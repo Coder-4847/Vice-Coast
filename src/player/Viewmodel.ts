@@ -494,7 +494,7 @@ export class Viewmodel {
   private mantleHands(p: Player, cam: THREE.PerspectiveCamera, mt: number): void {
     const m = p.mantle!;
     const L = m.ledge;
-    const reach = smooth(0, 0.3, m.t) * (1 - smooth(0.62, 0.92, m.t));
+    const reach = smooth(0.04, 0.3, m.t) * (1 - smooth(0.6, 0.85, m.t));
     const lateral = _v.set(L.dir.z, 0, -L.dir.x).multiplyScalar(0.0); // keep for clarity
     void lateral;
     const side = new THREE.Vector3().crossVectors(L.dir, new THREE.Vector3(0, 1, 0)).normalize(); // player's right

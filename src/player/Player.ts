@@ -424,18 +424,21 @@ export class Player {
       const arc = Math.max(0, ledge.top.y + 0.28 - (start.y + ledge.end.y) / 2);
       this.pos.y += arc * Math.sin(Math.PI * u);
     } else {
-      // Pull up the wall, then step forward onto the ledge.
-      const split = 0.58;
+      // 1) step up to the wall, 2) pull up with the hands on the lip, 3) step forward onto the ledge.
+      const split = 0.6;
+      // the spot just in front of the wall face (never farther than where we started)
+      const ax = ledge.top.x - ledge.dir.x * 0.4;
+      const az = ledge.top.z - ledge.dir.z * 0.4;
+      const startAlong = (start.x - ax) * ledge.dir.x + (start.z - az) * ledge.dir.z; // >0 means already past it
+      const ox = startAlong > 0 ? start.x : ax;
+      const oz = startAlong > 0 ? start.z : az;
       if (u < split) {
-        const k = easeInOutCubic(u / split); // slow start: the hands have time to find the ledge
-        this.pos.set(
-          start.x + ledge.dir.x * 0.18 * k, start.y + (ledge.end.y - start.y) * k, start.z + ledge.dir.z * 0.18 * k,
-        );
+        const walk = easeInOutCubic(clamp(u / 0.3, 0, 1));
+        const rise = easeInOutCubic(clamp((u - 0.2) / 0.4, 0, 1));
+        this.pos.set(start.x + (ox - start.x) * walk, start.y + (ledge.end.y - start.y) * rise, start.z + (oz - start.z) * walk);
       } else {
         const k = easeInOutCubic((u - split) / (1 - split));
-        const wx = start.x + ledge.dir.x * 0.18;
-        const wz = start.z + ledge.dir.z * 0.18;
-        this.pos.set(wx + (ledge.end.x - wx) * k, ledge.end.y, wz + (ledge.end.z - wz) * k);
+        this.pos.set(ox + (ledge.end.x - ox) * k, ledge.end.y, oz + (ledge.end.z - oz) * k);
       }
     }
     this.body.setNextKinematicTranslation({ x: this.pos.x, y: this.pos.y, z: this.pos.z });
