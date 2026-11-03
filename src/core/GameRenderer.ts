@@ -44,6 +44,8 @@ export class GameRenderer {
     // Tone mapping, grading and sRGB encoding happen in the post-processing pipeline's final pass.
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    // The post pipeline issues many render() calls per frame; Game resets the counters once per frame.
+    this.renderer.info.autoReset = false;
     this.gpu = readGpuInfo(this.renderer.getContext() as WebGL2RenderingContext);
 
     canvas.addEventListener('webglcontextlost', (e) => {
