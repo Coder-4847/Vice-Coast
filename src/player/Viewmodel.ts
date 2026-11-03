@@ -48,7 +48,7 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
 
 const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
 const ADS = pose(0, -0.0595, -0.40, 0, 0, 0);
-const SPRINT = pose(0.12, -0.235, -0.38, -0.66, 0.44, 0.18);
+const SPRINT = pose(0.12, -0.2, -0.38, -0.66, 0.44, 0.18);
 const HOLSTER = pose(0.22, -0.66, -0.12, -1.15, 0.2, 0.2);
 const SWIM = pose(0.12, -0.28, -0.36, -0.5, 0.3, 0.1);
 const MANTLE = pose(0.19, -0.58, -0.14, -1.0, 0.35, 0.1);
@@ -57,8 +57,8 @@ const SHOULDER_R = new THREE.Vector3(0.2, -0.2, 0.0);
 const SHOULDER_L = new THREE.Vector3(-0.2, -0.2, 0.0);
 const POLE_R = new THREE.Vector3(0.5, -1, 0.35);
 const POLE_L = new THREE.Vector3(-0.5, -1, 0.35);
-const REST_R = pose(0.17, -0.36, -0.19, 0.55, -0.15, 0.2);
-const REST_L = pose(-0.17, -0.36, -0.19, 0.55, 0.15, -0.2);
+const REST_R = pose(0.2, -0.19, -0.32, 0.95, -0.12, 0.25);
+const REST_L = pose(-0.2, -0.19, -0.32, 0.95, 0.12, -0.25);
 
 /**
  * First-person presentation: arms with IK, the pistol, and all weapon animation.
