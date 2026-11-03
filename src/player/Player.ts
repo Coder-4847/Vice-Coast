@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Collider, KinematicCharacterController, RigidBody } from '@dimforge/rapier3d-compat';
 import type { AudioEngine } from '../audio/AudioEngine';
-import { clamp, damp, easeInOutCubic, easeOutCubic, Spring } from '../core/math';
+import { clamp, damp, easeInOutCubic, Spring } from '../core/math';
 import type { InputManager } from '../input/InputManager';
 import { GROUP, type Physics, type RayHit, type Surface } from '../physics/Physics';
 import { terrainHeight } from '../world/Terrain';
@@ -405,7 +405,7 @@ export class Player {
   }
 
   private startMantle(ledge: Ledge): void {
-    const duration = ledge.kind === 'vault' ? 0.58 : 0.85 + 0.16 * ledge.height;
+    const duration = ledge.kind === 'vault' ? 0.6 : 1.0 + 0.2 * ledge.height;
     this.mantle = { ledge, t: 0, duration, start: this.pos.clone() };
     this.state = ledge.kind;
     this.vel.set(0, 0, 0);
@@ -427,7 +427,7 @@ export class Player {
       // Pull up the wall, then step forward onto the ledge.
       const split = 0.58;
       if (u < split) {
-        const k = easeOutCubic(u / split);
+        const k = easeInOutCubic(u / split); // slow start: the hands have time to find the ledge
         this.pos.set(
           start.x + ledge.dir.x * 0.18 * k, start.y + (ledge.end.y - start.y) * k, start.z + ledge.dir.z * 0.18 * k,
         );
