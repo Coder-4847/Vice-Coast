@@ -32,6 +32,7 @@ export interface SettingsData {
     /** Touch button centres as viewport fractions, keyed by button id. */
     touchLayout: Record<string, { x: number; y: number }>;
   };
+  audio: { master: number };
   accessibility: {
     reduceMotion: boolean;
     textScale: number;
@@ -66,6 +67,7 @@ export function defaultSettings(): SettingsData {
       bindings: defaultBindings(),
       touchLayout: {},
     },
+    audio: { master: 0.8 },
     accessibility: { reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off' },
   };
 }
@@ -125,6 +127,7 @@ export class Settings extends Emitter<{ change: SettingsData }> {
     d.graphics.fov = c(d.graphics.fov, 50, 110);
     d.controls.padDeadzone = c(d.controls.padDeadzone, 0.05, 0.4);
     d.accessibility.textScale = c(d.accessibility.textScale, 0.85, 1.4);
+    d.audio.master = c(d.audio.master, 0, 1);
     return d;
   }
 

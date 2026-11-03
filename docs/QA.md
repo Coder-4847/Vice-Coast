@@ -70,3 +70,34 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 
 ### Hardware pass (still to do)
 - [ ] Medium holds 60 FPS on an integrated GPU with `?weather=rain` at night (worst case).
+
+## Phase 3 — Player on foot
+
+### Movement
+- [ ] Spawn on the beach range grounded (no fall/jump from the "press any key" press). Camera swoops in from the title shot with no hard cut.
+- [ ] Walk ≈ 4.2 m/s, sprint ≈ 7 m/s draining stamina (bar under the crosshair), exhausted until it recovers; crouch ≈ 1.9 m/s and can't stand under a low ceiling.
+- [ ] Jump has coyote time and a buffered press; landing dips the camera and plays a thud.
+- [ ] Walls and buildings stop you at the capsule radius; slopes and small steps are climbed smoothly.
+- [ ] Vault a ≤ 1.3 m thin obstacle (crate pyramid / table) and climb a ≤ 2.3 m ledge; prompt "Vault"/"Climb" shows with the right glyph; > 2.4 m shows nothing.
+- [ ] Walk into the sea: you float at the surface, `C` dives, `Space` surfaces, no weapon use while swimming.
+- [ ] Very short key taps (< 1 frame) still register on keyboard and touch.
+
+### First-person body and weapon
+- [ ] Both hands and sleeved arms are visible; hands sit correctly on the pistol grip (strong hand on the grip, support hand cupping it).
+- [ ] Draw and holster are smooth; holstered hands rest low at the bottom of the screen.
+- [ ] Hip → ADS blends smoothly; sights line up; FOV narrows slightly; look sensitivity drops while aiming.
+- [ ] Sprint lowers the gun and you can't fire until it is raised; reload / inspect play the full hand choreography (mag out, drop, grab, insert, slide release).
+- [ ] Climbing and vaulting show the hands reaching for the ledge.
+- [ ] Gun is lit by the sun/moon and sits in shadow when you stand in shadow.
+
+### Shooting
+- [ ] 13 rounds (12 + 1 chambered); tactical reload tops up to 13, empty reload to 12; dry-fire clicks then starts a reload; slide locks back when empty.
+- [ ] Recoil climbs with a slight sideways drift and partly recovers; crosshair gap widens with movement / bloom and closes when aimed.
+- [ ] Impacts differ by material: concrete (dust + sparks), glass (crack decal + shards), wood (splinters), metal (sparks + ping), dirt/sand (puff + scorch), water (splash).
+- [ ] Crates, barrels and cans react physically; steel plates swing on their hinges and ring; hit marker flashes on props.
+- [ ] Brass ejects and bounces with a tinkle; the dropped magazine falls to the ground.
+- [ ] Gunshot reverb is airy in the open and tighter between buildings.
+
+### Audio and settings
+- [ ] Sound starts after the first key press/click (browser autoplay rule); Esc pauses audio; Audio tab master volume works.
+- [ ] Gamepad: rumble on shots; menu navigation unchanged. Touch: Arms button draws/holsters.

@@ -174,7 +174,7 @@ export class Viewmodel {
     this.swayX.velocity += (Math.random() - 0.5) * 0.5;
     this.flashT = 0.05;
     this.flash.visible = true;
-    const s = 0.085 + Math.random() * 0.05;
+    const s = 0.065 + Math.random() * 0.04;
     this.flash.scale.set(s, s, s);
     this.flash.rotation.z = Math.random() * 6.28;
   }

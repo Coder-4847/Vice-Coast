@@ -5,9 +5,9 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 2 — Core look.** A physically-based sky with a day/night cycle, weather, cascaded-shadow
-> lighting, a cinematic post-processing pipeline, procedural terrain + ocean and a placeholder city.
-> The player, vehicles and real districts come in later phases. See the [roadmap](#roadmap).
+> Status: **Phase 3 — Player on foot.** You play in first person with visible, IK-driven arms and a pistol on a
+> shooting range, with physics, vault/climb, swimming and procedural audio. Built on the Phase 2 look (physical sky,
+> day/night, weather, cinematic post). Vehicles and real districts come next. See the [roadmap](#roadmap).
 
 ## Run locally
 
@@ -24,20 +24,23 @@ expose the game object as `window.__vice` in a production build (always on in `n
 Look-dev URL parameters: `?time=18.7` (hour 0–24), `?weather=rain` (`clear cloudy overcast rain storm fog dust snow`),
 `?speed=0` (freeze time; default 30 = one game minute per two real seconds). The same controls live in **Esc → Environment**.
 
-## Controls (Phase 1 test camera)
+## Controls
 
-The player/vehicle controls arrive in later phases; for now a free-fly camera exercises every input device.
-All bindings are rebindable in **Esc → Controls / Gamepad**, and prompts switch glyphs automatically when you
-change device.
+All bindings are rebindable in **Esc → Controls / Gamepad**, and prompts switch glyphs automatically when you change device.
+Click the game to capture the mouse. You spawn on a beach shooting range facing the city at golden hour.
 
 | Action | Keyboard + mouse | Gamepad | Touch |
 | --- | --- | --- | --- |
 | Move | `W A S D` / arrows | Left stick | Left thumb (floating stick) |
-| Look | Mouse (click to capture) | Right stick | Drag the right side · optional gyro |
-| Up / down | `Space` / `C` | `A` (✕) / `R3` | Jump / Crouch buttons |
-| Sprint | `Shift` | `L3` | Sprint button (latches) |
-| Menu | `Esc` or `P` | `Start` (Options) | Menu button |
-| Menu navigation | Arrows / Tab / Enter | D-pad or left stick · `A` select · `B` back | Tap |
+| Look | Mouse | Right stick | Drag the right side · optional gyro |
+| Fire / aim | `LMB` / `RMB` | `RT` / `LT` | Fire / Aim buttons |
+| Reload | `R` | `X` (□) | Reload |
+| Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) | Jump |
+| Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` | Sprint · Crouch (latching) |
+| Draw / holster · inspect | `1` · `G` | D-pad ↓ · D-pad → | Arms |
+| Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
+| Menu | `Esc` or `P` | `Start` (Options) | Menu |
+| Noclip (debug) | `F9` | — | — |
 
 Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
@@ -48,7 +51,10 @@ src/
   core/    game loop (fixed timestep + interpolation), renderer + HDR post pipeline, quality presets, settings
   input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
-  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, placeholder city, fly camera
+  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, placeholder city, props, effects
+  physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries
+  player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
+  audio/   procedural Web Audio engine (no sample files)
 docs/      PERFORMANCE.md, QA.md
 ```
 
@@ -60,8 +66,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 ## Roadmap
 
 1. **Foundation** ✅
-2. **Core look** ✅ (this build) — sky, day/night, lighting, post-processing, terrain, weather
-3. Player on foot — first-person hands, weapons
+2. **Core look** ✅ — sky, day/night, lighting, post-processing, terrain, weather
+3. **Player on foot** ✅ (this build) — first-person hands, movement, vault/climb, pistol
 4. Vehicles
 5. World streaming and Port Valeria
 6. NPCs and traffic

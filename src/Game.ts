@@ -108,6 +108,7 @@ export class Game {
       render: () => this.renderFrame(),
     });
 
+    this.audio.volume = this.settings.data.audio.master;
     this.bindEvents();
   }
 
@@ -326,6 +327,7 @@ export class Game {
     this.touch.setActive(false);
     this.ui.setCaptureHint(false);
     if (document.pointerLockElement) document.exitPointerLock();
+    this.audio.suspend();
     this.ui.menu.open();
   }
 
@@ -334,6 +336,7 @@ export class Game {
     if (this.editingTouch) return;
     this.state = 'playing';
     this.ui.menu.close();
+    this.audio.resume();
     this.loop.paused = false;
     this.input.gameplayEnabled = true;
     this.touch.setActive(true);
@@ -377,6 +380,7 @@ export class Game {
   }
 
   private applySettings(): void {
+    this.audio.setVolume(this.settings.data.audio.master);
     const preset = this.resolvePreset();
     if (preset.name !== this.gfx.preset.name) {
       this.gfx.applyQuality(preset);

@@ -60,7 +60,18 @@ weather ≤ 3, plus the shadow cascades and post passes. The FPS panel now repor
   a budget (shadow casters limited to the first cascades, AO pre-pass on a simplified layer).
 - **Temporal anti-aliasing is not implemented** (see Deferred). MSAA + SMAA are used instead.
 
-## Measured
+## Phase 3 additions
+
+| Feature | Cost model |
+| --- | --- |
+| Rapier physics | separate 1.7 MB (gzip) chunk loaded behind the loading screen; one fixed step per frame; ~620 static box colliders + one 475×450 heightfield (≈1 s to sample at load); ~40 dynamic props |
+| Viewmodel pass | a second scene render of only the viewmodel layer (≈25 small meshes) with a cleared depth buffer |
+| Shadow maps | now rendered **once per frame** (`shadowMap.autoUpdate = false`, requested by the pipeline) and reused by the viewmodel pass and GTAO pre-pass; this also removed a hidden duplicate cascade render |
+| Effects | preallocated pools: 320 particles (one `Points`), 5 decal `InstancedMesh`es × 48, 10 tracers, 32 brass; no allocation per frame except one `Vector3` per shot |
+| Audio | all synthesis is on-demand `OscillatorNode`/`BufferSource` graphs per sound (a few nodes per shot) |
+| Raycasts | bullets: 1 ray; ledge probe: ≤ 8 rays per fixed step while grounded; gunshot reverb probe: 9 rays per shot |
+
+
 
 Headless Chromium on SwiftShader (CPU software GL) runs this world at only a few FPS. That is expected and says nothing about
 real GPUs; use it only for correctness. **The 60 FPS target on integrated and discrete GPUs is still unverified** — run

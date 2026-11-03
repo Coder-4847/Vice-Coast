@@ -33,9 +33,9 @@ interface MenuHooks {
 
 type Sync = () => void;
 
-const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Input test'] as const;
+const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test'] as const;
 const ENV_TAB = 1;
-const TEST_TAB = 6;
+const TEST_TAB = 7;
 
 /** Pause menu + settings. Every control writes straight to Settings and re-syncs on change. */
 export class SettingsMenu {
@@ -71,7 +71,7 @@ export class SettingsMenu {
     });
 
     const body = h('div', 'panel-body');
-    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.inputTest()];
+    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest()];
     this.pages.forEach((p) => {
       p.classList.add('tabpage');
       p.setAttribute('role', 'tabpanel');
@@ -417,6 +417,16 @@ export class SettingsMenu {
       this.slider('Text size', 0.85, 1.4, 0.05, () => this.settings.data.accessibility.textScale, (v) => this.update((d) => (d.accessibility.textScale = v)), (v) => `${Math.round(v * 100)}%`),
       this.group('Colour'),
       this.segmented('Colour-blind accent', cb, () => this.settings.data.accessibility.colorBlind, (v) => this.update((d) => (d.accessibility.colorBlind = v)), 'Swaps the UI accent for a colour-safe one. World colour filters arrive with post-processing.'),
+    );
+    return page;
+  }
+
+  private audioPage(): HTMLElement {
+    const page = h('div');
+    page.append(
+      this.group('Volume'),
+      this.slider('Master volume', 0, 1, 0.05, () => this.settings.data.audio.master, (v) => this.update((d) => (d.audio.master = v)), (v) => `${Math.round(v * 100)}%`,
+        'All sound is synthesised in the browser: gunshots, footsteps, impacts and mechanics.'),
     );
     return page;
   }
