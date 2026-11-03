@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
-// Relative base works on GitHub Pages project sites (/vice-coast/) and locally.
+// A relative base works on GitHub Pages project sites (/Vice-Coast/) and locally,
+// so asset URLs never 404 regardless of the repository name.
 export default defineConfig({
   base: './',
   build: {
