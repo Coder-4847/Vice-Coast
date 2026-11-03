@@ -191,7 +191,7 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
     float ground = step(4.5, vLoc.y) * step(vLoc.y, vSize.y - 1.2);
     wMask = step(0.16, f.x) * step(f.x, 0.84) * step(0.2, f.y) * step(f.y, 0.82) * ground;
     float hh = n_hash21(cell + vSeed * 91.0 + an.x * 7.0);
-    float fraction = 0.06 + 0.5 * smoothstep(0.05, 0.8, uNight);
+    float fraction = 0.04 + 0.30 * smoothstep(0.05, 0.8, uNight);
     wLit = step(hh, fraction);
     wCol = mix(vec3(1.0, 0.70, 0.40), vec3(0.72, 0.86, 1.0), step(0.86, n_hash21(cell * 1.7 + vSeed)));
     wCol *= 0.6 + 0.9 * n_hash21(cell + 4.0);
@@ -200,6 +200,6 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
 }`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor * (1.0 - 0.3 * uWet), 0.05, wMask);')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.15, wMask);')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += wCol * wMask * wLit * uNight * 2.4;');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += wCol * wMask * wLit * uNight * 1.25;');
   };
 }

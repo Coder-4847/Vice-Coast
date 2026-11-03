@@ -23,7 +23,7 @@ export interface PostParams {
 }
 
 /** Post-exposure luminance above which pixels contribute to bloom. */
-const BLOOM_THRESHOLD = 2.4;
+const BLOOM_THRESHOLD = 3.2;
 
 const FINAL_SHADER = {
   uniforms: {

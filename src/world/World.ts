@@ -120,7 +120,7 @@ export class World {
     p.exposure = look.exposure * w.current.exposure;
     p.tint.copy(look.tint);
     p.saturation = look.saturation * w.current.saturation;
-    p.bloom = look.bloom * (1 + 0.6 * look.night) * (1 + 0.5 * w.current.fog * 200);
+    p.bloom = look.bloom;
     p.vignette = look.vignette;
     p.flash = w.flash;
     p.time = this.clock;

@@ -43,7 +43,7 @@ export class GameRenderer {
     });
     // Tone mapping, grading and sRGB encoding happen in the post-processing pipeline's final pass.
     this.renderer.toneMapping = THREE.NoToneMapping;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.gpu = readGpuInfo(this.renderer.getContext() as WebGL2RenderingContext);
 
     canvas.addEventListener('webglcontextlost', (e) => {
