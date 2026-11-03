@@ -152,7 +152,7 @@ function makeShared() {
     uNight: { value: 0 },
     uOvercast: { value: new THREE.Vector3(0.6, 0.63, 0.68) },
     uOvercastAmt: { value: 0 },
-    uSkyScale: { value: 0.03 },
+    uSkyScale: { value: 0.015 },
     uFogFalloff: { value: 0.0025 },
     uWet: { value: 0 },
     uTime: { value: 0 },

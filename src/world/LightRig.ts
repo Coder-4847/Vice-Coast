@@ -90,7 +90,7 @@ export class LightRig {
     const cur = weather.current;
 
     // Sun strength fades out just before the horizon; moon takes over once it is dark.
-    const sunI = smooth(-3.5, 3, elev) * 3.6 * cur.sun * (0.35 + 0.65 * smooth(0, 14, elev));
+    const sunI = smooth(-3.5, 3, elev) * 3.1 * cur.sun * (0.35 + 0.65 * smooth(0, 14, elev));
     const moonUp = smooth(-4, 8, tod.moonDir.y);
     const moonI = (1 - smooth(-11, -2, elev)) * moonUp * 0.42 * (1 - 0.7 * cur.overcast);
 

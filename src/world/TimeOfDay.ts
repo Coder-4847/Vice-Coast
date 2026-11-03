@@ -44,13 +44,13 @@ interface Key {
  * Values are art-directed against the physical sky; tweak these to change the mood.
  */
 const KEYS: Key[] = [
-  { elev: -18, exposure: 2.6, tint: [0.80, 0.93, 1.22], sat: 0.80, bloom: 0.5, vignette: 0.38, fillSky: [0.10, 0.16, 0.34], fillGround: [0.03, 0.04, 0.08], fill: 0.55, env: 1.0 },
-  { elev: -7, exposure: 1.9, tint: [0.92, 0.88, 1.12], sat: 0.95, bloom: 0.45, vignette: 0.34, fillSky: [0.20, 0.20, 0.42], fillGround: [0.06, 0.05, 0.09], fill: 0.55, env: 1.0 },
+  { elev: -18, exposure: 2.6, tint: [0.80, 0.93, 1.22], sat: 0.80, bloom: 0.32, vignette: 0.38, fillSky: [0.10, 0.16, 0.34], fillGround: [0.03, 0.04, 0.08], fill: 0.55, env: 1.0 },
+  { elev: -7, exposure: 1.9, tint: [0.92, 0.88, 1.12], sat: 0.95, bloom: 0.3, vignette: 0.34, fillSky: [0.20, 0.20, 0.42], fillGround: [0.06, 0.05, 0.09], fill: 0.55, env: 1.0 },
   { elev: -1.5, exposure: 1.35, tint: [1.12, 0.92, 0.92], sat: 1.12, bloom: 0.4, vignette: 0.32, fillSky: [0.45, 0.30, 0.45], fillGround: [0.15, 0.08, 0.08], fill: 0.4, env: 1.0 },
   { elev: 4, exposure: 1.05, tint: [1.10, 0.95, 0.86], sat: 1.18, bloom: 0.3, vignette: 0.30, fillSky: [0.55, 0.40, 0.42], fillGround: [0.22, 0.12, 0.10], fill: 0.25, env: 1.0 },
   { elev: 12, exposure: 0.95, tint: [1.05, 0.98, 0.92], sat: 1.12, bloom: 0.2, vignette: 0.26, fillSky: [0.60, 0.60, 0.70], fillGround: [0.25, 0.20, 0.18], fill: 0.12, env: 1.0 },
-  { elev: 35, exposure: 0.90, tint: [1.0, 1.0, 1.0], sat: 1.05, bloom: 0.14, vignette: 0.22, fillSky: [0.60, 0.68, 0.85], fillGround: [0.28, 0.25, 0.22], fill: 0.06, env: 1.0 },
-  { elev: 70, exposure: 0.88, tint: [1.0, 1.0, 1.0], sat: 1.04, bloom: 0.12, vignette: 0.2, fillSky: [0.60, 0.70, 0.90], fillGround: [0.30, 0.27, 0.24], fill: 0.05, env: 1.0 },
+  { elev: 35, exposure: 0.85, tint: [1.0, 1.0, 1.0], sat: 1.05, bloom: 0.14, vignette: 0.22, fillSky: [0.60, 0.68, 0.85], fillGround: [0.28, 0.25, 0.22], fill: 0.06, env: 1.0 },
+  { elev: 70, exposure: 0.82, tint: [1.0, 1.0, 1.0], sat: 1.04, bloom: 0.12, vignette: 0.2, fillSky: [0.60, 0.70, 0.90], fillGround: [0.30, 0.27, 0.24], fill: 0.05, env: 1.0 },
 ];
 
 const smooth = (a: number, b: number, x: number) => {
