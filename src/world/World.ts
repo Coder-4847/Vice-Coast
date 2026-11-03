@@ -4,10 +4,12 @@ import type { PostParams } from '../core/RenderPipeline';
 import { RenderPipeline } from '../core/RenderPipeline';
 import type { QualityPreset } from '../core/Quality';
 import { clamp, damp } from '../core/math';
+import type { Physics } from '../physics/Physics';
 import { Atmosphere } from './Atmosphere';
 import { City } from './City';
 import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
+import { Props } from './Props';
 import { Terrain, terrainHeight, CITY } from './Terrain';
 import { TimeOfDay } from './TimeOfDay';
 import { Weather, type WeatherType } from './Weather';
@@ -30,6 +32,7 @@ export class World {
   readonly ocean = new Ocean();
   readonly city = new City();
   readonly pipeline: RenderPipeline;
+  props: Props | null = null;
 
   private readonly post: PostParams = {
     exposure: 1, tint: new THREE.Color(1, 1, 1), saturation: 1, bloom: 0.3, vignette: 0.25, flash: 0, time: 0,
@@ -39,6 +42,8 @@ export class World {
   private sunOccluded = 0;
   private frame = 0;
   private clock = 0;
+
+  physics: Physics | null = null;
 
   constructor(private readonly gfx: GameRenderer, private readonly camera: THREE.PerspectiveCamera, preset: QualityPreset) {
     this.scene.background = null;
@@ -67,6 +72,17 @@ export class World {
     this.atmosphere.markEnvDirty();
   }
 
+  /** Called once Rapier has loaded: builds the static colliders and the shooting range. */
+  attachPhysics(physics: Physics): void {
+    this.physics = physics;
+    physics.buildTerrain();
+    physics.setBuildings(this.city.boxes);
+    this.props = new Props(physics);
+    this.props.buildRange();
+    for (const m of this.props.materials) this.rig.register(m);
+    this.scene.add(this.props.group);
+  }
+
   private drawingSize(): THREE.Vector2 {
     return this.gfx.renderer.getDrawingBufferSize(new THREE.Vector2());
   }
@@ -76,6 +92,7 @@ export class World {
     this.atmosphere.setQuality({ cloudOctaves: preset.cloudOctaves, envSize: preset.envSize, envInterval: preset.envInterval });
     this.terrain.rebuild(preset.terrainSegments);
     this.city.build(preset.instanceBudget, preset.lamps);
+    this.physics?.setBuildings(this.city.boxes);
     this.weather.buildFields({ rain: preset.rain, snow: preset.snow, dust: preset.dust });
     const size = this.drawingSize();
     this.pipeline.configure(preset, size.x, size.y);

@@ -37,8 +37,18 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   padMapping = '';
   pointerLocked = false;
 
+  private _gameplayEnabled = false;
+  /** Keys held when gameplay switched on (e.g. the "press any key" press) are ignored until released. */
+  private suppressed = new Set<string>();
+
   /** When false, gameplay actions read as released (menus, title, loading). */
-  gameplayEnabled = false;
+  get gameplayEnabled(): boolean {
+    return this._gameplayEnabled;
+  }
+  set gameplayEnabled(on: boolean) {
+    if (on && !this._gameplayEnabled) this.suppressed = new Set(this.keys);
+    this._gameplayEnabled = on;
+  }
 
   /** Combined movement, x: +right, y: +forward, length ≤ 1. */
   readonly move = { x: 0, y: 0 };
@@ -46,6 +56,9 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   readonly nav = { x: 0, y: 0, confirm: false, back: false, start: false };
 
   private keys = new Set<string>();
+  /** Keys/buttons pressed since the last frame, and releases deferred until a frame has seen them down. */
+  private keysUnseen = new Set<string>();
+  private keysDeferred = new Set<string>();
   private cur = {} as Record<Action, boolean>;
   private prev = {} as Record<Action, boolean>;
   private toggled: Record<Holdable, boolean> = { sprint: false, crouch: false, aim: false };
@@ -192,12 +205,16 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
       let down = false;
       if (enabled) {
         const b = this.binding(id);
-        for (const k of b.kbm) if (this.keys.has(k)) { down = true; break; }
+        for (const k of b.kbm) if (this.keys.has(k) && !this.suppressed.has(k)) { down = true; break; }
         if (!down && this.pad) for (const i of b.pad) if (this.padDown[i]) { down = true; break; }
         if (!down && this.touchHeld.has(id)) down = true;
       }
       this.cur[id] = down;
     }
+    for (const k of this.suppressed) if (!this.keys.has(k)) this.suppressed.delete(k);
+    this.keysUnseen.clear();
+    for (const k of this.keysDeferred) this.keys.delete(k);
+    this.keysDeferred.clear();
     this.touchUnseen.clear();
     for (const a of this.touchDeferred) this.touchHeld.delete(a);
     this.touchDeferred.clear();
@@ -299,6 +316,18 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
 
   // ----------------------------------------------------------------- private
 
+  private pressKey(code: string): void {
+    this.keys.add(code);
+    this.keysUnseen.add(code);
+    this.keysDeferred.delete(code);
+  }
+
+  /** A tap shorter than one frame stays "down" until a frame has seen it, so quick presses are never lost. */
+  private releaseKey(code: string): void {
+    if (this.keysUnseen.has(code)) this.keysDeferred.add(code);
+    else this.keys.delete(code);
+  }
+
   private setDevice(d: Device): void {
     if (this.activeDevice === d) return;
     this.activeDevice = d;
@@ -323,12 +352,12 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     }, true);
     w.addEventListener('keydown', (e) => {
       this.setDevice('kbm');
-      this.keys.add(e.code);
+      this.pressKey(e.code);
       if (!e.repeat) this.emit('anyinput', 'kbm');
       if (this.gameplayEnabled && !e.ctrlKey && !e.metaKey && !e.altKey && this.isBoundKey(e.code)) e.preventDefault();
     });
     w.addEventListener('keyup', (e) => {
-      this.keys.delete(e.code);
+      this.releaseKey(e.code);
     });
     w.addEventListener('blur', () => {
       this.keys.clear();
@@ -362,10 +391,10 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     // Mouse buttons and look are only live while the pointer is captured, so the
     // click that captures the pointer never fires a weapon.
     w.addEventListener('mousedown', (e) => {
-      if (this.pointerLocked) this.keys.add('Mouse' + e.button);
+      if (this.pointerLocked) this.pressKey('Mouse' + e.button);
     });
     w.addEventListener('mouseup', (e) => {
-      this.keys.delete('Mouse' + e.button);
+      this.releaseKey('Mouse' + e.button);
     });
     w.addEventListener('mousemove', (e) => {
       if (!this.pointerLocked || !this.gameplayEnabled) return;

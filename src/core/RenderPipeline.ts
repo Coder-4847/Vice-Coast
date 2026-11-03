@@ -124,6 +124,8 @@ export class RenderPipeline {
   private h = 1;
   /** Meshes (sky dome, ocean, light pools…) that must not appear in the ambient-occlusion depth pre-pass. */
   readonly hideForAO: THREE.Object3D[] = [];
+  /** Optional second pass drawn over the world with its own camera (the first-person viewmodel). */
+  overlayCamera: THREE.Camera | null = null;
 
   constructor(private readonly gfx: GameRenderer, private readonly scene: THREE.Scene, private readonly camera: THREE.PerspectiveCamera) {}
 
@@ -177,7 +179,14 @@ export class RenderPipeline {
     const r = this.gfx.renderer;
     // 1. Scene into the HDR target.
     r.setRenderTarget(this.sceneRT);
+    r.shadowMap.needsUpdate = true; // shadow maps are rendered once per frame, here, and reused by later passes
     r.render(this.scene, this.camera);
+    if (this.overlayCamera) {
+      r.autoClear = false;
+      r.clearDepth(); // the viewmodel never intersects the world
+      r.render(this.scene, this.overlayCamera);
+      r.autoClear = true;
+    }
 
     // 2. Post chain.
     let read = this.sceneRT;

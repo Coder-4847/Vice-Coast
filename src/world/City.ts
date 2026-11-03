@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { BuildingBox } from '../physics/Physics';
 import { CITY } from './Terrain';
 import { NOISE_GLSL } from './skyGlsl';
 
@@ -40,6 +41,8 @@ export class City {
   readonly pools = new THREE.Group();
   buildings: THREE.InstancedMesh | null = null;
   instanceCount = 0;
+  /** Axis-aligned footprints of every building, for the physics world. */
+  boxes: BuildingBox[] = [];
   private lamps: THREE.Object3D[] = [];
   private builtKey = '';
   private readonly boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -95,6 +98,7 @@ export class City {
     cells.sort((a, b) => dist(a) - dist(b));
 
     let n = 0;
+    this.boxes = [];
     for (const cell of cells) {
       if (n >= budget) break;
       const d = dist(cell);
@@ -111,6 +115,7 @@ export class City {
         m.compose(p, q, sc);
         mesh.setMatrixAt(n, m);
         mesh.setColorAt(n, palette[Math.floor(rnd() * palette.length)]!);
+        this.boxes.push({ cx: p.x, cy: p.y, cz: p.z, hx: w / 2, hy: h / 2, hz: dp / 2 });
         n++;
       }
     }

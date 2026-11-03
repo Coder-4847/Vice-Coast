@@ -7,7 +7,12 @@ import { Settings } from './core/Settings';
 import { InputManager } from './input/InputManager';
 import { TouchControls } from './input/TouchControls';
 import { UI } from './ui/UI';
-import { FlyCamera } from './world/FlyCamera';
+import { AudioEngine } from './audio/AudioEngine';
+import { Physics } from './physics/Physics';
+import { Player } from './player/Player';
+import { Viewmodel } from './player/Viewmodel';
+import { WeaponSystem } from './player/WeaponSystem';
+import { Effects } from './world/Effects';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
@@ -29,7 +34,18 @@ export class Game {
 
   private readonly canvas: HTMLCanvasElement;
   private readonly camera: THREE.PerspectiveCamera;
-  private readonly fly = new FlyCamera();
+  physics: Physics | null = null;
+  readonly audio = new AudioEngine();
+  player: Player | null = null;
+  weapon: WeaponSystem | null = null;
+  viewmodel: Viewmodel | null = null;
+  effects: Effects | null = null;
+  private baseFov = 75;
+  /** 0 → 1 camera swoop from the title shot into the player's eyes. */
+  private intro = 1;
+  private readonly introFromPos = new THREE.Vector3();
+  private readonly introFromQuat = new THREE.Quaternion();
+  private readonly introTmpQuat = new THREE.Quaternion();
   private readonly autoPreset: PresetName;
   private titleT = 0;
   private fovFrom = TITLE_FOV;
@@ -97,6 +113,12 @@ export class Game {
 
   /** Compile shaders behind the loading screen, then reveal the title. */
   async init(): Promise<void> {
+    this.ui.setProgress(0.1);
+    this.physics = await Physics.create();
+    this.world.attachPhysics(this.physics);
+    this.player = new Player(this.physics, this.input, this.audio);
+    this.player.teleport(100, 0, -Math.PI / 2);
+    this.setupWeapon();
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
     this.world.update(0, false);
@@ -122,6 +144,24 @@ export class Game {
     this.ui.showTitle();
   }
 
+  private setupWeapon(): void {
+    const world = this.world;
+    const player = this.player!;
+    this.effects = new Effects(this.audio);
+    this.viewmodel = new Viewmodel();
+    world.scene.add(this.effects.group, this.viewmodel.group);
+    for (const m of this.viewmodel.materials) world.rig.register(m);
+    world.pipeline.overlayCamera = this.viewmodel.camera;
+    world.pipeline.hideForAO.push(this.effects.group);
+    this.weapon = new WeaponSystem(this.input, player, this.physics!, this.audio, this.effects, () => world.props);
+    const vm = this.viewmodel;
+    this.weapon.onFire = (k) => vm.kick(k);
+    this.weapon.onDraw = () => vm.bump(0.5);
+    vm.onMagDrop = (pos, vel) => this.effects!.dropMagazine(pos, vel);
+    player.onLand = (speed) => vm.bump(Math.min(5, speed * 0.35));
+    player.onMantleEnd = () => vm.bump(1.5);
+  }
+
   /** `?time=18.6&weather=rain&speed=0` — handy for look-dev and QA. */
   private applyUrlParams(): void {
     const q = new URLSearchParams(location.search);
@@ -140,7 +180,10 @@ export class Game {
   // ------------------------------------------------------------------ loop
 
   private fixedUpdate(dt: number): void {
-    if (this.state === 'playing') this.fly.fixedUpdate(dt, this.input, (x, z) => this.world.heightAt(x, z));
+    if (this.state !== 'playing' || !this.physics || !this.player) return;
+    this.player.fixedUpdate(dt);
+    this.physics.step();
+    this.world.props?.fixedUpdate();
   }
 
   private update(dt: number, alpha: number): void {
@@ -153,7 +196,7 @@ export class Game {
         this.placeTitleCamera(this.titleT);
         break;
       case 'playing':
-        this.fly.update(alpha, input, this.camera);
+        this.updatePlaying(dt, alpha);
         if (input.pressed('pause')) this.pause();
         this.ui.setCaptureHint(input.activeDevice === 'kbm' && !input.pointerLocked && !this.editingTouch);
         break;
@@ -190,6 +233,34 @@ export class Game {
     if (n.back || n.start) this.resume();
   }
 
+  private updatePlaying(dt: number, alpha: number): void {
+    const player = this.player;
+    if (!player) return;
+    player.update(dt, alpha, this.camera);
+    this.world.props?.update(alpha);
+    const weapon = this.weapon;
+    const vm = this.viewmodel;
+    if (weapon && vm && this.effects) {
+      weapon.update(dt);
+      // zoom in a little when aiming, out a little when sprinting
+      this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
+      this.camera.updateProjectionMatrix();
+      vm.update(dt, player, weapon, this.camera, this.camera.aspect);
+      this.effects.update(dt);
+      this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
+    }
+    if (this.intro < 1) {
+      // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.
+      this.intro = Math.min(1, this.intro + dt / 2.4);
+      const k = easeInOutCubic(this.intro);
+      this.camera.position.lerpVectors(this.introFromPos, this.camera.position, k);
+      this.introTmpQuat.copy(this.camera.quaternion);
+      this.camera.quaternion.slerpQuaternions(this.introFromQuat, this.introTmpQuat, k);
+      if (this.intro >= 1) this.input.gameplayEnabled = true;
+    }
+    this.audio.setListener(this.camera);
+  }
+
   /** Slow golden-hour dolly over the city toward the sunset coast. */
   private placeTitleCamera(t: number): void {
     const s = Math.sin(t * 0.045);
@@ -200,25 +271,32 @@ export class Game {
 
   private updateFov(dt: number): void {
     const target = this.state === 'title' || this.state === 'loading' ? TITLE_FOV : this.settings.data.graphics.fov;
+    let fov = target;
     if (this.fovT < 1) {
       this.fovT = Math.min(1, this.fovT + dt / (this.settings.data.accessibility.reduceMotion ? 0.01 : 1.6));
-      this.camera.fov = this.fovFrom + (target - this.fovFrom) * easeInOutCubic(this.fovT);
-    } else {
-      this.camera.fov = target;
+      fov = this.fovFrom + (target - this.fovFrom) * easeInOutCubic(this.fovT);
     }
-    this.camera.updateProjectionMatrix();
+    if (this.state === 'playing' && this.weapon) {
+      this.baseFov = fov; // the weapon code applies aim zoom / sprint FOV on top
+    } else {
+      this.camera.fov = fov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   // ---------------------------------------------------------- state changes
 
   startPlaying(): void {
     if (this.state !== 'title') return;
-    // The fly camera adopts the title shot's exact pose: the hand-off is a continuous move, not a cut.
-    this.fly.setFromCamera(this.camera);
+    // The camera swoops from the title shot into the player's eyes: a continuous move, never a cut.
+    this.introFromPos.copy(this.camera.position);
+    this.introFromQuat.copy(this.camera.quaternion);
+    this.intro = this.settings.data.accessibility.reduceMotion ? 1 : 0;
     this.fovFrom = this.camera.fov;
     this.fovT = 0;
     this.state = 'playing';
-    this.input.gameplayEnabled = true;
+    this.audio.unlock();
+    this.input.gameplayEnabled = this.intro >= 1;
     this.ui.hideTitle();
     this.ui.showHud();
     this.touch.setActive(true);
@@ -312,12 +390,18 @@ export class Game {
 
     // "Press any key" on the title screen, from any device.
     this.input.on('anyinput', () => {
+      this.audio.unlock();
       if (this.state === 'title') this.startPlaying();
     });
     this.input.on('device', () => this.ui.refreshPrompts());
     this.input.on('gamepad', () => this.ui.refreshPrompts());
 
     window.addEventListener('keydown', (e) => {
+      if (e.code === 'F9' && this.player && this.state === 'playing') {
+        this.player.noclip = !this.player.noclip;
+        this.ui.toast(this.player.noclip ? 'Noclip on' : 'Noclip off');
+        e.preventDefault();
+      }
       if (e.code !== 'Escape' || e.repeat) return;
       if (this.input.capturing) return;
       if (this.state === 'playing') this.pause();

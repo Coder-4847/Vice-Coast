@@ -4,7 +4,8 @@ export type Action =
   | 'moveForward' | 'moveBack' | 'moveLeft' | 'moveRight'
   | 'jump' | 'sprint' | 'crouch' | 'interact'
   | 'fire' | 'aim' | 'reload'
-  | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause';
+  | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause'
+  | 'holster' | 'inspect';
 
 export interface ActionBinding {
   /** KeyboardEvent.code values, or `Mouse0`..`Mouse4`. */
@@ -40,6 +41,8 @@ export const ACTION_DEFS: ActionDef[] = [
   { id: 'reload', label: 'Reload', group: 'Combat', kbm: ['KeyR'], pad: [PAD.X], rebindable: true },
   { id: 'fire', label: 'Fire', group: 'Combat', kbm: ['Mouse0'], pad: [PAD.RT], rebindable: true },
   { id: 'aim', label: 'Aim', group: 'Combat', kbm: ['Mouse2'], pad: [PAD.LT], rebindable: true },
+  { id: 'holster', label: 'Draw / holster weapon', group: 'Combat', kbm: ['Digit1'], pad: [PAD.DOWN], rebindable: true },
+  { id: 'inspect', label: 'Inspect weapon', group: 'Combat', kbm: ['KeyG'], pad: [PAD.RIGHT], rebindable: true },
   { id: 'weaponWheel', label: 'Weapon wheel', group: 'Menus', kbm: ['Tab'], pad: [PAD.LB], rebindable: true },
   { id: 'radioWheel', label: 'Radio wheel', group: 'Menus', kbm: ['KeyQ'], pad: [PAD.RB], rebindable: true },
   { id: 'phone', label: 'Phone', group: 'Menus', kbm: ['KeyT'], pad: [PAD.UP], rebindable: true },

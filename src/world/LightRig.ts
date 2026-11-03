@@ -109,10 +109,13 @@ export class LightRig {
     if (flash > 0) this.keyColor.lerp(new THREE.Color(0.75, 0.82, 1), clamp(flash, 0, 0.7));
     this.keyIntensity = intensity;
 
+    this.hemi.layers.enable(1);
+    this.plain.layers.enable(1);
     if (this.csm) {
       this.csm.lightDirection.copy(this.keyDir);
       this.csm.update();
       for (const l of this.csm.lights) {
+        l.layers.enable(1); // the first-person viewmodel (layer 1) is lit by the same sun/moon
         l.intensity = intensity;
         l.color.copy(this.keyColor);
       }
