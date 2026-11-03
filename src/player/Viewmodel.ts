@@ -513,7 +513,13 @@ export class Viewmodel {
       const target = this.tmpPose;
       target.p.copy(viewP);
       target.q.copy(wq);
-      const k = reach * mt;
+      // The arm only reaches ~0.56 m from the shoulder: clamp to that, and let the hand drop away
+      // smoothly once the ledge is out of reach (e.g. when it is down at your feet as you mount).
+      const shoulder = sign > 0 ? SHOULDER_R : SHOULDER_L;
+      const toLedge = _v.subVectors(target.p, shoulder);
+      const dist = toLedge.length();
+      if (dist > 0.54) target.p.copy(shoulder).addScaledVector(toLedge, 0.54 / dist);
+      const k = reach * mt * (1 - smooth(0.62, 0.95, dist));
       hand.p.lerp(target.p, k);
       hand.q.slerp(target.q, k);
     };

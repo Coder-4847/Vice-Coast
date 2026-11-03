@@ -506,15 +506,22 @@ export class Player {
     this.roll = damp(this.roll, strafe + Math.sin(this.gait) * 0.004 * this.bobAmp * (this.sprinting ? 1.8 : 0.6), 10, dt);
 
     _tmp.lerpVectors(this.prevPos, this.pos, this.mantle || this.noclip ? 1 : alpha);
-    const swimSink = this.swimBlend * 0.15;
-    let mantlePitch = 0;
+    let mantlePitch = 0; // positive = look down
     let mantleDrop = 0;
     if (this.mantle) {
       const m = this.mantle;
-      const k = Math.sin(Math.PI * m.t);
-      mantlePitch = (m.ledge.kind === 'climb' ? 0.35 : 0.12) * k;
-      mantleDrop = (m.ledge.kind === 'climb' ? 0.08 : 0.04) * k;
+      if (m.ledge.kind === 'climb') {
+        // look up at the ledge while reaching, then down at the top as you mount it
+        const up = Math.sin(Math.PI * clamp(m.t / 0.5, 0, 1)) * 0.3;
+        const down = Math.sin(Math.PI * clamp((m.t - 0.4) / 0.6, 0, 1)) * 0.38;
+        mantlePitch = down - up;
+        mantleDrop = 0.08 * Math.sin(Math.PI * m.t);
+      } else {
+        mantlePitch = 0.12 * Math.sin(Math.PI * m.t);
+        mantleDrop = 0.04 * Math.sin(Math.PI * m.t);
+      }
     }
+    const swimSink = this.swimBlend * 0.15;
     this.eye.set(_tmp.x + this.bob.x * Math.cos(this.yaw), _tmp.y + this.eyeHeight + this.bob.y - swimSink - mantleDrop, _tmp.z - this.bob.x * Math.sin(this.yaw));
     camera.position.copy(this.eye);
     _e.set(this.pitch - mantlePitch, this.yaw, this.roll, 'YXZ');
