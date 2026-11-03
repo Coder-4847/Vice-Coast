@@ -261,7 +261,7 @@ export class Weather {
       u.uScale!.value = scale;
     };
     setField(f.rain, cur.rain, wind, -17, wind * 0.4, '#c4d0e0', 1, 0.38);
-    setField(f.snow, cur.snow, wind * 0.5, -1.5, wind * 0.2, '#ffffff', 1.4, 0.85, 0.03);
+    setField(f.snow, cur.snow, wind * 0.5, -1.5, wind * 0.2, '#ffffff', 1.5, 0.9, 0.07);
     setField(f.dust, cur.dust, wind * 1.8, -0.2, wind * 0.5, '#d9a066', 1, 0.1, 0.45);
 
     this.updateLightning(dt, camera);
