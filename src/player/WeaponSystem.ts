@@ -68,6 +68,10 @@ export class WeaponSystem {
   firedThisFrame = false;
   dryFiredThisFrame = false;
   hitThisFrame: HitEvent | null = null;
+  /** The most recent hit, kept until the next one (HUD, tests, debugging). */
+  lastHit: HitEvent | null = null;
+  /** Total shots fired this session. */
+  shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
   hitMarker = 0;
   /** Muzzle world position for tracers (set by the viewmodel each frame). */
@@ -275,6 +279,7 @@ export class WeaponSystem {
   private shoot(): void {
     const p = this.player;
     this.ammo--;
+    this.shotsFired++;
     this.firedThisFrame = true;
     this.cooldown = FIRE_INTERVAL;
     this.sinceShot = 0;
@@ -299,7 +304,7 @@ export class WeaponSystem {
     if (hit) {
       const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _dir, 22);
       this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);
-      this.hitThisFrame = { hit, target };
+      this.hitThisFrame = this.lastHit = { hit, target };
       if (target) this.hitMarker = 0.18;
     }
 
