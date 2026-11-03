@@ -53,12 +53,15 @@ const HOLSTER = pose(0.22, -0.66, -0.12, -1.15, 0.2, 0.2);
 const SWIM = pose(0.12, -0.28, -0.36, -0.5, 0.3, 0.1);
 const MANTLE = pose(0.19, -0.58, -0.14, -1.0, 0.35, 0.1);
 
+/** Empty hands hang in a loose half-fist. */
+const RESTING: HandPose = HandRig.mix(POSES.relaxed, POSES.fist, 0.55, HandRig.blank());
+
 const SHOULDER_R = new THREE.Vector3(0.2, -0.2, 0.0);
 const SHOULDER_L = new THREE.Vector3(-0.2, -0.2, 0.0);
 const POLE_R = new THREE.Vector3(0.5, -1, 0.35);
 const POLE_L = new THREE.Vector3(-0.5, -1, 0.35);
-const REST_R = pose(0.2, -0.19, -0.32, 0.95, -0.12, 0.25);
-const REST_L = pose(-0.2, -0.19, -0.32, 0.95, 0.12, -0.25);
+const REST_R = pose(0.2, -0.2, -0.43, 0.35, -0.2, 0.28);
+const REST_L = pose(-0.2, -0.2, -0.43, 0.35, 0.2, -0.28);
 
 /**
  * First-person presentation: arms with IK, the pistol, and all weapon animation.
@@ -388,10 +391,10 @@ export class Viewmodel {
     // --- finger poses --------------------------------------------------------------------------------
     const trig = w.trigger;
     HandRig.mix(POSES.gripIndexOff, POSES.gripTrigger, trig, this.rPose);
-    HandRig.mix(POSES.relaxed, this.rPose, grab * (1 - mt), this.rPose);
+    HandRig.mix(RESTING, this.rPose, grab * (1 - mt), this.rPose);
     HandRig.mix(this.rPose, p.mantle ? POSES.hook : this.rPose, mt, this.rPose);
     HandRig.mix(leftPose, leftPoseB, leftBlend, this.lPose);
-    HandRig.mix(POSES.relaxed, this.lPose, grab * (1 - mt), this.lPose);
+    HandRig.mix(RESTING, this.lPose, grab * (1 - mt), this.lPose);
     HandRig.mix(this.lPose, p.mantle ? POSES.hook : this.lPose, mt, this.lPose);
     if (this.debug.pose === 'fist') { this.right.apply(POSES.fist); this.left.apply(POSES.fist); }
     else if (this.debug.pose === 'flat') { this.right.apply(POSES.flat); this.left.apply(POSES.flat); }
