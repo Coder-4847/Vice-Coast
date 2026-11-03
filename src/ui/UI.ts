@@ -6,7 +6,7 @@ import type { Settings } from '../core/Settings';
 import type { Device } from '../input/Actions';
 import type { InputManager } from '../input/InputManager';
 import { h } from './dom';
-import { SettingsMenu } from './SettingsMenu';
+import { SettingsMenu, type EnvControls } from './SettingsMenu';
 
 export interface UIHooks {
   resume(): void;
@@ -15,6 +15,7 @@ export interface UIHooks {
   finishTouchLayout(): void;
   setGyro(on: boolean): Promise<boolean>;
   autoPreset(): PresetName;
+  env: EnvControls;
 }
 
 
@@ -67,7 +68,7 @@ export class UI {
       'div', 'screen title is-hidden',
       h('div', 'center', h('h1', 'wordmark', 'Vice Coast'), h('div', 'kicker', 'San Verano')),
       this.press,
-      h('div', 'build', 'Phase 1 · Foundation'),
+      h('div', 'build', 'Phase 2 · Core look'),
     );
 
     // HUD

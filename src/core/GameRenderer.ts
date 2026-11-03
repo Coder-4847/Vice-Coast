@@ -22,6 +22,8 @@ export class GameRenderer {
   userScale = 1;
   preset: QualityPreset;
   contextLost = false;
+  /** Notified with the drawing-buffer size (px) whenever it changes, so render targets can follow. */
+  onResize: ((width: number, height: number) => void) | null = null;
 
   private cooldown = 0;
   private upCooldown = 0;
@@ -34,13 +36,13 @@ export class GameRenderer {
     this.preset = preset;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: preset.antialias,
+      antialias: false, // MSAA lives on the HDR scene target (RenderPipeline), not the canvas
       powerPreference: 'high-performance',
       stencil: false,
       alpha: false,
     });
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1;
+    // Tone mapping, grading and sRGB encoding happen in the post-processing pipeline's final pass.
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.gpu = readGpuInfo(this.renderer.getContext() as WebGL2RenderingContext);
 
@@ -83,6 +85,7 @@ export class GameRenderer {
     this.lastPR = pr;
     this.renderer.setPixelRatio(pr);
     this.renderer.setSize(w, h, false); // CSS size is set by stylesheet
+    this.onResize?.(Math.round(w * pr), Math.round(h * pr));
   }
 
   /**

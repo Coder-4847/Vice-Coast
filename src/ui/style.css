@@ -135,6 +135,8 @@ kbd, .key { display: inline-block; min-width: 1.7em; padding: 1px 7px; margin: 0
 .row:focus-within { background: var(--accent-soft); }
 .row > label, .row > .label { flex: 1; font-weight: 300; }
 .row small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+.row.stack { flex-direction: column; align-items: flex-start; }
+.row.stack .seg { flex-wrap: wrap; }
 .ctl { display: flex; align-items: center; gap: var(--sp-3); }
 .ctl output { min-width: 3.6em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: var(--fs-sm); }
 

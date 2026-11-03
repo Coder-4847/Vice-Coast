@@ -31,7 +31,7 @@ export class FlyCamera {
     this.vel.set(0, 0, 0);
   }
 
-  fixedUpdate(dt: number, input: InputManager): void {
+  fixedUpdate(dt: number, input: InputManager, groundAt: (x: number, z: number) => number): void {
     this.prev.copy(this.pos);
 
     _euler.set(this.pitch, this.yaw, 0, 'YXZ');
@@ -53,8 +53,10 @@ export class FlyCamera {
     this.vel.y = damp(this.vel.y, this.wish.y, k, dt);
     this.vel.z = damp(this.vel.z, this.wish.z, k, dt);
     this.pos.addScaledVector(this.vel, dt);
-    if (this.pos.y < 1.7) {
-      this.pos.y = 1.7;
+    // Stay above terrain and the sea surface.
+    const floor = Math.max(groundAt(this.pos.x, this.pos.z), 0) + 1.7;
+    if (this.pos.y < floor) {
+      this.pos.y = floor;
       if (this.vel.y < 0) this.vel.y = 0;
     }
   }

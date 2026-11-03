@@ -5,8 +5,9 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 1 — Foundation.** The world is a procedural placeholder city used to exercise the
-> engine. See the [build plan](#roadmap).
+> Status: **Phase 2 — Core look.** A physically-based sky with a day/night cycle, weather, cascaded-shadow
+> lighting, a cinematic post-processing pipeline, procedural terrain + ocean and a placeholder city.
+> The player, vehicles and real districts come in later phases. See the [roadmap](#roadmap).
 
 ## Run locally
 
@@ -19,6 +20,9 @@ npm run preview    # serve the production build
 
 Needs a browser with WebGL 2 (current Chrome, Edge, Firefox or Safari). Append `?debug` to the URL to
 expose the game object as `window.__vice` in a production build (always on in `npm run dev`).
+
+Look-dev URL parameters: `?time=18.7` (hour 0–24), `?weather=rain` (`clear cloudy overcast rain storm fog dust snow`),
+`?speed=0` (freeze time; default 30 = one game minute per two real seconds). The same controls live in **Esc → Environment**.
 
 ## Controls (Phase 1 test camera)
 
@@ -41,10 +45,10 @@ Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
 ```
 src/
-  core/    game loop (fixed timestep + interpolation), renderer wrapper, quality presets, settings
+  core/    game loop (fixed timestep + interpolation), renderer + HDR post pipeline, quality presets, settings
   input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
-  world/   Phase 1 placeholder world (sky, city grid, fly camera)
+  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, placeholder city, fly camera
 docs/      PERFORMANCE.md, QA.md
 ```
 
@@ -55,8 +59,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 
 ## Roadmap
 
-1. **Foundation** ✅ (this build)
-2. Core look — sky, day/night, lighting, post-processing, weather
+1. **Foundation** ✅
+2. **Core look** ✅ (this build) — sky, day/night, lighting, post-processing, terrain, weather
 3. Player on foot — first-person hands, weapons
 4. Vehicles
 5. World streaming and Port Valeria

@@ -41,3 +41,32 @@ Append `?debug` to inspect `window.__vice`.
 
 ### Performance (hardware pass — still to do)
 - [ ] Medium preset holds 60 FPS on an integrated GPU; note FPS / 1% low in `docs/PERFORMANCE.md`.
+
+## Phase 2 — Core look
+
+Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at least *Medium* and *High*.
+
+### Sky and time of day
+- [ ] 18:40 shows a golden-hour sunset over the sea: orange horizon band, lit clouds, sun disc/glare, long shadows.
+- [ ] Scrubbing the time slider 0 → 24 moves sun and moon smoothly; no pops in lighting, fog colour or shadows.
+- [ ] Night: stars + Milky Way, a lit moon with a phase, lit windows and streetlights with light pools, blue moonlight shadows.
+- [ ] Dawn (~06:00) mirrors dusk. Distant terrain fades into the *sky's* colour at every hour (no grey/white fog band).
+- [ ] *Normal* speed: a full day takes ~48 minutes; *Paused* freezes time.
+
+### Weather
+- [ ] Each of the 8 types blends in over ~14 s (instant with `?weather=`): sky, fog, light, saturation all change together.
+- [ ] Rain: streaks follow the camera, roads darken and gain puddles/reflections, sea gets rougher. Storm adds lightning (flash + bolt; *Strike* button fires one).
+- [ ] Snow and dust particles are visible and readable; fog limits visibility but the sky stays continuous.
+- [ ] Returning to *Clear* dries the roads gradually.
+
+### Rendering and quality
+- [ ] Low: no post chain except the final grade; Medium adds 2 cascades, bloom, SMAA; High adds MSAA ×4, GTAO, 3 cascades; Ultra 4 cascades.
+- [ ] Switching presets live rebuilds shadows/post without errors or a black frame.
+- [ ] Shadow acne / peter-panning is not visible on facades or terrain.
+- [ ] GTAO does not darken the sky, sea or particles.
+- [ ] Film grain is subtle and never leaves black or white speckles (regression: HDR luma bug).
+- [ ] Lens flare appears only when the sun is on screen and unobstructed; fades behind buildings, hills and thick cloud.
+- [ ] Dynamic resolution resizes the HDR targets without flicker.
+
+### Hardware pass (still to do)
+- [ ] Medium holds 60 FPS on an integrated GPU with `?weather=rain` at night (worst case).

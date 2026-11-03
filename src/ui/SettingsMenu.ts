@@ -4,10 +4,25 @@ import type { ColorBlindMode, HoldMode, Settings, SettingsData } from '../core/S
 import { ACTION_BY_ID, ACTION_DEFS, PAD, type Action } from '../input/Actions';
 import { keyLabel, padButtonLabel } from '../input/Glyphs';
 import type { InputManager } from '../input/InputManager';
+import type { WeatherType } from '../world/Weather';
+import { WEATHER_TYPES } from '../world/Weather';
 import { h } from './dom';
 import { MenuNav } from './MenuNav';
 
+/** Look-development controls for the Phase 2 world (time of day, weather). */
+export interface EnvControls {
+  hour(): number;
+  setHour(h: number): void;
+  clock(): string;
+  speed(): number;
+  setSpeed(v: number): void;
+  weather(): WeatherType;
+  setWeather(t: WeatherType): void;
+  strike(): void;
+}
+
 interface MenuHooks {
+  env: EnvControls;
   resume(): void;
   editTouchLayout(): void;
   resetTouchLayout(): void;
@@ -18,7 +33,9 @@ interface MenuHooks {
 
 type Sync = () => void;
 
-const TABS = ['Graphics', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Input test'] as const;
+const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Input test'] as const;
+const ENV_TAB = 1;
+const TEST_TAB = 6;
 
 /** Pause menu + settings. Every control writes straight to Settings and re-syncs on change. */
 export class SettingsMenu {
@@ -29,8 +46,7 @@ export class SettingsMenu {
   private readonly tabButtons: HTMLButtonElement[] = [];
   private current = 0;
   private tester!: { tick: () => void };
-  private aaNote!: HTMLElement;
-  private readonly startedAA: boolean;
+  private readonly envSyncs: Sync[] = [];
 
   constructor(
     parent: HTMLElement,
@@ -39,7 +55,6 @@ export class SettingsMenu {
     private readonly gfx: GameRenderer,
     private readonly hooks: MenuHooks,
   ) {
-    this.startedAA = gfx.preset.antialias;
     const title = h('h2', '', 'Paused');
     const head = h('div', 'panel-head', title, h('span', 'kicker', 'San Verano'));
 
@@ -56,7 +71,7 @@ export class SettingsMenu {
     });
 
     const body = h('div', 'panel-body');
-    this.pages = [this.graphics(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.inputTest()];
+    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.inputTest()];
     this.pages.forEach((p) => {
       p.classList.add('tabpage');
       p.setAttribute('role', 'tabpanel');
@@ -111,7 +126,8 @@ export class SettingsMenu {
 
   /** Called every frame while open (live input tester). */
   tick(): void {
-    if (this.current === 5) this.tester.tick();
+    if (this.current === TEST_TAB) this.tester.tick();
+    if (this.current === ENV_TAB) for (const f of this.envSyncs) f();
   }
 
   private selectTab(i: number): void {
@@ -144,7 +160,7 @@ export class SettingsMenu {
 
   private slider(
     label: string, min: number, max: number, step: number,
-    get: () => number, set: (v: number) => void, fmt: (v: number) => string, hint?: string,
+    get: () => number, set: (v: number) => void, fmt: (v: number) => string, hint?: string, bucket: Sync[] = this.syncs,
   ): HTMLElement {
     const input = h('input');
     input.type = 'range';
@@ -162,8 +178,8 @@ export class SettingsMenu {
       set(Number(input.value));
       paint();
     });
-    this.syncs.push(() => {
-      input.value = String(get());
+    bucket.push(() => {
+      if (document.activeElement !== input || bucket === this.syncs) input.value = String(get());
       paint();
     });
     return this.row(label, h('div', 'ctl', input, out), hint);
@@ -180,7 +196,7 @@ export class SettingsMenu {
   }
 
   private segmented<T extends string>(
-    label: string, options: [T, string][], get: () => T, set: (v: T) => void, hint?: string,
+    label: string, options: [T, string][], get: () => T, set: (v: T) => void, hint?: string, bucket: Sync[] = this.syncs,
   ): HTMLElement {
     const wrap = h('div', 'seg');
     wrap.setAttribute('role', 'radiogroup');
@@ -192,7 +208,7 @@ export class SettingsMenu {
       wrap.append(b);
       return [value, b] as const;
     });
-    this.syncs.push(() => {
+    bucket.push(() => {
       for (const [value, b] of buttons) b.setAttribute('aria-checked', String(get() === value));
     });
     return this.row(label, wrap, hint);
@@ -226,13 +242,6 @@ export class SettingsMenu {
     this.syncs.push(() => {
       note.textContent = this.settings.data.graphics.preset === 'auto' ? `${autoLabel()} · ${this.gfx.gpu.renderer.slice(0, 48)}` : '';
     });
-    this.aaNote = h('small', '', '');
-    presetRow.firstElementChild!.append(this.aaNote);
-    this.syncs.push(() => {
-      const wantAA = this.gfx.preset.antialias;
-      this.aaNote.textContent = wantAA !== this.startedAA ? 'Anti-aliasing changes apply after a reload.' : '';
-    });
-
     page.append(
       this.group('Quality'),
       presetRow,
@@ -241,6 +250,46 @@ export class SettingsMenu {
       this.group('Display'),
       this.slider('Field of view', 50, 110, 1, () => this.settings.data.graphics.fov, (v) => this.update((d) => (d.graphics.fov = v)), (v) => `${v}°`),
       this.toggle('FPS counter', () => this.settings.data.graphics.showFps, (v) => this.update((d) => (d.graphics.showFps = v))),
+    );
+    return page;
+  }
+
+  private environment(): HTMLElement {
+    const page = h('div');
+    const env = this.hooks.env;
+    const bucket = this.envSyncs;
+    const speeds: [string, string][] = [['0', 'Paused'], ['6', 'Slow'], ['30', 'Normal'], ['120', 'Fast'], ['600', 'Very fast']];
+    const clockFmt = (v: number) => {
+      const hh = Math.floor(v);
+      const mm = Math.floor((v - hh) * 60);
+      return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh >= 12 && hh < 24 ? 'PM' : 'AM'}`;
+    };
+    const weatherRow = this.segmented<WeatherType>(
+      'Weather',
+      WEATHER_TYPES.map((w) => [w.id, w.label] as [WeatherType, string]),
+      () => env.weather(),
+      (v) => {
+        env.setWeather(v);
+        this.sync();
+        for (const f of bucket) f();
+      },
+      undefined,
+      bucket,
+    );
+    weatherRow.classList.add('stack');
+    const speedRow = this.segmented<string>(
+      'Time speed', speeds, () => String(env.speed()),
+      (v) => { env.setSpeed(Number(v)); for (const f of bucket) f(); },
+      '“Normal” is one game minute per two real seconds.', bucket,
+    );
+    speedRow.classList.add('stack');
+    page.append(
+      this.group('Time of day'),
+      this.slider('Time', 0, 24, 0.05, () => env.hour(), (v) => env.setHour(v), clockFmt, undefined, bucket),
+      speedRow,
+      this.group('Weather'),
+      weatherRow,
+      this.button('Lightning', 'Strike', () => env.strike(), 'Fires a bolt; works in any weather.'),
     );
     return page;
   }

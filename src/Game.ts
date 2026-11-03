@@ -8,7 +8,8 @@ import { InputManager } from './input/InputManager';
 import { TouchControls } from './input/TouchControls';
 import { UI } from './ui/UI';
 import { FlyCamera } from './world/FlyCamera';
-import { TestWorld } from './world/TestWorld';
+import { World } from './world/World';
+import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
 export type GameState = 'loading' | 'title' | 'playing' | 'paused';
 
@@ -21,7 +22,7 @@ export class Game {
   readonly settings = new Settings();
   readonly input: InputManager;
   readonly gfx: GameRenderer;
-  readonly world: TestWorld;
+  readonly world: World;
   readonly ui: UI;
   readonly touch: TouchControls;
   readonly loop: GameLoop;
@@ -34,6 +35,8 @@ export class Game {
   private fovFrom = TITLE_FOV;
   private fovT = 1;
   private editingTouch = false;
+  private timeFrozen = false;
+  private lastDt = 1 / 60;
 
   constructor(gpu: GpuInfo) {
     const root = document.getElementById('ui')!;
@@ -51,8 +54,9 @@ export class Game {
     this.gfx.userScale = this.settings.data.graphics.resolutionScale;
     this.gfx.resize(true);
 
-    this.camera = new THREE.PerspectiveCamera(TITLE_FOV, window.innerWidth / window.innerHeight, 0.1, 2000);
-    this.world = new TestWorld(preset);
+    this.camera = new THREE.PerspectiveCamera(TITLE_FOV, window.innerWidth / window.innerHeight, 0.25, 6000);
+    this.world = new World(this.gfx, this.camera, preset);
+    this.applyUrlParams();
     this.input = new InputManager(this.settings, this.canvas);
     this.touch = new TouchControls(root, this.input, this.settings);
 
@@ -66,13 +70,26 @@ export class Game {
       finishTouchLayout: () => this.endTouchEdit(),
       setGyro: (on) => this.touch.setGyro(on),
       autoPreset: () => this.autoPreset,
+      env: {
+        hour: () => this.world.tod.hour,
+        setHour: (h) => this.world.setHour(h),
+        clock: () => this.world.tod.clock,
+        speed: () => (this.world.tod.paused ? 0 : this.world.tod.speed),
+        setSpeed: (v) => {
+          this.timeFrozen = v === 0;
+          if (v > 0) this.world.tod.speed = v;
+        },
+        weather: () => this.world.weather.type,
+        setWeather: (t) => this.world.setWeather(t),
+        strike: () => this.world.weather.strike(this.camera),
+      },
     });
 
     this.loop = new GameLoop({
       begin: (dt) => this.input.beginFrame(dt),
       fixedUpdate: (dt) => this.fixedUpdate(dt),
       update: (dt, alpha) => this.update(dt, alpha),
-      render: () => this.gfx.render(this.world.scene, this.camera),
+      render: () => this.renderFrame(),
     });
 
     this.bindEvents();
@@ -80,29 +97,50 @@ export class Game {
 
   /** Compile shaders behind the loading screen, then reveal the title. */
   async init(): Promise<void> {
-    this.ui.setProgress(0.25);
+    this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
-    this.world.update(this.camera);
-    this.ui.setProgress(0.5);
+    this.world.update(0, false);
+    this.ui.setProgress(0.4);
     try {
       await this.gfx.renderer.compileAsync(this.world.scene, this.camera);
     } catch {
       /* compileAsync is an optimisation; first render will compile instead */
     }
-    this.ui.setProgress(0.85);
-    this.gfx.render(this.world.scene, this.camera); // warm GPU state before the reveal
+    this.ui.setProgress(0.65);
+    // Warm every pipeline stage (sky, shadows, AO, bloom, grade) behind the loading screen.
+    for (let i = 0; i < 3; i++) {
+      this.world.update(1 / 60, false);
+      this.world.render(1 / 60);
+      await new Promise((r) => requestAnimationFrame(r));
+      this.ui.setProgress(0.65 + 0.1 * (i + 1));
+    }
     this.ui.setProgress(1);
     this.loop.start();
-    await new Promise((r) => setTimeout(r, 350));
+    await new Promise((r) => setTimeout(r, 300));
     this.state = 'title';
     this.ui.hideLoading();
     this.ui.showTitle();
   }
 
+  /** `?time=18.6&weather=rain&speed=0` — handy for look-dev and QA. */
+  private applyUrlParams(): void {
+    const q = new URLSearchParams(location.search);
+    const t = q.get('time');
+    if (t !== null && Number.isFinite(Number(t))) this.world.setHour(Number(t));
+    const wx = q.get('weather') as WeatherType | null;
+    if (wx && WEATHER_TYPES.some((w) => w.id === wx)) this.world.setWeather(wx, true);
+    const sp = q.get('speed');
+    if (sp !== null && Number.isFinite(Number(sp))) {
+      const v = Number(sp);
+      this.timeFrozen = v === 0;
+      if (v > 0) this.world.tod.speed = v;
+    }
+  }
+
   // ------------------------------------------------------------------ loop
 
   private fixedUpdate(dt: number): void {
-    if (this.state === 'playing') this.fly.fixedUpdate(dt, this.input);
+    if (this.state === 'playing') this.fly.fixedUpdate(dt, this.input, (x, z) => this.world.heightAt(x, z));
   }
 
   private update(dt: number, alpha: number): void {
@@ -126,13 +164,19 @@ export class Game {
     }
 
     this.updateFov(dt);
-    this.world.update(this.camera);
+    this.lastDt = dt;
+    this.world.update(dt, this.state === 'playing' && !this.timeFrozen);
     this.gfx.govern(
       this.loop.recentAverage(60), dt,
       this.settings.data.graphics.dynamicResolution && !document.hidden,
       this.loop.sampleCount,
     );
     this.ui.updateStats(dt, this.loop.stats, this.gfx, this.gfx.renderer.info.render);
+  }
+
+  private renderFrame(): void {
+    this.gfx.renderer.info.reset();
+    this.world.render(this.lastDt);
   }
 
   /** Gamepad / keyboard navigation of the pause menu. */
@@ -146,11 +190,11 @@ export class Game {
     if (n.back || n.start) this.resume();
   }
 
+  /** Slow golden-hour dolly over the city toward the sunset coast. */
   private placeTitleCamera(t: number): void {
-    const a = 0.7 + t * 0.045;
-    const r = 430;
-    this.camera.position.set(Math.cos(a) * r, 150 + Math.sin(t * 0.12) * 10, Math.sin(a) * r);
-    this.camera.lookAt(0, 55, 0);
+    const s = Math.sin(t * 0.045);
+    this.camera.position.set(1230 + Math.sin(t * 0.03) * 70, 150 + Math.sin(t * 0.11) * 9, 330 * s - 40);
+    this.camera.lookAt(120, 36, 170 * Math.sin(t * 0.045 + 0.8));
     this.camera.updateMatrixWorld();
   }
 
@@ -263,6 +307,7 @@ export class Game {
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
+      this.world.rig.onResize();
     });
 
     // "Press any key" on the title screen, from any device.
