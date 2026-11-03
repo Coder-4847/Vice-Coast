@@ -202,11 +202,11 @@ export class ArmRig {
       this.root.add(m);
       return m;
     };
-    this.upper = seg(0.058, 0.05, this.L1, sleeve);
-    this.fore = seg(0.05, 0.036, this.L2 - 0.03, sleeve);
-    this.cuff = seg(0.039, 0.039, 0.045, cuffMat);
-    this.forearmSkin = seg(0.0295, 0.0295, 0.06, skinMat);
-    this.elbowBall = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), sleeve);
+    this.upper = seg(0.052, 0.046, this.L1, sleeve);
+    this.fore = seg(0.046, 0.034, this.L2 - 0.03, sleeve);
+    this.cuff = seg(0.034, 0.034, 0.04, cuffMat);
+    this.forearmSkin = seg(0.0215, 0.0235, 0.075, skinMat);
+    this.elbowBall = new THREE.Mesh(new THREE.SphereGeometry(0.047, 16, 12), sleeve);
     this.root.add(this.elbowBall);
     this.root.traverse((o) => { o.frustumCulled = false; });
   }
@@ -236,9 +236,9 @@ export class ArmRig {
     fdir.multiplyScalar(1 / Math.max(flen, 1e-5));
     this.place(this.fore, this._elbow, this._elbow.clone().add(fdir));
     this.fore.scale.set(1, 1, Math.max(0.2, (flen - 0.075) / (this.L2 - 0.03)));
-    const cuffStart = this._elbow.clone().addScaledVector(fdir, Math.max(0, flen - 0.108));
+    const cuffStart = this._elbow.clone().addScaledVector(fdir, Math.max(0, flen - 0.105));
     this.place(this.cuff, cuffStart, cuffStart.clone().add(fdir));
-    const skinStart = this._elbow.clone().addScaledVector(fdir, Math.max(0, flen - 0.066));
+    const skinStart = this._elbow.clone().addScaledVector(fdir, Math.max(0, flen - 0.078));
     this.place(this.forearmSkin, skinStart, skinStart.clone().add(fdir));
   }
 
