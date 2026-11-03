@@ -46,15 +46,15 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
   return out;
 };
 
-const HIP = pose(0.142, -0.150, -0.338, 0.012, 0.05, 0);
-const ADS = pose(0, -0.0595, -0.292, 0, 0, 0);
-const SPRINT = pose(0.09, -0.205, -0.27, -0.66, 0.44, 0.18);
-const HOLSTER = pose(0.2, -0.64, -0.08, -1.15, 0.2, 0.2);
-const SWIM = pose(0.1, -0.26, -0.27, -0.5, 0.3, 0.1);
-const MANTLE = pose(0.17, -0.56, -0.1, -1.0, 0.35, 0.1);
+const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
+const ADS = pose(0, -0.0595, -0.40, 0, 0, 0);
+const SPRINT = pose(0.12, -0.235, -0.38, -0.66, 0.44, 0.18);
+const HOLSTER = pose(0.22, -0.66, -0.12, -1.15, 0.2, 0.2);
+const SWIM = pose(0.12, -0.28, -0.36, -0.5, 0.3, 0.1);
+const MANTLE = pose(0.19, -0.58, -0.14, -1.0, 0.35, 0.1);
 
-const SHOULDER_R = new THREE.Vector3(0.19, -0.215, 0.09);
-const SHOULDER_L = new THREE.Vector3(-0.19, -0.215, 0.09);
+const SHOULDER_R = new THREE.Vector3(0.2, -0.2, 0.0);
+const SHOULDER_L = new THREE.Vector3(-0.2, -0.2, 0.0);
 const POLE_R = new THREE.Vector3(0.5, -1, 0.35);
 const POLE_L = new THREE.Vector3(-0.5, -1, 0.35);
 const REST_R = pose(0.17, -0.36, -0.19, 0.55, -0.15, 0.2);
@@ -109,7 +109,7 @@ export class Viewmodel {
   private readonly gunMatrix = new THREE.Matrix4();
 
   /** Debug overrides for look-development screenshots. */
-  debug: { reloadT?: number; ads?: number; holster?: number; sprint?: number; inspectT?: number; pose?: string } = {};
+  debug: { reloadT?: number; ads?: number; holster?: number; sprint?: number; inspectT?: number; pose?: string; cam?: { p: number[]; t: number[]; fov?: number } } = {};
 
   /** Called when the empty magazine is released: world position + velocity for the falling prop. */
   onMagDrop: ((pos: THREE.Vector3, vel: THREE.Vector3) => void) | null = null;
@@ -204,7 +204,15 @@ export class Viewmodel {
     this.camera.quaternion.copy(cam.quaternion);
     this.camera.aspect = aspect;
     this.adsB = dbg.ads ?? w.ads;
-    this.camera.fov = 56 - 7 * this.adsB;
+    this.camera.fov = 52 - 6 * this.adsB;
+    if (dbg.cam) {
+      // look-dev camera: positions are in view space (x right, y up, −z forward)
+      this.camera.position.set(dbg.cam.p[0]!, dbg.cam.p[1]!, dbg.cam.p[2]!).applyQuaternion(cam.quaternion).add(cam.position);
+      _v.set(dbg.cam.t[0]!, dbg.cam.t[1]!, dbg.cam.t[2]!).applyQuaternion(cam.quaternion).add(cam.position);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(_v);
+      if (dbg.cam.fov) this.camera.fov = dbg.cam.fov;
+    }
     this.camera.updateProjectionMatrix();
 
     // --- blend parameters ----------------------------------------------------------------------

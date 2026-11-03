@@ -45,7 +45,7 @@ const KNUCKLE_X = { index: -0.0275, middle: -0.0095, ring: 0.0085, pinky: 0.0255
 
 const skin = (): THREE.MeshPhysicalMaterial => {
   const m = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#c58b66'), roughness: 0.58, metalness: 0, sheen: 0.6, sheenRoughness: 0.5,
+    color: new THREE.Color('#bd835f'), roughness: 0.58, metalness: 0, sheen: 0.6, sheenRoughness: 0.5,
     sheenColor: new THREE.Color('#ff9a7a'),
   });
   m.fog = false;
@@ -64,6 +64,7 @@ export class HandRig {
   private readonly fingerRoots: THREE.Object3D[] = [];
   private readonly thumbJoints: THREE.Object3D[] = [];
   private thumbRoot!: THREE.Object3D;
+  private readonly nailMat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#d9a789'), roughness: 0.3, clearcoat: 0.6, fog: false });
   private readonly current: HandPose = structuredClone(POSES.relaxed) as HandPose;
 
   constructor(material?: THREE.MeshPhysicalMaterial) {
@@ -86,11 +87,6 @@ export class HandRig {
     ellipsoid(0.028, 0.017, 0.028, -0.018, -0.004, -0.022);
     ellipsoid(0.019, 0.015, 0.034, 0.028, -0.003, -0.05);
     ellipsoid(0.044, 0.0125, 0.012, 0, 0.002, -0.094);
-    // wrist stub (skin shows a few cm before the sleeve)
-    const wrist = new THREE.CylinderGeometry(0.029, 0.033, 0.07, 14);
-    wrist.rotateX(Math.PI / 2);
-    add(this.root, wrist, 0, 0, 0.03);
-
     // Fingers
     for (const name of FINGERS) {
       const [l1, l2, l3] = LENGTHS[name];
@@ -106,10 +102,17 @@ export class HandRig {
           joint.position.set(0, 0, -[l1, l2][i - 1]!);
           parent.add(joint);
         }
-        const rr = r * (1 - i * 0.1);
+        const rr = r * (1 - i * 0.11);
         const geo = new THREE.CapsuleGeometry(rr, len, 4, 10);
         geo.rotateX(Math.PI / 2);
+        geo.scale(1, 0.92, 1); // slightly flattened, like a real finger
         add(joint, geo, 0, 0, -len / 2);
+        if (i === 2) {
+          // fingernail on the back of the fingertip
+          const nail = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8).scale(rr * 0.78, rr * 0.22, len * 0.46), this.nailMat);
+          nail.position.set(0, rr * 0.8, -len * 0.55);
+          joint.add(nail);
+        }
         this.fingerJoints[name].push(joint);
         parent = joint;
       });

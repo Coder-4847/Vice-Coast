@@ -167,11 +167,11 @@ export class Pistol {
     const gf = this.gripFrame.matrix;
     // Right hand: palm on the right side of the grip, fingers wrapping the front.
     const right = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 1))
-      .setPosition(0.0262, -0.034, 0.066);
+      .setPosition(0.0262, -0.046, 0.066);
     this.rightGrip.multiplyMatrices(gf, right);
     // Left (support) hand: the mirrored basis (a reflection, so the shared right-hand rig renders as a left hand).
     const left = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, 1))
-      .setPosition(-0.0262, -0.066, 0.058);
+      .setPosition(-0.0262, -0.078, 0.058);
     this.leftGrip.multiplyMatrices(gf, left);
     this.magBase.set(0, -0.006 - this.magLength, 0).applyMatrix4(gf);
   }

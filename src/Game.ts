@@ -248,6 +248,21 @@ export class Game {
       vm.update(dt, player, weapon, this.camera, this.camera.aspect);
       this.effects.update(dt);
       this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
+      this.ui.updateHud(dt, {
+        weaponName: weapon.name,
+        ammo: weapon.ammo,
+        reserve: weapon.reserve,
+        spread: weapon.spread,
+        ads: weapon.ads,
+        drawn: weapon.isDrawn,
+        reloading: weapon.state === 'reloading',
+        lowAmmo: weapon.ammo <= 3,
+        hitMarker: weapon.hitMarker,
+        stamina: player.stamina,
+        prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,
+        fovDeg: this.camera.fov,
+        viewportH: this.gfx.renderer.domElement.clientHeight,
+      });
     }
     if (this.intro < 1) {
       // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.

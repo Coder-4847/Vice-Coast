@@ -8,6 +8,25 @@ import type { InputManager } from '../input/InputManager';
 import { h } from './dom';
 import { SettingsMenu, type EnvControls } from './SettingsMenu';
 
+/** Everything the in-game HUD shows about the player and weapon, polled once per frame. */
+export interface HudState {
+  weaponName: string;
+  ammo: number;
+  reserve: number;
+  /** Crosshair spread in degrees. */
+  spread: number;
+  ads: number;
+  drawn: boolean;
+  reloading: boolean;
+  lowAmmo: boolean;
+  hitMarker: number;
+  stamina: number;
+  /** Contextual prompt, e.g. "Vault" / "Climb". */
+  prompt: { action: 'jump'; label: string } | null;
+  fovDeg: number;
+  viewportH: number;
+}
+
 export interface UIHooks {
   resume(): void;
   editTouchLayout(): void;
@@ -46,6 +65,20 @@ export class UI {
   private readonly deviceChip: HTMLElement;
   private readonly toasts: HTMLElement;
   private readonly editBar: HTMLElement;
+  private readonly ammoEl: HTMLElement;
+  private readonly ammoNum: HTMLElement;
+  private readonly ammoRes: HTMLElement;
+  private readonly ammoName: HTMLElement;
+  private readonly reloadPrompt: HTMLElement;
+  private readonly crossEl: HTMLElement;
+  private readonly hitEl: HTMLElement;
+  private readonly staminaEl: HTMLElement;
+  private readonly staminaBar: HTMLElement;
+  private readonly promptEl: HTMLElement;
+  private shownAmmo = -1;
+  private ammoAnim = 0;
+  private ammoTarget = 0;
+  private ammoShown = 0;
   private statEls!: Record<'fps' | 'ms' | 'low' | 'scale' | 'calls' | 'tris' | 'gpu', HTMLElement>;
   private statTimer = 0;
   private hintTimer = 0;
@@ -76,7 +109,17 @@ export class UI {
     this.hints = h('dl', 'hints panel-glass is-hidden');
     this.capture = h('div', 'capture-hint panel-glass is-hidden', 'Click to capture the mouse');
     this.deviceChip = h('div', 'device panel-glass');
-    this.hud = h('div', 'hud is-hidden', h('div', 'crosshair'), this.stats, this.hints, this.capture, this.deviceChip);
+    this.crossEl = h('div', 'cross', ...['t', 'b', 'l', 'r'].map((k) => h('i', `c-${k}`)), h('i', 'c-dot'));
+    this.hitEl = h('div', 'hitmarker', ...[0, 1, 2, 3].map((i) => h('i', `h${i}`)));
+    this.ammoNum = h('b', 'ammo-num', '13');
+    this.ammoRes = h('span', 'ammo-res', '/ 60');
+    this.ammoName = h('span', 'ammo-name', 'VC-9');
+    this.ammoEl = h('div', 'ammo panel-glass', h('div', 'ammo-row', this.ammoNum, this.ammoRes), this.ammoName);
+    this.reloadPrompt = h('div', 'reload-prompt', '');
+    this.staminaBar = h('i');
+    this.staminaEl = h('div', 'stamina', this.staminaBar);
+    this.promptEl = h('div', 'prompt panel-glass is-hidden', '');
+    this.hud = h('div', 'hud is-hidden', this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl);
 
     this.toasts = h('div', 'toasts');
     this.editBar = h('div', 'edit-bar panel-glass is-hidden');
@@ -131,7 +174,7 @@ export class UI {
     this.hud.classList.remove('is-hidden');
     this.hints.classList.remove('is-hidden');
     window.clearTimeout(this.hintTimer);
-    this.hintTimer = window.setTimeout(() => this.hints.classList.add('is-hidden'), 12000);
+    this.hintTimer = window.setTimeout(() => this.hints.classList.add('is-hidden'), 16000);
   }
   hideHud(): void {
     this.hud.classList.add('is-hidden');
@@ -181,6 +224,52 @@ export class UI {
     e.gpu.textContent = gfx.gpu.renderer.replace(/ANGLE \(|\)/g, '').slice(0, 24);
   }
 
+  /** Per-frame HUD update. Only touches the DOM when a value actually changed. */
+  updateHud(dt: number, st: HudState): void {
+    // ammo counter rolls smoothly toward the real value
+    this.ammoTarget = st.ammo;
+    if (this.ammoShown !== this.ammoTarget) {
+      this.ammoAnim += dt;
+      if (this.ammoAnim > 0.035) {
+        this.ammoAnim = 0;
+        this.ammoShown += Math.sign(this.ammoTarget - this.ammoShown);
+      }
+    }
+    if (this.shownAmmo !== this.ammoShown) {
+      this.shownAmmo = this.ammoShown;
+      this.ammoNum.textContent = String(this.ammoShown);
+    }
+    const res = `/ ${st.reserve}`;
+    if (this.ammoRes.textContent !== res) this.ammoRes.textContent = res;
+    this.ammoName.textContent = st.weaponName;
+    this.ammoEl.classList.toggle('is-hidden', !st.drawn);
+    this.ammoNum.classList.toggle('low', st.lowAmmo);
+
+    // crosshair: gap follows the real spread (degrees → pixels), hidden while aiming through sights
+    const px = (st.spread * Math.PI / 180) / (st.fovDeg * Math.PI / 180) * st.viewportH * 0.5 * 2;
+    this.crossEl.style.setProperty('--gap', `${Math.max(3, Math.min(90, px)).toFixed(1)}px`);
+    this.crossEl.style.opacity = st.drawn ? String(1 - st.ads) : '0.55';
+    this.hitEl.style.opacity = String(Math.min(1, st.hitMarker / 0.12));
+
+    // reload prompt
+    const want = st.drawn && !st.reloading && st.lowAmmo && st.reserve > 0;
+    this.reloadPrompt.classList.toggle('on', want);
+    if (want) this.reloadPrompt.innerHTML = `<kbd>${this.input.glyph('reload')}</kbd> Reload`;
+
+    // stamina (only visible when not full)
+    this.staminaBar.style.transform = `scaleX(${st.stamina.toFixed(3)})`;
+    this.staminaEl.classList.toggle('on', st.stamina < 0.995);
+
+    // contextual prompt
+    if (st.prompt) {
+      const html = `<kbd>${this.input.glyph(st.prompt.action)}</kbd> ${st.prompt.label}`;
+      if (this.promptEl.innerHTML !== html) this.promptEl.innerHTML = html;
+      this.promptEl.classList.remove('is-hidden');
+    } else {
+      this.promptEl.classList.add('is-hidden');
+    }
+  }
+
   // ----------------------------------------------------------- device & glyphs
 
   private onDevice(d: Device): void {
@@ -209,22 +298,25 @@ export class UI {
       d === 'kbm'
         ? [
             ['Move', ['moveForward', 'moveLeft', 'moveBack', 'moveRight'].map((a) => key(g(a as 'moveForward')))],
-            ['Look', [key('Mouse')]],
-            ['Fly up / down', [key(g('jump')), key(g('crouch'))]],
-            ['Sprint', [key(g('sprint'))]],
+            ['Look / fire / aim', [key('Mouse'), key(g('fire')), key(g('aim'))]],
+            ['Jump · vault · climb', [key(g('jump'))]],
+            ['Sprint · crouch', [key(g('sprint')), key(g('crouch'))]],
+            ['Reload · holster', [key(g('reload')), key(g('holster'))]],
             ['Menu', [key('Esc')]],
           ]
         : d === 'gamepad'
           ? [
-              ['Move', [key('Left stick')]],
-              ['Look', [key('Right stick')]],
-              ['Fly up / down', [key(g('jump')), key(g('crouch'))]],
-              ['Sprint', [key(g('sprint'))]],
+              ['Move · look', [key('Left stick'), key('Right stick')]],
+              ['Fire · aim', [key(g('fire')), key(g('aim'))]],
+              ['Jump · vault · climb', [key(g('jump'))]],
+              ['Sprint · crouch', [key(g('sprint')), key(g('crouch'))]],
+              ['Reload · holster', [key(g('reload')), key(g('holster'))]],
               ['Menu', [key(g('pause'))]],
             ]
           : [
               ['Move', [key('Left thumb')]],
               ['Look', [key('Drag right side')]],
+              ['Fire · aim · reload', [key('Fire'), key('Aim'), key('Reload')]],
               ['Menu', [key('Menu')]],
             ];
     const dl = h('dl', 'hints panel-glass');

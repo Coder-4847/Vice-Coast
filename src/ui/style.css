@@ -79,6 +79,37 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .hud { position: absolute; inset: 0; pointer-events: none !important; z-index: 10; opacity: 1; transition: opacity var(--dur-3) var(--ease); }
 .hud.is-hidden { opacity: 0; }
 .hud > * { pointer-events: none; }
+/* dynamic crosshair: four ticks whose gap tracks the weapon's spread */
+.cross { position: absolute; left: 50%; top: 50%; width: 0; height: 0; --gap: 6px; transition: opacity var(--dur-2) var(--ease); }
+.cross i { position: absolute; background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); border-radius: 1px; will-change: transform; }
+.cross .c-t, .cross .c-b { width: 2px; height: 9px; left: -1px; }
+.cross .c-l, .cross .c-r { height: 2px; width: 9px; top: -1px; }
+.cross .c-t { top: 0; transform: translateY(calc(-1 * var(--gap) - 9px)); }
+.cross .c-b { top: 0; transform: translateY(var(--gap)); }
+.cross .c-l { left: 0; transform: translateX(calc(-1 * var(--gap) - 9px)); }
+.cross .c-r { left: 0; transform: translateX(var(--gap)); }
+.cross .c-dot { width: 2px; height: 2px; left: -1px; top: -1px; background: #fff; }
+.hitmarker { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; }
+.hitmarker i { position: absolute; width: 10px; height: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.hitmarker .h0 { transform: translate(-17px, -17px) rotate(45deg); }
+.hitmarker .h1 { transform: translate(7px, -17px) rotate(-45deg); }
+.hitmarker .h2 { transform: translate(-17px, 15px) rotate(-45deg); }
+.hitmarker .h3 { transform: translate(7px, 15px) rotate(45deg); }
+
+.ammo { position: absolute; right: calc(var(--sp-5) + env(safe-area-inset-right)); bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); padding: var(--sp-3) var(--sp-4); text-align: right; transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease); }
+.ammo.is-hidden { opacity: 0; transform: translateY(8px); }
+.ammo-row { display: flex; align-items: baseline; justify-content: flex-end; gap: var(--sp-2); }
+.ammo-num { font-size: 2.1rem; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; transition: color var(--dur-2) var(--ease); }
+.ammo-num.low { color: var(--accent); }
+.ammo-res { font-size: var(--fs-md); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ammo-name { display: block; margin-top: 2px; font-size: var(--fs-xs); letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+.reload-prompt { position: absolute; right: calc(var(--sp-5) + env(safe-area-inset-right)); bottom: calc(var(--sp-7) + 64px); font-size: var(--fs-sm); letter-spacing: 0.08em; opacity: 0; transform: translateY(4px); transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.reload-prompt.on { opacity: 1; transform: none; animation: breathe 1.4s var(--ease-in-out) infinite; }
+.stamina { position: absolute; left: 50%; bottom: calc(var(--sp-6) + env(safe-area-inset-bottom) + 64px); width: 140px; height: 2px; margin-left: -70px; background: var(--line); border-radius: 2px; overflow: hidden; opacity: 0; transition: opacity var(--dur-3) var(--ease); }
+.stamina.on { opacity: 1; }
+.stamina i { display: block; height: 100%; width: 100%; background: rgba(255, 255, 255, 0.85); transform-origin: left; }
+.prompt { position: absolute; left: 50%; top: 62%; transform: translate(-50%, 0); padding: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); letter-spacing: 0.06em; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.prompt.is-hidden { opacity: 0; transform: translate(-50%, 6px); }
 .crosshair { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
 .panel-glass { background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(12px) saturate(1.1); -webkit-backdrop-filter: blur(12px) saturate(1.1); }
 .stats { position: absolute; top: calc(var(--sp-4) + env(safe-area-inset-top)); left: calc(var(--sp-4) + env(safe-area-inset-left)); padding: var(--sp-3) var(--sp-4); font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.6; min-width: 188px; transform: translateY(0); opacity: 1; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
