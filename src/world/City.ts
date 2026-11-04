@@ -184,6 +184,7 @@ export class City {
   private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[] }>();
   private readonly farBoxes = new Map<string, Prim[]>();
   private physics: Physics | null = null;
+  private readonly removeQueue: number[] = [];
   private radius = 700;
   private lamps = true;
   private builtKey = '';
@@ -325,26 +326,42 @@ export class City {
     return out.sort((a, b) => a.d - b.d);
   }
 
-  /** Per-frame streaming: at most one chunk in and one out per call, nearest first. */
+  /**
+   * Per-frame streaming, nearest first. Each call does at most one heavy step so a frame never pays for several at once:
+   * queued collider removals, then one chunk unload, otherwise one chunk load (+ a small slice of collider creation).
+   */
   update(dt: number, px: number, pz: number): void {
     this.time += dt;
-    // unload chunks that drifted well outside the radius (hysteresis = one chunk)
-    for (const [key, r] of this.rec) {
-      const nx = Math.max(r.cx * CHUNK, Math.min(px, (r.cx + 1) * CHUNK));
-      const nz = Math.max(r.cz * CHUNK, Math.min(pz, (r.cz + 1) * CHUNK));
-      if (Math.hypot(px - nx, pz - nz) > this.radius + CHUNK) {
-        this.unload(key);
-        break;
+    let heavy = this.drainRemovals(140);
+    if (!heavy) {
+      for (const [key, r] of this.rec) {
+        const nx = Math.max(r.cx * CHUNK, Math.min(px, (r.cx + 1) * CHUNK));
+        const nz = Math.max(r.cz * CHUNK, Math.min(pz, (r.cz + 1) * CHUNK));
+        if (Math.hypot(px - nx, pz - nz) > this.radius + CHUNK) {
+          this.unload(key);
+          heavy = true;
+          break;
+        }
       }
     }
-    for (const w of this.wanted(px, pz)) {
-      if (!this.rec.has(`${w.cx},${w.cz}`)) {
-        this.load(w.cx, w.cz);
-        break;
+    if (!heavy) {
+      for (const w of this.wanted(px, pz)) {
+        if (!this.rec.has(`${w.cx},${w.cz}`)) {
+          this.load(w.cx, w.cz);
+          heavy = true;
+          break;
+        }
       }
     }
-    this.drainColliders(180);
+    this.drainColliders(heavy ? 40 : 120);
     this.updateSignals();
+  }
+
+  private drainRemovals(budget: number): boolean {
+    if (!this.removeQueue.length || !this.physics) return false;
+    this.physics.removeBuildings(this.removeQueue.splice(0, budget));
+    this.stats.colliders = this.physics.buildingCount;
+    return true;
   }
 
   /** Create queued colliders, at most `budget` per call, so a chunk load never costs a whole frame. */
@@ -388,6 +405,7 @@ export class City {
   private releaseColliders(): void {
     if (!this.physics) return;
     for (const r of this.rec.values()) this.physics.removeBuildings(r.handles);
+    this.physics.removeBuildings(this.removeQueue.splice(0));
     this.stats.colliders = this.physics.buildingCount;
   }
 
@@ -486,12 +504,11 @@ export class City {
     const r = this.rec.get(key);
     if (!r) return;
     for (const p of this.all) if (p !== this.pFar) p.remove(key);
-    this.physics?.removeBuildings(r.handles);
+    this.removeQueue.push(...r.handles);
     this.rec.delete(key);
     const far = this.farBoxes.get(key);
     if (far) this.addFar(key, far);
     this.stats.chunks = this.rec.size;
-    if (this.physics) this.stats.colliders = this.physics.buildingCount;
   }
 
   // ------------------------------------------------------------------------------------- lighting
