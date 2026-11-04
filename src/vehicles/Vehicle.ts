@@ -35,6 +35,8 @@ export interface WheelState {
   /** Accumulated rotation (radians) for the visual. */
   spin: number;
   onGround: boolean;
+  /** Was the wheel on the ground in the previous sub-step? (Damper velocity is only valid if so.) */
+  wasOnGround: boolean;
   load: number;
   /** Tyre slip magnitude 0–1+ (1 = at the limit). */
   slip: number;
@@ -183,7 +185,7 @@ export class Vehicle {
       const driven = spec.drive === 'awd' || (spec.drive === 'fwd' && front) || (spec.drive === 'rwd' && !front);
       this.wheels.push({
         x: wx, z: wz, mountY: -spec.comHeight + spec.wheelRadius + (spec.suspension.rest - x0), front, driven,
-        stiffness: k, damping: c, comp: x0, prevComp: x0, steer: 0, spin: 0, onGround: false, load: 0, slip: 0,
+        stiffness: k, damping: c, comp: x0, prevComp: x0, steer: 0, spin: 0, onGround: false, wasOnGround: false, load: 0, slip: 0,
         sliding: false, surface: 'asphalt', vLong: 0, probe: newProbe(), visualComp: x0, contact: new THREE.Vector3(),
       });
     }
@@ -217,7 +219,7 @@ export class Vehicle {
   /** Place the vehicle upright at a spot (ground-level coordinates). */
   teleport(x: number, y: number, z: number, yaw: number): void {
     const q = _q.setFromEuler(_e.set(0, yaw, 0));
-    this.body.setTranslation({ x, y: y + this.spec.comHeight + 0.1, z }, true);
+    this.body.setTranslation({ x, y: y + this.spec.comHeight + 0.03, z }, true);
     this.body.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
@@ -388,6 +390,7 @@ export class Vehicle {
       const len = spec.suspension.rest + spec.wheelRadius;
       const pr = this.physics.probe(_p.x, _p.y, _p.z, _n.x, _n.y, _n.z, len, this.collider, w.probe);
       w.prevComp = w.comp;
+      w.wasOnGround = w.onGround;
       if (pr.hit) {
         const suspLen = pr.distance - spec.wheelRadius;
         w.comp = clamp(spec.suspension.rest - suspLen, 0, spec.suspension.rest);
@@ -426,11 +429,12 @@ export class Vehicle {
       _n.lerp(_up, 0.35).normalize();
 
       // --- suspension (spring + asymmetric damper + bump stop) -------------------------------------------------
-      const compVel = (w.comp - w.prevComp) / h;
+      // the first frame in contact has no valid previous compression: don't let the damper see a fake impact
+      const compVel = w.wasOnGround ? (w.comp - w.prevComp) / h : 0;
       const damp_ = compVel > 0 ? w.damping : w.damping * 0.6; // bump stiffer than rebound
       let fs = w.stiffness * w.comp + damp_ * compVel + arLoad[i]!;
       if (w.comp > spec.suspension.travel) fs += (w.comp - spec.suspension.travel) * w.stiffness * 8;
-      fs = Math.max(0, fs);
+      fs = clamp(fs, 0, this.staticLoad * 7); // a bound on the spring force keeps hard landings from launching the car
       w.load = fs;
       w.contact.set(pr.px, pr.py, pr.pz);
 

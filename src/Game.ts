@@ -153,6 +153,16 @@ export class Game {
     const mgr = new VehicleManager(this.physics!);
     this.vehicles = mgr;
     this.world.scene.add(mgr.group);
+    // every lit vehicle material gets cascaded shadows + sky fog like the rest of the world
+    mgr.onVisual = (visual) => {
+      const seen = new Set<THREE.Material>();
+      visual.group.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+          if (!seen.has(m) && (m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshPhysicalMaterial)) { seen.add(m); this.world.rig.register(m); }
+        }
+      });
+    };
     // A showroom row on the beach lot, facing the city: five cars and a bike.
     const row: [string, number][] = [['pico', -34], ['marlow', -22], ['barrage', -10], ['veloce', 2], ['ridgeback', 14], ['sparrow', 24]];
     for (const [id, z] of row) mgr.spawn(id, 168, z, -Math.PI / 2);
@@ -254,7 +264,10 @@ export class Game {
     if (!player) return;
     player.update(dt, alpha, this.camera);
     this.world.props?.update(alpha);
-    this.vehicles?.update(alpha);
+    if (this.vehicles) {
+      this.vehicles.night = this.world.tod.look.night;
+      this.vehicles.update(alpha);
+    }
     const weapon = this.weapon;
     const vm = this.viewmodel;
     if (weapon && vm && this.effects) {

@@ -3,14 +3,30 @@ import type { Physics } from '../physics/Physics';
 import { terrainHeight } from '../world/Terrain';
 import { Vehicle } from './Vehicle';
 import { VEHICLES } from './specs';
+import { BikeModel } from './BikeModel';
+import { CarModel } from './CarModel';
+
+/** Common surface of CarModel / BikeModel. */
+export interface VehicleVisual {
+  group: THREE.Group;
+  materials: THREE.Material[];
+  update(): void;
+  setLights(headlights: boolean, braking: boolean, reversing: boolean, night: number): void;
+}
+
+export function createVisual(v: Vehicle): VehicleVisual {
+  return v.spec.kind === 'bike' ? new BikeModel(v) : new CarModel(v);
+}
 
 /** Owns every vehicle in the world: spawning, stepping, interpolation, and "what can the player enter?". */
 export class VehicleManager {
   readonly vehicles: Vehicle[] = [];
   readonly group = new THREE.Group();
-  /** Builds the visual for a vehicle (set once the model code is loaded). */
-  modelFactory: ((v: Vehicle) => THREE.Object3D) | null = null;
-  private readonly models = new Map<Vehicle, THREE.Object3D>();
+  /** Called for each new visual so the world can register its materials (shadows, fog). */
+  onVisual: ((visual: VehicleVisual) => void) | null = null;
+  /** 0 = day … 1 = night; set each frame for lights. */
+  night = 0;
+  private readonly models = new Map<Vehicle, VehicleVisual>();
 
   constructor(private readonly physics: Physics) {}
 
@@ -21,26 +37,14 @@ export class VehicleManager {
     const v = new Vehicle(this.physics, spec, x, y, z, yaw);
     if (color) (v as { paintOverride?: string }).paintOverride = color;
     this.vehicles.push(v);
-    if (this.modelFactory) {
-      const m = this.modelFactory(v);
-      this.models.set(v, m);
-      this.group.add(m);
-    }
+    const visual = createVisual(v);
+    this.models.set(v, visual);
+    this.group.add(visual.group);
+    this.onVisual?.(visual);
     return v;
   }
 
-  /** Attach visuals to vehicles that were spawned before the model factory existed. */
-  attachModels(): void {
-    if (!this.modelFactory) return;
-    for (const v of this.vehicles) {
-      if (this.models.has(v)) continue;
-      const m = this.modelFactory(v);
-      this.models.set(v, m);
-      this.group.add(m);
-    }
-  }
-
-  modelOf(v: Vehicle): THREE.Object3D | undefined {
+  visualOf(v: Vehicle): VehicleVisual | undefined {
     return this.models.get(v);
   }
 
@@ -54,8 +58,10 @@ export class VehicleManager {
       v.interpolate(alpha);
       const m = this.models.get(v);
       if (m) {
-        m.position.copy(v.position);
-        m.quaternion.copy(v.quaternion);
+        m.group.position.copy(v.position);
+        m.group.quaternion.copy(v.quaternion);
+        m.update();
+        m.setLights(v.headlights, v.braking, v.reversing, this.night);
       }
     }
   }
