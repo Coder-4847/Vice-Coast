@@ -200,7 +200,7 @@ export class Driving {
     const hz = this.enterFrom.z + (stand.z - this.enterFrom.z) * walk;
     const hy = this.enterFrom.y + (stand.y - this.enterFrom.y) * walk;
     player.placeAt(hx + (seat.x - stand.x) * seatT, hy + (seat.y - 1.0 - hy) * seatT + Math.sin(seatT * Math.PI) * 0.15, hz + (seat.z - stand.z) * seatT);
-    player.yaw += angleDiff(this.enterYaw, player.yaw) * Math.min(1, dt * 9);
+    player.yaw += clamp(angleDiff(this.enterYaw, player.yaw) * Math.min(1, dt * 6), -4 * dt, 4 * dt);
     player.pitch += (-0.1 - player.pitch) * Math.min(1, dt * 5);
 
     v.doorOpen = damp(v.doorOpen, t < 1.1 ? 1 : 0, 9, dt);

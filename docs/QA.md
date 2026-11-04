@@ -101,3 +101,31 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 ### Audio and settings
 - [ ] Sound starts after the first key press/click (browser autoplay rule); Esc pauses audio; Audio tab master volume works.
 - [ ] Gamepad: rumble on shots; menu navigation unchanged. Touch: Arms button draws/holsters.
+
+
+## Phase 4 — Vehicles
+
+### Getting in and out
+- [ ] Vehicle lot at ~(168, 0) on the beach holds Pico, Marlow, Barrage, Veloce, Ridgeback and the Sparrow bike.
+- [ ] Walking within ~3.4 m of a vehicle's driver door shows "Enter <name>" with the right glyph for the active device.
+- [ ] Pressing interact: you turn to the door, the door swings open, you slide in, the camera glides to the chase view with no hard cut (and the hands leave the screen).
+- [ ] Exit below ~40 km/h: door opens, you step out beside it, the camera glides back into your eyes. Above that: "Slow down to get out".
+- [ ] A vehicle you leave holds still on its handbrake; other vehicles are silent and parked.
+
+### Driving feel
+- [ ] Every car accelerates, brakes and steers with a believable weight shift (nose dips under braking, squat on throttle, body roll in corners).
+- [ ] RWD cars (Marlow, Barrage, Veloce) power-slide when you stab the throttle in a corner; Pico understeers gently; Ridgeback (AWD) is planted.
+- [ ] Handbrake + steering starts a drift; counter-steer assist keeps it controllable; releasing grips up again.
+- [ ] Veloce is fast (~325 km/h) and stays pinned thanks to downforce; the bike leans into corners and is steady straight.
+- [ ] Gears shift automatically with a short torque cut; hitting the limiter is audible; reversing works by holding the brake when stopped.
+- [ ] Running into things bumps the body and plays an impact thud; driving off a kerb or small jump lands softly (no spinning, no launch).
+
+### Camera
+- [ ] Chase camera follows with smooth lag, swings toward velocity in drifts, widens FOV with speed, shakes slightly at top speed, and never clips into terrain/buildings.
+- [ ] `V` cycles chase → close → hood → cinematic; look-behind (`C`) flips the view; moving the mouse / right stick orbits and then recentres.
+- [ ] Hands rest on the steering wheel and turn with it; the bike rider leans with the bike.
+
+### Audio, HUD, input
+- [ ] Engine pitch follows RPM, with shift blips; tyres squeal while sliding; wind rises with speed; horn on `H`; sound stops when you get out.
+- [ ] Speedometer shows km/h, gear, RPM bar and vehicle name.
+- [ ] Gamepad: triggers are analogue throttle/brake; rumble on impact. Touch: driving layout (gas, brake, drift, exit, cam, look back, horn, lights) replaces the foot buttons while in a vehicle.

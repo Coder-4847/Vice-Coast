@@ -12,6 +12,8 @@ interface ButtonDef {
   size: number; // px
   /** Latches on tap instead of tracking the finger (sprint on touch is easier as a toggle). */
   latch?: boolean;
+  /** Which control layout shows this button (default: on foot). */
+  mode?: 'foot' | 'vehicle' | 'both';
 }
 
 const BUTTONS: ButtonDef[] = [
@@ -24,7 +26,16 @@ const BUTTONS: ButtonDef[] = [
   { id: 'sprint', action: 'sprint', label: 'Sprint', x: 0.3, y: 0.8, size: 62, latch: true },
   { id: 'weapons', action: 'weaponWheel', label: 'Arms', x: 0.4, y: 0.1, size: 54 },
   { id: 'map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 54 },
-  { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54 },
+  { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54, mode: 'both' },
+  // ---- driving layout: steer with the left stick, pedals under the right thumb
+  { id: 'v-gas', action: 'fire', label: 'Gas', x: 0.9, y: 0.68, size: 96, mode: 'vehicle' },
+  { id: 'v-brake', action: 'aim', label: 'Brake', x: 0.76, y: 0.76, size: 76, mode: 'vehicle' },
+  { id: 'v-hand', action: 'jump', label: 'Drift', x: 0.77, y: 0.5, size: 62, mode: 'vehicle' },
+  { id: 'v-exit', action: 'interact', label: 'Exit', x: 0.94, y: 0.4, size: 56, mode: 'vehicle' },
+  { id: 'v-cam', action: 'cameraMode', label: 'Cam', x: 0.2, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-back', action: 'crouch', label: 'Look back', x: 0.3, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-horn', action: 'horn', label: 'Horn', x: 0.1, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-lights', action: 'headlights', label: 'Lights', x: 0.4, y: 0.1, size: 52, mode: 'vehicle' },
 ];
 
 const STICK_RADIUS = 58;
@@ -133,6 +144,26 @@ export class TouchControls {
 
   // ------------------------------------------------------------------ layout
 
+  private vehicleMode = false;
+
+  /** Swap between the on-foot and driving button sets. */
+  setMode(mode: 'foot' | 'vehicle'): void {
+    const vehicle = mode === 'vehicle';
+    if (vehicle === this.vehicleMode) return;
+    this.vehicleMode = vehicle;
+    this.latched.clear();
+    for (const { def, el } of this.buttons.values()) {
+      el.classList.remove('down', 'on');
+      this.input.setTouchAction(def.action, false);
+    }
+    this.layout();
+  }
+
+  private shows(def: ButtonDef): boolean {
+    const m = def.mode ?? 'foot';
+    return m === 'both' || (m === 'vehicle') === this.vehicleMode;
+  }
+
   private layout(): void {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -142,6 +173,7 @@ export class TouchControls {
     for (const { def, el } of this.buttons.values()) {
       const p = lay[def.id] ?? { x: def.x, y: def.y };
       const size = def.size * scale;
+      el.style.display = this.shows(def) ? '' : 'none';
       el.style.width = el.style.height = `${size}px`;
       el.style.transform = `translate(${p.x * w - size / 2}px, ${p.y * h - size / 2}px)`;
     }

@@ -45,6 +45,7 @@ export class Game {
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
+  private carSound: ReturnType<AudioEngine['createVehicleSound']> = null;
   private baseFov = 75;
   /** 0 → 1 camera swoop from the title shot into the player's eyes. */
   private intro = 1;
@@ -267,6 +268,28 @@ export class Game {
     if (n.back || n.start) this.resume();
   }
 
+  /** Engine/tyre/wind sound for the vehicle being driven (created lazily on first entry, silent on foot). */
+  private updateVehicleAudio(driving: Driving | null): void {
+    const v = driving && driving.mode !== 'foot' ? driving.vehicle : null;
+    if (!this.carSound) {
+      if (!v) return;
+      this.carSound = this.audio.createVehicleSound();
+      this.carSound?.start();
+    }
+    const snd = this.carSound;
+    if (!snd) return;
+    if (!v) {
+      snd.update({ rpm: 0, idleRpm: 1, redlineRpm: 2, load: 0, cylinders: 4, turbo: false, speedKmh: 0, skid: 0, airborne: false, braking: false, shifted: false, impact: 0, horn: false, active: false });
+      return;
+    }
+    const e = v.spec.engine;
+    snd.update({
+      rpm: v.rpm, idleRpm: e.idleRpm, redlineRpm: e.redlineRpm, load: v.load, cylinders: e.cylinders, turbo: !!e.turbo,
+      speedKmh: v.speedKmh, skid: v.skid, airborne: v.wheels.every((w) => !w.onGround), braking: v.braking,
+      shifted: v.shifted, impact: v.impact, horn: !!driving?.hornOn, active: v.occupied,
+    });
+  }
+
   private updatePlaying(dt: number, alpha: number): void {
     const player = this.player;
     if (!player) return;
@@ -292,6 +315,8 @@ export class Game {
     }
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
+    this.updateVehicleAudio(driving);
+    this.touch.setMode(driving && driving.mode !== 'foot' ? 'vehicle' : 'foot');
     if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
     if (this.intro < 1) {
       // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.

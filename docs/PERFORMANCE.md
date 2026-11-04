@@ -81,10 +81,18 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 | --- | --- | --- | --- | --- |
 | _to do_ | Medium | | | |
 
+## Phase 4 cost notes
+
+- Physics steps at 120 Hz (two substeps per 60 Hz tick). Each vehicle casts 4 wheel rays per substep (bike 2), only against
+  world colliders. Only vehicles inside the driven vehicle's neighbourhood need to simulate — until Phase 6 traffic exists,
+  all six lot vehicles step every tick (cheap, but a sleeping/LOD scheme is planned for streaming in Phase 5).
+- Cars are ~25 draw calls each (body, glass, wheels, lights, interior). Phase 6 traffic will need instancing/LOD for distant cars.
+- Vehicle audio is one oscillator-based voice (3 oscillators + 4 filtered noise sources); only the driven vehicle is audible.
+
 ## Deferred from the master prompt (not silently dropped)
 
-- **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both land in Phase 4 when there are fast-moving
-  objects to justify it. MSAA ×4 (High/Ultra) and SMAA (Medium/Ultra) cover AA until then.
+- **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both are still pending — vehicles now exist, so they move to Phase 14
+  polish (a velocity buffer is the prerequisite). MSAA ×4 (High/Ultra) and SMAA (Medium/Ultra) cover AA until then.
 - **Screen-space reflections** on wet roads / car paint: wet roads currently reflect the live sky via image-based lighting.
   SSR waits for Phase 4–5, when there are cars and neon to reflect.
 - **Depth of field** belongs to cutscenes and photo mode (Phases 11 and 14). **God rays** and **heat haze** come with the

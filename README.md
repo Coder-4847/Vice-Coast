@@ -5,9 +5,10 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 3 — Player on foot.** You play in first person with visible, IK-driven arms and a pistol on a
-> shooting range, with physics, vault/climb, swimming and procedural audio. Built on the Phase 2 look (physical sky,
-> day/night, weather, cinematic post). Vehicles and real districts come next. See the [roadmap](#roadmap).
+> Status: **Phase 4 — Vehicles.** Five cars and a sport bike on a custom tyre/suspension model, a chase camera,
+> seamless first ↔ third person enter/exit, procedural engine audio, and a vehicle lot on the beach next to the shooting
+> range. Built on Phase 3 (first-person hands, pistol, physics) and Phase 2 (physical sky, weather, cinematic post).
+> Real districts come next. See the [roadmap](#roadmap).
 
 ## Run locally
 
@@ -37,10 +38,24 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Reload | `R` | `X` (□) | Reload |
 | Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) | Jump |
 | Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` | Sprint · Crouch (latching) |
-| Draw / holster · inspect | `1` · `G` | D-pad ↓ · D-pad → | Arms |
+| Draw / holster · inspect | `1` · `G` | D-pad ↓ · — | Arms |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
 | Menu | `Esc` or `P` | `Start` (Options) | Menu |
 | Noclip (debug) | `F9` | — | — |
+
+### Vehicles
+
+Walk to a car in the lot (east of the range, ~170 m along the beach) and press the interact key.
+
+| Action | Keyboard + mouse | Gamepad | Touch |
+| --- | --- | --- | --- |
+| Enter / exit | `E` (exit below ~40 km/h) | `Y` (△) | Use / Exit |
+| Throttle · brake / reverse | `W` · `S` | `RT` · `LT` | Gas · Brake |
+| Steer | `A` `D` | Left stick | Left thumb |
+| Handbrake (drift) | `Space` | `A` (✕) | Drift |
+| Camera mode (chase / close / hood / cinematic) | `V` | D-pad → | Cam |
+| Look behind · free look | `C` · mouse | `R3` · right stick | Look back · drag |
+| Horn · headlights | `H` · `L` | `L3` · — | Horn · Lights |
 
 Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
@@ -52,7 +67,8 @@ src/
   input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
   world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, placeholder city, props, effects
-  physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries
+  physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
+  vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
   audio/   procedural Web Audio engine (no sample files)
 docs/      PERFORMANCE.md, QA.md
@@ -67,8 +83,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 
 1. **Foundation** ✅
 2. **Core look** ✅ — sky, day/night, lighting, post-processing, terrain, weather
-3. **Player on foot** ✅ (this build) — first-person hands, movement, vault/climb, pistol
-4. Vehicles
+3. **Player on foot** ✅ — first-person hands, movement, vault/climb, pistol
+4. **Vehicles** ✅ (this build) — 5 cars + 1 bike, chase camera, enter/exit
 5. World streaming and Port Valeria
 6. NPCs and traffic
 7. Combat and police
