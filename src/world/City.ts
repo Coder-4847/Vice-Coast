@@ -568,7 +568,7 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
     vec2 fc = an.x > an.z ? vec2(vLoc.z, vLoc.y) : vec2(vLoc.x, vLoc.y);
     float yTop = vSize.y;
     float night = uNight;
-    float fraction = 0.04 + 0.30 * smoothstep(0.05, 0.8, night);
+    float fraction = 0.03 + 0.24 * smoothstep(0.05, 0.8, night);
     vec3 glassCol = vec3(0.035, 0.05, 0.075);
     if (md < 1.5) {
       vec2 cs = vec2(2.6, 3.7);
@@ -609,7 +609,7 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
 }`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor * (1.0 - 0.3 * uWet), 0.05, wMask);')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.15, wMask);')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += wCol * wMask * wLit * uNight * 1.25 + neonCol * wEmit * (0.35 + uNight * 4.0);');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += wCol * wMask * wLit * uNight * 0.55 + neonCol * wEmit * (0.35 + uNight * 4.0);');
   };
 }
 
