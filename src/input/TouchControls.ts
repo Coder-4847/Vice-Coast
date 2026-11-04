@@ -36,6 +36,7 @@ const BUTTONS: ButtonDef[] = [
   { id: 'v-back', action: 'crouch', label: 'Look back', x: 0.3, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-horn', action: 'horn', label: 'Horn', x: 0.1, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-lights', action: 'headlights', label: 'Lights', x: 0.4, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 52, mode: 'vehicle' },
 ];
 
 const STICK_RADIUS = 58;

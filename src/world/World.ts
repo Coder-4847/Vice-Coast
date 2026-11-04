@@ -7,7 +7,7 @@ import { clamp, damp } from '../core/math';
 import { GROUP, type Physics } from '../physics/Physics';
 import { Atmosphere } from './Atmosphere';
 import { City } from './City';
-import { FerrisWheel, HillRoad } from './Landmarks';
+import { FerrisWheel, HillRoad, WaypointBeacon } from './Landmarks';
 import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
 import { Props } from './Props';
@@ -33,6 +33,7 @@ export class World {
   readonly city = new City();
   readonly hillRoad: HillRoad;
   readonly wheel = new FerrisWheel();
+  readonly beacon = new WaypointBeacon();
   readonly pipeline: RenderPipeline;
   props: Props | null = null;
 
@@ -68,10 +69,10 @@ export class World {
     this.rig.register(this.hillRoad.material);
     this.rig.register(this.wheel.frameMaterial);
     this.rig.register(this.wheel.cabinMaterial);
-    this.scene.add(this.hillRoad.mesh, this.wheel.group, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
+    this.scene.add(this.hillRoad.mesh, this.wheel.group, this.beacon.mesh, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
 
     this.pipeline = new RenderPipeline(gfx, this.scene, camera);
-    this.pipeline.hideForAO.push(this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group);
+    this.pipeline.hideForAO.push(this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group, this.beacon.mesh);
     const size = this.drawingSize();
     this.pipeline.configure(preset, size.x, size.y);
     gfx.onResize = (w, h) => {

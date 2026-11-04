@@ -220,8 +220,8 @@ export class Terrain {
       paint = mix(paint, yellow, step(wht, ylw));
     }
     vec3 lot = conc;
-    lot = mix(lot, grassL, zn.r);
     lot = mix(lot, tile, zn.g);
+    lot = mix(lot, grassL, zn.r);
     lot = mix(lot, parking, zn.b);
     vec3 cityCol = lot;
     cityCol = mix(cityCol, pave, sideW);
@@ -240,8 +240,8 @@ export class Terrain {
     float bw = zn.a;
     if (bw > 0.001) {
       vec2 bc = vec2(floor(vWPos.x / 0.8), floor(vWPos.z / 5.0));
-      float tone = n_hash21(bc);
-      vec3 wood = mix(vec3(0.42, 0.29, 0.18), vec3(0.58, 0.42, 0.27), tone);
+      float tone = 0.3 + 0.7 * n_hash21(bc);
+      vec3 wood = mix(vec3(0.50, 0.33, 0.19), vec3(0.64, 0.45, 0.26), tone);
       float seam = smoothstep(0.0, 0.05, fract(vWPos.x / 0.8)) * (1.0 - smoothstep(0.94, 1.0, fract(vWPos.x / 0.8)));
       wood *= 0.55 + 0.45 * seam;
       col = mix(col, wood * (0.9 + 0.2 * nC), bw);

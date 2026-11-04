@@ -181,7 +181,7 @@ export class City {
   private pSigHead!: InstancePool;
   private all: InstancePool[] = [];
 
-  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[] }>();
+  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[] }>();
   private readonly farBoxes = new Map<string, Prim[]>();
   private physics: Physics | null = null;
   private radius = 700;
@@ -301,7 +301,8 @@ export class City {
   attachPhysics(physics: Physics): void {
     this.physics = physics;
     physics.groundHook = (x, z) => this.plan.surfaceAt(x, z);
-    for (const r of this.rec.values()) if (!r.handles.length) this.addColliders(r, this.collidersFor(r.cx, r.cz));
+    for (const r of this.rec.values()) if (!r.handles.length && !r.pending.length) r.pending = this.collidersFor(r.cx, r.cz);
+    this.drainColliders(1e9);
   }
 
   /** Synchronously load every chunk within the streaming radius (used at start-up and after a teleport). */
@@ -342,7 +343,21 @@ export class City {
         break;
       }
     }
+    this.drainColliders(180);
     this.updateSignals();
+  }
+
+  /** Create queued colliders, at most `budget` per call, so a chunk load never costs a whole frame. */
+  private drainColliders(budget: number): void {
+    if (!this.physics) return;
+    for (const r of this.rec.values()) {
+      if (!r.pending.length) continue;
+      const take = r.pending.splice(0, budget);
+      r.handles.push(...this.physics.addBuildings(take));
+      budget -= take.length;
+      if (budget <= 0) break;
+    }
+    this.stats.colliders = this.physics.buildingCount;
   }
 
   private collidersFor(cx: number, cz: number): BuildingBox[] {
@@ -370,12 +385,6 @@ export class City {
     return out;
   }
 
-  private addColliders(r: { handles: number[] }, boxes: BuildingBox[]): void {
-    if (!this.physics) return;
-    r.handles = this.physics.addBuildings(boxes);
-    this.stats.colliders = this.physics.buildingCount;
-  }
-
   private releaseColliders(): void {
     if (!this.physics) return;
     for (const r of this.rec.values()) this.physics.removeBuildings(r.handles);
@@ -387,7 +396,7 @@ export class City {
     const key = `${cx},${cz}`;
     if (this.rec.has(key)) return;
     const d = this.plan.generateChunk(cx, cz);
-    const rec = { cx, cz, handles: [] as number[] };
+    const rec = { cx, cz, handles: [] as number[], pending: [] as BuildingBox[] };
     this.rec.set(key, rec);
     this.pFar.remove(key);
 
@@ -454,7 +463,7 @@ export class City {
         c.setHex(0x1f4a2e);
       } else {
         m.compose(pos.set(t.x, t.y + h + 1.6 * t.s, t.z), q.identity(), sc.set(2.7 * t.s, 2.2 * t.s, 2.7 * t.s));
-        c.setHex(0x2f5a28).lerp(green.setHex(0x6b8a30), t.tint);
+        c.setHex(0x244a20).lerp(green.setHex(0x4f6a26), t.tint);
       }
     });
     const palms = d.trees.filter((t) => t.kind === 1);
@@ -462,10 +471,10 @@ export class City {
       const t = palms[i]!;
       q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, t.tint * 6.28);
       m.compose(pos.set(t.x, t.y + trunkH(t), t.z), q, sc.set(t.s * 1.1, t.s * 1.1, t.s * 1.1));
-      c.setHex(0x3d7a34).lerp(green.setHex(0x5f8f3a), t.tint);
+      c.setHex(0x2f6a2c).lerp(green.setHex(0x4d7a30), t.tint);
     });
 
-    if (this.physics) this.addColliders(rec, this.toColliders(d));
+    if (this.physics) rec.pending = this.toColliders(d);
     const ms = performance.now() - t0;
     this.stats.loadMs = ms;
     this.stats.maxLoadMs = Math.max(this.stats.maxLoadMs, ms);

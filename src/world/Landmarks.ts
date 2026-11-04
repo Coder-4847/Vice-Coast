@@ -131,3 +131,37 @@ export class FerrisWheel {
     this.cabinMaterial.emissiveIntensity = 0.15 + night * 1.6;
   }
 }
+
+/** A tall additive light beam marking the active waypoint. */
+export class WaypointBeacon {
+  readonly mesh: THREE.Mesh;
+  private readonly mat: THREE.MeshBasicMaterial;
+
+  constructor() {
+    const c = document.createElement('canvas');
+    c.width = 4;
+    c.height = 128;
+    const g = c.getContext('2d')!;
+    const grd = g.createLinearGradient(0, 0, 0, 128);
+    grd.addColorStop(0, 'rgba(255,255,255,0)');
+    grd.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+    grd.addColorStop(1, 'rgba(255,255,255,1)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 4, 128);
+    const tex = new THREE.CanvasTexture(c);
+    this.mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(2.2, 0.9, 0.5), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide });
+    this.mesh = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 600, 16, 1, true).translate(0, 300, 0), this.mat);
+    this.mesh.visible = false;
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 6;
+  }
+
+  set(x: number, z: number): void {
+    this.mesh.position.set(x, terrainHeight(x, z), z);
+    this.mesh.visible = true;
+  }
+
+  clear(): void {
+    this.mesh.visible = false;
+  }
+}

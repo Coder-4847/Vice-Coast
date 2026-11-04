@@ -65,6 +65,10 @@ export class UI {
   private readonly title: HTMLElement;
   private readonly press: HTMLElement;
   private readonly hud: HTMLElement;
+  /** The HUD container, for widgets that live in it (minimap). */
+  get hudRoot(): HTMLElement {
+    return this.hud;
+  }
   private readonly stats: HTMLElement;
   private hints: HTMLElement;
   private readonly capture: HTMLElement;

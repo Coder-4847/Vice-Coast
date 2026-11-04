@@ -7,6 +7,7 @@ import { Settings } from './core/Settings';
 import { InputManager } from './input/InputManager';
 import { TouchControls } from './input/TouchControls';
 import { UI } from './ui/UI';
+import { MapUI } from './ui/MapUI';
 import { AudioEngine } from './audio/AudioEngine';
 import { Physics } from './physics/Physics';
 import { Player } from './player/Player';
@@ -19,7 +20,7 @@ import { Driving } from './vehicles/Driving';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
-export type GameState = 'loading' | 'title' | 'playing' | 'paused';
+export type GameState = 'loading' | 'title' | 'playing' | 'paused' | 'map';
 
 const TITLE_FOV = 50;
 
@@ -33,6 +34,7 @@ export class Game {
   readonly world: World;
   readonly ui: UI;
   readonly touch: TouchControls;
+  map!: MapUI;
   readonly loop: GameLoop;
 
   private readonly canvas: HTMLCanvasElement;
@@ -58,6 +60,7 @@ export class Game {
   private fovT = 1;
   private editingTouch = false;
   private timeFrozen = false;
+  private readonly mapFwd = new THREE.Vector3();
   private lastDt = 1 / 60;
 
   constructor(gpu: GpuInfo) {
@@ -106,6 +109,17 @@ export class Game {
         strike: () => this.world.weather.strike(this.camera),
       },
     });
+
+    this.map = new MapUI(root, this.ui.hudRoot, this.world.city.plan, {
+      toast: (m) => this.ui.toast(m),
+      device: () => this.input.activeDevice,
+      close: () => this.closeMap(),
+    });
+    this.map.onWaypoint = (wp) => {
+      if (wp) this.world.beacon.set(wp.x, wp.z);
+      else this.world.beacon.clear();
+      this.ui.toast(wp ? 'Waypoint set' : 'Waypoint cleared');
+    };
 
     this.loop = new GameLoop({
       begin: (dt) => this.input.beginFrame(dt),
@@ -233,13 +247,18 @@ export class Game {
       case 'playing':
         this.updatePlaying(dt, alpha);
         if (input.pressed('pause')) this.pause();
+        else if (input.pressed('map')) this.openMap();
         this.ui.setCaptureHint(input.activeDevice === 'kbm' && !input.pointerLocked && !this.editingTouch);
         break;
       case 'paused':
         this.updateMenuInput();
         this.ui.menu.tick();
         break;
+      case 'map':
+        this.map.tick(dt);
+        break;
     }
+    this.updateMapHud(dt);
 
     this.updateFov(dt);
     this.lastDt = dt;
@@ -417,6 +436,57 @@ export class Game {
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
   }
 
+  openMap(): void {
+    if (this.state !== 'playing') return;
+    this.state = 'map';
+    this.input.gameplayEnabled = false;
+    this.loop.paused = true;
+    this.touch.setActive(false);
+    this.ui.setCaptureHint(false);
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.audio.suspend();
+    this.map.open();
+  }
+
+  closeMap(): void {
+    if (this.state !== 'map') return;
+    this.map.close();
+    this.state = 'playing';
+    this.audio.resume();
+    this.loop.paused = false;
+    this.input.gameplayEnabled = true;
+    this.touch.setActive(true);
+    if (this.input.activeDevice === 'kbm') void this.lockPointer();
+  }
+
+  /** Feed the minimap with the player's (or driven vehicle's) position and heading. */
+  private updateMapHud(dt: number): void {
+    if (this.state !== 'playing' && this.state !== 'map') {
+      this.map.setHudVisible(false);
+      return;
+    }
+    this.map.setHudVisible(this.state === 'playing');
+    const driving = this.driving;
+    const v = driving && driving.mode !== 'foot' ? driving.vehicle : null;
+    const cam = this.camera;
+    let yaw: number;
+    let x: number, z: number;
+    if (v) {
+      x = v.position.x; z = v.position.z;
+      const f = this.mapFwd.set(0, 0, -1).applyQuaternion(v.quaternion);
+      yaw = Math.atan2(-f.x, -f.z);
+    } else {
+      const p = this.player ? this.player.pos : cam.position;
+      x = p.x; z = p.z;
+      const f = this.mapFwd.set(0, 0, -1).applyQuaternion(cam.quaternion);
+      yaw = Math.atan2(-f.x, -f.z);
+    }
+    this.map.update(dt, {
+      x, z, yaw, speedKmh: v ? v.speedKmh : 0,
+      vehicles: this.vehicles ? this.vehicles.vehicles.map((c) => ({ x: c.position.x, z: c.position.z })) : [],
+    });
+  }
+
   private beginTouchEdit(): void {
     this.editingTouch = true;
     this.ui.menu.close();
@@ -498,6 +568,7 @@ export class Game {
       if (this.input.capturing) return;
       if (this.state === 'playing') this.pause();
       else if (this.state === 'paused') this.resume();
+      else if (this.state === 'map') this.closeMap();
     });
 
     // The browser releases the pointer on Esc; treat any loss of capture while playing as "pause".
