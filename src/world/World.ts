@@ -4,9 +4,10 @@ import type { PostParams } from '../core/RenderPipeline';
 import { RenderPipeline } from '../core/RenderPipeline';
 import type { QualityPreset } from '../core/Quality';
 import { clamp, damp } from '../core/math';
-import type { Physics } from '../physics/Physics';
+import { GROUP, type Physics } from '../physics/Physics';
 import { Atmosphere } from './Atmosphere';
 import { City } from './City';
+import { FerrisWheel, HillRoad } from './Landmarks';
 import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
 import { Props } from './Props';
@@ -14,7 +15,6 @@ import { Terrain, terrainHeight, CITY } from './Terrain';
 import { TimeOfDay } from './TimeOfDay';
 import { Weather, type WeatherType } from './Weather';
 
-const _ray = new THREE.Raycaster();
 const _v = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 
@@ -31,6 +31,8 @@ export class World {
   readonly terrain: Terrain;
   readonly ocean = new Ocean();
   readonly city = new City();
+  readonly hillRoad: HillRoad;
+  readonly wheel = new FerrisWheel();
   readonly pipeline: RenderPipeline;
   props: Props | null = null;
 
@@ -57,9 +59,16 @@ export class World {
     this.rig.register(this.city.buildingMaterial, City.patch);
     this.rig.register(this.city.poleMaterial);
     this.rig.register(this.city.headMaterial);
+    this.rig.register(this.city.signalMaterial, City.signalPatch);
+    this.rig.register(this.city.trunkMaterial);
+    this.rig.register(this.city.leafMaterial);
 
-    this.city.build(preset.instanceBudget, preset.lamps);
-    this.scene.add(this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
+    this.city.configure(preset, camera.position.x, camera.position.z);
+    this.hillRoad = new HillRoad(this.city.plan);
+    this.rig.register(this.hillRoad.material);
+    this.rig.register(this.wheel.frameMaterial);
+    this.rig.register(this.wheel.cabinMaterial);
+    this.scene.add(this.hillRoad.mesh, this.wheel.group, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
 
     this.pipeline = new RenderPipeline(gfx, this.scene, camera);
     this.pipeline.hideForAO.push(this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group);
@@ -76,7 +85,7 @@ export class World {
   attachPhysics(physics: Physics): void {
     this.physics = physics;
     physics.buildTerrain();
-    physics.setBuildings(this.city.boxes);
+    this.city.attachPhysics(physics);
     this.props = new Props(physics);
     this.props.buildRange();
     for (const m of this.props.materials) this.rig.register(m);
@@ -91,8 +100,7 @@ export class World {
     this.rig.setQuality(preset);
     this.atmosphere.setQuality({ cloudOctaves: preset.cloudOctaves, envSize: preset.envSize, envInterval: preset.envInterval });
     this.terrain.rebuild(preset.terrainSegments);
-    this.city.build(preset.instanceBudget, preset.lamps);
-    this.physics?.setBuildings(this.city.boxes);
+    this.city.configure(preset, this.camera.position.x, this.camera.position.z);
     this.weather.buildFields({ rain: preset.rain, snow: preset.snow, dust: preset.dust });
     const size = this.drawingSize();
     this.pipeline.configure(preset, size.x, size.y);
@@ -128,6 +136,8 @@ export class World {
 
     const look = this.tod.look;
     this.city.setNight(look.night, w.wetness);
+    this.city.update(dt, cam.position.x, cam.position.z);
+    this.wheel.update(running ? dt : 0, look.night);
     this.ocean.follow(cam);
     this.ocean.sea.value = clamp(0.3 + w.current.wind / 13, 0.3, 1.7);
     this.updateSunVisibility(dt);
@@ -160,10 +170,8 @@ export class World {
         if (terrainHeight(o.x + sd.x * t, o.z + sd.z * t) > o.y + sd.y * t) blocked = true;
       }
       // buildings: cheap raycast every few frames
-      if (!blocked && this.city.buildings && this.frame % 3 === 0) {
-        _ray.set(o, sd);
-        _ray.far = 3000;
-        this.sunOccluded = _ray.intersectObject(this.city.buildings).length > 0 ? 1 : 0;
+      if (!blocked && this.physics && this.frame % 3 === 0) {
+        this.sunOccluded = this.physics.raycast(o, sd, 3000, undefined, GROUP.WORLD) ? 1 : 0;
       }
       if (!blocked && !this.sunOccluded) {
         target = 1 - clamp(this.weather.current.coverage * 1.15 - 0.15, 0, 1) * 0.92;

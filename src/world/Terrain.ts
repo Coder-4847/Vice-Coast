@@ -4,6 +4,8 @@ import { NOISE_GLSL } from './skyGlsl';
 /** The flat district where the placeholder city sits; streets in the terrain shader use the same numbers. */
 export const CITY = { x: 980, z: 0, flat: 760, blend: 260, height: 4.5, cell: 64 } as const;
 export const TERRAIN = { x0: -800, x1: 3000, z0: -1800, z1: 1800 } as const;
+/** Crestview Hill, north of the city: a gentle rise carrying the villa road. */
+export const HILL = { x: 1060, z: -1040, h: 64, s: 300 } as const;
 
 const smooth = (a: number, b: number, x: number): number => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -59,12 +61,28 @@ export function terrainHeight(x: number, z: number): number {
   const roll = (fbm(x * 0.006, z * 0.006, 4) - 0.35) * 22 * smooth(CITY.flat * 0.6, CITY.flat + 300, d) * smooth(20, 260, x);
   h += roll;
 
+  const hx = x - HILL.x;
+  const hz = z - HILL.z;
+  h += HILL.h * Math.exp(-(hx * hx + hz * hz) / (2 * HILL.s * HILL.s));
+
   const flat = 1 - smooth(CITY.flat, CITY.flat + CITY.blend, d);
   return h + (CITY.height - h) * flat * smooth(30, 170, x);
 }
 
 /** Procedural terrain: one mesh, material blends sand/grass/rock/snow by height + slope and draws the city's streets. */
+export interface CityTextures {
+  /** 4096×2 half-float: row 0 = N–S road field along x, row 1 = E–W road field along z (R dist-to-edge, G offset, B half-width, A arterial). */
+  road: THREE.Texture;
+  /** RGBA8 zone mask: R grass, G plaza, B parking/yard, A boardwalk. */
+  zone: THREE.Texture;
+  roadBox: THREE.Vector4;
+  zoneBox: THREE.Vector4;
+  radius: number;
+}
+
 export class Terrain {
+  /** Set by the city before the terrain material compiles. */
+  static cityData: CityTextures | null = null;
   readonly mesh: THREE.Mesh;
   readonly material: THREE.MeshStandardMaterial;
   private segments = 0;
@@ -100,11 +118,19 @@ export class Terrain {
   /** Shader patch (installed through LightRig.register so it chains with shadows and fog). */
   static patch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
     shader.uniforms.uCity = { value: new THREE.Vector4(CITY.x, CITY.z, CITY.flat, CITY.blend) };
+    const cd = Terrain.cityData;
+    const dummy = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
+    dummy.needsUpdate = true;
+    shader.uniforms.uRoadTex = { value: cd?.road ?? dummy };
+    shader.uniforms.uZoneTex = { value: cd?.zone ?? dummy };
+    shader.uniforms.uRoadBox = { value: cd?.roadBox ?? new THREE.Vector4(0, 0, 1, 1) };
+    shader.uniforms.uZoneBox = { value: cd?.zoneBox ?? new THREE.Vector4(0, 0, 1, 1) };
+    shader.uniforms.uCityR = { value: cd?.radius ?? CITY.flat };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWN;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = transformed;\nvWN = normal;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWN;\nuniform vec4 uCity;\n${NOISE_GLSL}`)
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWN;\nuniform vec4 uCity;\nuniform sampler2D uRoadTex;\nuniform sampler2D uZoneTex;\nuniform vec4 uRoadBox;\nuniform vec4 uZoneBox;\nuniform float uCityR;\n${NOISE_GLSL}`)
       .replace('#include <map_fragment>', `#include <map_fragment>
 {
   vec3 n = normalize(vWN);
@@ -131,29 +157,96 @@ export class Terrain {
   rough = mix(rough, 0.8, rockW);
   rough = mix(rough, 0.55, snowW);
 
-  // City streets: asphalt grid, kerbs, lane dashes, pavement.
-  float cityMask = 1.0 - smoothstep(uCity.z - 40.0, uCity.z + uCity.w * 0.7, length(vWPos.xz - uCity.xy));
-  cityMask *= smoothstep(150.0, 200.0, vWPos.x) * (1.0 - smoothstep(0.0, 0.2, slope));
+  // City ground: roads, sidewalks, markings and lot surfaces come from the plan's road-field and zone textures.
+  float cityMask = (1.0 - smoothstep(uCityR - 35.0, uCityR + 25.0, length(vWPos.xz - uCity.xy))) * smoothstep(205.0, 216.0, vWPos.x) * (1.0 - smoothstep(0.0, 0.2, slope));
+  vec4 rx = texture2D(uRoadTex, vec2((vWPos.x - uRoadBox.x) / uRoadBox.z, 0.25));
+  vec4 rz = texture2D(uRoadTex, vec2((vWPos.z - uRoadBox.y) / uRoadBox.w, 0.75));
+  vec2 zuv = (vWPos.xz - uZoneBox.xy) / uZoneBox.zw;
+  vec4 zn = texture2D(uZoneTex, zuv) * step(0.0, zuv.x) * step(zuv.x, 1.0) * step(0.0, zuv.y) * step(zuv.y, 1.0);
+  float inBox = step(uRoadBox.x, vWPos.x) * step(vWPos.x, uRoadBox.x + uRoadBox.z) * step(uRoadBox.y, vWPos.z) * step(vWPos.z, uRoadBox.y + uRoadBox.w);
   float asphaltW = 0.0;
   float puddleW = 0.0;
-  if (cityMask > 0.001) {
-    vec2 g = vWPos.xz / ${CITY.cell.toFixed(1)};
-    vec2 e = min(fract(g), 1.0 - fract(g)) * ${CITY.cell.toFixed(1)};
-    float sd = min(e.x, e.y);
-    asphaltW = 1.0 - smoothstep(6.7, 7.0, sd);
-    float kerb = smoothstep(7.0, 7.2, sd) * (1.0 - smoothstep(7.5, 7.8, sd));
-    vec3 asph = mix(vec3(0.075, 0.075, 0.082), vec3(0.12, 0.12, 0.13), nC) * (0.9 + 0.2 * nB);
-    vec3 paving = mix(vec3(0.36, 0.35, 0.34), vec3(0.45, 0.44, 0.43), nC);
-    vec3 city = mix(paving, asph, asphaltW);
-    city = mix(city, vec3(0.62, 0.61, 0.60), kerb);
-    float along = e.x < e.y ? vWPos.z : vWPos.x;
-    float dash = step(0.5, fract(along / 7.0)) * (1.0 - smoothstep(0.1, 0.22, sd));
-    city = mix(city, vec3(0.80, 0.62, 0.14), dash * asphaltW);
-    col = mix(col, city, cityMask);
-    rough = mix(rough, mix(0.92, 0.82, asphaltW), cityMask);
+  float parkW = 0.0;
+  if (cityMask > 0.001 || zn.a > 0.001) {
+    float dX = rx.r;
+    float dZ = rz.r;
+    float dRoad = min(dX, dZ);
+    asphaltW = (1.0 - smoothstep(-0.2, 0.2, dRoad)) * inBox;
+    float sideW = smoothstep(-0.1, 0.1, dRoad) * (1.0 - smoothstep(3.45, 3.75, dRoad)) * inBox;
+    float kerbW = smoothstep(-0.05, 0.1, dRoad) * (1.0 - smoothstep(0.25, 0.45, dRoad)) * inBox;
+
+    vec3 conc = mix(vec3(0.30, 0.295, 0.285), vec3(0.40, 0.39, 0.375), nC) * (0.92 + 0.16 * nB);
+    vec3 grassL = mix(vec3(0.10, 0.20, 0.07), vec3(0.17, 0.27, 0.09), nB) * (0.85 + 0.3 * nC);
+    float chk = mod(floor(vWPos.x / 2.5) + floor(vWPos.z / 2.5), 2.0);
+    vec3 tile = mix(vec3(0.60, 0.57, 0.52), vec3(0.50, 0.47, 0.43), chk) * (0.94 + 0.1 * nC);
+    float stall = step(0.95, fract(vWPos.x / 2.8)) * step(0.35, fract(vWPos.z / 18.0));
+    vec3 parking = mix(vec3(0.085, 0.085, 0.09), vec3(0.14, 0.14, 0.145), nC);
+    parking = mix(parking, vec3(0.7), stall * 0.55);
+    vec3 pave = mix(vec3(0.46, 0.45, 0.43), vec3(0.54, 0.53, 0.51), nC);
+    float joint = smoothstep(0.485, 0.5, max(abs(fract(vWPos.x / 2.0) - 0.5), abs(fract(vWPos.z / 2.0) - 0.5)));
+    pave *= 1.0 - 0.14 * joint;
+    vec3 asph = mix(vec3(0.075, 0.075, 0.082), vec3(0.125, 0.125, 0.135), nC) * (0.9 + 0.2 * nB);
+
+    #ifdef USE_FOG
+      float cdist = length(vFogViewPos);
+    #else
+      float cdist = 0.0;
+    #endif
+    float mfade = 1.0 - smoothstep(110.0, 260.0, cdist);
+
+    // lane paint
+    float paintW = 0.0;
+    vec3 paint = vec3(0.82, 0.82, 0.80);
+    bool nsRoad = dX < 0.0 && dZ >= 0.0;
+    bool ewRoad = dZ < 0.0 && dX >= 0.0;
+    if (nsRoad || ewRoad) {
+      vec4 rr = nsRoad ? rx : rz;
+      float aoff = abs(rr.g);
+      float hw = rr.b;
+      float art = rr.a;
+      float along = nsRoad ? vWPos.z : vWPos.x;
+      float dash = step(0.42, fract(along / 9.0));
+      float dbl = (1.0 - smoothstep(0.05, 0.09, abs(aoff - 0.24))) * art;
+      float one = (1.0 - smoothstep(0.05, 0.09, aoff)) * dash * (1.0 - art);
+      float lane = (1.0 - smoothstep(0.05, 0.09, abs(aoff - hw * 0.5))) * dash * art;
+      float edge = 1.0 - smoothstep(0.05, 0.09, abs(aoff - (hw - 0.45)));
+      float cd = nsRoad ? dZ : dX;
+      float cw = step(0.9, cd) * step(cd, 4.4) * step(aoff, hw - 0.5) * step(0.5, fract(rr.g * 0.9));
+      float stop = step(5.0, cd) * step(cd, 5.5) * step(0.4, aoff) * step(aoff, hw - 0.5) * 0.0;
+      vec3 yellow = vec3(0.78, 0.58, 0.10);
+      float ylw = max(dbl, one);
+      float wht = max(max(lane, edge), max(cw, stop));
+      paintW = max(ylw, wht) * mfade;
+      paint = mix(paint, yellow, step(wht, ylw));
+    }
+    vec3 lot = conc;
+    lot = mix(lot, grassL, zn.r);
+    lot = mix(lot, tile, zn.g);
+    lot = mix(lot, parking, zn.b);
+    vec3 cityCol = lot;
+    cityCol = mix(cityCol, pave, sideW);
+    cityCol = mix(cityCol, vec3(0.62, 0.61, 0.60), kerbW);
+    cityCol = mix(cityCol, asph, asphaltW);
+    cityCol = mix(cityCol, paint * (0.92 + 0.12 * nC), paintW * asphaltW);
+    col = mix(col, cityCol, cityMask);
+    rough = mix(rough, mix(0.92, 0.8, asphaltW) , cityMask);
+    rough = mix(rough, 0.6, paintW * asphaltW * cityMask);
     float flatMask = smoothstep(0.985, 0.998, n.y);
-    puddleW = smoothstep(0.52 - 0.18 * uWet, 0.64 - 0.18 * uWet, n_fbm(vWPos.xz * 0.09 + 3.0)) * flatMask * cityMask * uWet;
+    parkW = zn.b * (1.0 - sideW);
+    puddleW = smoothstep(0.52 - 0.18 * uWet, 0.64 - 0.18 * uWet, n_fbm(vWPos.xz * 0.09 + 3.0)) * flatMask * cityMask * uWet * max(asphaltW, parkW);
     asphaltW *= cityMask;
+
+    // seaside boardwalk planks
+    float bw = zn.a;
+    if (bw > 0.001) {
+      vec2 bc = vec2(floor(vWPos.x / 0.8), floor(vWPos.z / 5.0));
+      float tone = n_hash21(bc);
+      vec3 wood = mix(vec3(0.42, 0.29, 0.18), vec3(0.58, 0.42, 0.27), tone);
+      float seam = smoothstep(0.0, 0.05, fract(vWPos.x / 0.8)) * (1.0 - smoothstep(0.94, 1.0, fract(vWPos.x / 0.8)));
+      wood *= 0.55 + 0.45 * seam;
+      col = mix(col, wood * (0.9 + 0.2 * nC), bw);
+      rough = mix(rough, 0.82, bw);
+    }
   }
 
   // Wet ground: darker, glossier, with standing puddles on flat paving.

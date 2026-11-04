@@ -38,6 +38,12 @@ export const newProbe = (): Probe => ({ hit: false, distance: 0, px: 0, py: 0, p
 export interface BuildingBox {
   cx: number; cy: number; cz: number;
   hx: number; hy: number; hz: number;
+  /** Yaw in radians (stadium segments, villas). */
+  ry?: number;
+  /** Facade mode (see city MODE): lets bullets tell glass from wall. */
+  win?: number;
+  /** Cylinder (radius = hx) instead of a cuboid. */
+  cyl?: boolean;
 }
 
 const HEIGHT_CELL = 8; // metres per heightfield cell
@@ -51,10 +57,12 @@ export const SUBSTEPS = 2;
 export class Physics {
   readonly world: RapierWorld;
   private readonly surfaces = new Map<number, Surface>();
-  private readonly buildingIndex = new Map<number, number>();
-  private buildingColliders: Collider[] = [];
-  private boxes: BuildingBox[] = [];
+  /** Streamed city colliders, keyed by collider handle. */
+  private readonly buildingBoxes = new Map<number, BuildingBox>();
+  private readonly buildingBodies = new Map<number, Collider>();
   private terrainCollider: Collider | null = null;
+  /** City plan lookup: road / pavement / lot, so tyres and bullets can tell them apart. */
+  groundHook: ((x: number, z: number) => Surface) | null = null;
   /** Bodies of registered dynamic props, keyed by collider handle. */
   private readonly propBodies = new Map<number, RigidBody>();
 
@@ -108,24 +116,34 @@ export class Physics {
     this.terrainCollider = this.world.createCollider(desc);
   }
 
-  /** Replace the building colliders (called whenever the city is rebuilt for a new quality preset). */
-  setBuildings(boxes: BuildingBox[]): void {
-    for (const c of this.buildingColliders) {
-      this.world.removeCollider(c, false);
-      this.surfaces.delete(c.handle);
-      this.buildingIndex.delete(c.handle);
-    }
-    this.buildingColliders = [];
-    this.boxes = boxes;
-    boxes.forEach((b, i) => {
-      const desc = this.R.ColliderDesc.cuboid(b.hx, b.hy, b.hz)
-        .setTranslation(b.cx, b.cy, b.cz)
-        .setFriction(0.6)
-        .setCollisionGroups(groups(GROUP.WORLD, GROUP.PLAYER | GROUP.PROP));
+  /** Add static colliders for city geometry (one chunk at a time); returns handles for removal. */
+  addBuildings(boxes: BuildingBox[]): number[] {
+    const handles: number[] = [];
+    for (const b of boxes) {
+      const desc = b.cyl
+        ? this.R.ColliderDesc.cylinder(b.hy, b.hx)
+        : this.R.ColliderDesc.cuboid(b.hx, b.hy, b.hz);
+      desc.setTranslation(b.cx, b.cy, b.cz).setFriction(0.6).setCollisionGroups(groups(GROUP.WORLD, GROUP.PLAYER | GROUP.PROP));
+      if (b.ry) desc.setRotation({ x: 0, y: Math.sin(b.ry / 2), z: 0, w: Math.cos(b.ry / 2) });
       const col = this.world.createCollider(desc);
-      this.buildingColliders.push(col);
-      this.buildingIndex.set(col.handle, i);
-    });
+      this.buildingBoxes.set(col.handle, b);
+      this.buildingBodies.set(col.handle, col);
+      handles.push(col.handle);
+    }
+    return handles;
+  }
+
+  removeBuildings(handles: number[]): void {
+    for (const h of handles) {
+      const c = this.buildingBodies.get(h);
+      if (c) this.world.removeCollider(c, false);
+      this.buildingBodies.delete(h);
+      this.buildingBoxes.delete(h);
+    }
+  }
+
+  get buildingCount(): number {
+    return this.buildingBodies.size;
   }
 
   /** Register a fixed or dynamic collider's surface type. */
@@ -144,20 +162,26 @@ export class Physics {
   /** What a point on the terrain is made of (city paving vs beach sand vs dirt). */
   groundSurface(x: number, y: number): Surface {
     const inCity = Math.hypot(x - CITY.x, y - CITY.z) < CITY.flat - 20 && x > 200;
-    if (inCity) return 'asphalt';
+    if (inCity) return this.groundHook ? this.groundHook(x, y) : 'asphalt';
     if (x < 220 && terrainHeight(x, y) < 3.6) return 'sand';
     return 'dirt';
   }
 
   /** Window test mirroring the facade shader, so shots at glass sound and spark like glass. */
   private isWindow(b: BuildingBox, p: THREE.Vector3, n: THREE.Vector3): boolean {
-    if (Math.abs(n.y) >= 0.5) return false;
+    const mode = b.win ?? 2;
+    if (Math.abs(n.y) >= 0.5 || b.ry || b.cyl || mode === 0 || mode >= 4) return false;
     const lx = p.x - (b.cx - b.hx);
     const ly = p.y - (b.cy - b.hy);
     const lz = p.z - (b.cz - b.hz);
     const sizeY = b.hy * 2;
-    if (ly <= 4.5 || ly >= sizeY - 1.2) return false;
     const fcx = Math.abs(n.x) > Math.abs(n.z) ? lz : lx;
+    if (mode === 3) return ly > sizeY - 5 && ly < sizeY - 2.2;
+    if (ly <= 4.5 || ly >= sizeY - 1.2) return false;
+    if (mode === 1) {
+      const fx = (fcx / 2.6) % 1, fy = (ly / 3.7) % 1;
+      return fx > 0.05 && fx < 0.95 && fy > 0.08 && fy < 0.9;
+    }
     const fx = (fcx / 3.4) % 1;
     const fy = (ly / 3.8) % 1;
     return fx > 0.16 && fx < 0.84 && fy > 0.2 && fy < 0.82;
@@ -181,8 +205,8 @@ export class Physics {
       const point = new THREE.Vector3(origin.x + dir.x * hit.timeOfImpact, origin.y + dir.y * hit.timeOfImpact, origin.z + dir.z * hit.timeOfImpact);
       const normal = new THREE.Vector3(hit.normal.x, hit.normal.y, hit.normal.z);
       let surface = this.surfaces.get(hit.collider.handle);
-      const bi = this.buildingIndex.get(hit.collider.handle);
-      if (bi !== undefined) surface = this.isWindow(this.boxes[bi]!, point, normal) ? 'glass' : 'concrete';
+      const bb = this.buildingBoxes.get(hit.collider.handle);
+      if (bb) surface = this.isWindow(bb, point, normal) ? 'glass' : 'concrete';
       else if (hit.collider.handle === this.terrainCollider?.handle) surface = this.groundSurface(point.x, point.z);
       best = {
         point, normal, distance: hit.timeOfImpact, surface: surface ?? 'concrete',
@@ -220,7 +244,7 @@ export class Physics {
       out.nx = hit.normal.x; out.ny = hit.normal.y; out.nz = hit.normal.z;
       const h = hit.collider.handle;
       const tagged = this.surfaces.get(h);
-      out.surface = this.buildingIndex.has(h) ? 'concrete' : h === this.terrainCollider?.handle ? this.groundSurface(out.px, out.pz) : (tagged ?? 'concrete');
+      out.surface = this.buildingBoxes.has(h) ? 'concrete' : h === this.terrainCollider?.handle ? this.groundSurface(out.px, out.pz) : (tagged ?? 'concrete');
     }
     // the sea is solid for wheels only as a shallow-water drag surface; vehicles don't float yet
     void best;
