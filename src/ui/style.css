@@ -283,4 +283,5 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .fullmap-title b { font-weight: 300; font-size: var(--fs-lg); letter-spacing: 0.06em; margin-right: var(--sp-3); }
 .fullmap-title span { font-size: var(--fs-xs); letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); }
 .fullmap-actions { display: flex; gap: var(--sp-2); }
-.fullmap-hint { position: absolute; left: 50%; bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: var(--sp-5); flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 24px); font-size: var(--fs-xs); letter-spacing: 0.06em; color: var(--muted); padding: var(--sp-2) var(--sp-4); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; pointer-events: none; }
+.fullmap-hint span { white-space: nowrap; }
+.fullmap-hint { position: absolute; left: 50%; bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: var(--sp-5); flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 24px); font-size: var(--fs-xs); letter-spacing: 0.06em; color: var(--muted); padding: var(--sp-2) var(--sp-4); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; pointer-events: none; }

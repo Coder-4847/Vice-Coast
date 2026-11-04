@@ -122,7 +122,9 @@ export class MapUI {
           if (h < 0) {
             const d = Math.min(1, -h / 70);
             r = 34 - 22 * d; gg = 82 - 50 * d; b = 112 - 40 * d;
-          } else if (h < 5.2) { r = 150; gg = 138; b = 108; }
+          } else if (h < 5.2) {
+            if (MB.x0 + (i + 0.5) * STEP < 205) { r = 150; gg = 138; b = 108; } else { r = 92; gg = 98; b = 88; }
+          }
           else if (h < 60) { r = 74; gg = 92; b = 62; }
           else if (h < 160) { r = 86; gg = 88; b = 66; }
           else if (h < 260) { r = 108; gg = 100; b = 90; }
