@@ -98,9 +98,11 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
   objects: one draw call per pool regardless of how many chunks are loaded. A building is 2–6 boxes (podium, tower, crown,
   roof clutter, neon sign). Facade windows, shopfronts, neon and stadium seating are all procedural in one fragment patch.
 - **Streaming**: 256 m chunks, one load and one unload per frame, nearest first, 1 chunk of hysteresis. Radius by preset:
-  Low 520 m, Medium 760 m, High 1000 m, Ultra 1300 m. Generating a chunk and writing its instances took 1–3 ms on a
-  desktop CPU (≤ 15 ms worst case on a slow software-rendering box); physics colliders (≈ 250 per chunk: buildings, lamp posts,
-  tree trunks) are created at most 180 per frame.
+  Low 520 m, Medium 760 m, High 1000 m, Ultra 1300 m. Each frame does at most one heavy streaming step (a chunk load, an unload, or a
+  slice of collider removal); colliders (≈ 250 per chunk: buildings, lamp posts, tree trunks) are created ≤ 120 per frame
+  (≤ 40 on a frame that loaded a chunk). Measured on a slow CPU-only test box, driving the full length of Valeria Avenue
+  (1.6 km in 30 s, up to 272 km/h, ~15 chunk loads): update cost avg 3.4 ms, p95 8.5 ms, p99 14.6 ms, worst chunk load 3.8 ms
+  (it was 10 ms before the one-step-per-frame change). Real-GPU frame times are still unmeasured.
 - **Far skyline**: every building outside the radius is kept in a separate pool (≈ 1–2 k boxes, no shadows), with tower tiers
   stretched to the ground so there are no gaps under podium roofs. It is swapped for the detailed version as a chunk loads.
 - Typical loaded counts around downtown on Medium: ~2.3 k building boxes, ~4 k colliders, ~35–45 chunks. Streetlight pools
