@@ -118,7 +118,7 @@ export class UI {
       'div', 'screen title is-hidden',
       h('div', 'center', h('h1', 'wordmark', 'Vice Coast'), h('div', 'kicker', 'San Verano')),
       this.press,
-      h('div', 'build', 'Phase 2 · Core look'),
+      h('div', 'build', 'Phase 5 · Port Valeria'),
     );
 
     // HUD
