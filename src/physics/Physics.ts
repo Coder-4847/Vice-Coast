@@ -11,6 +11,7 @@ export const GROUP = {
   WORLD: 0x0001,
   PROP: 0x0002,
   PLAYER: 0x0004,
+  VEHICLE: 0x0008,
 } as const;
 const groups = (member: number, filter: number): number => ((member << 16) | filter) >>> 0;
 
@@ -24,12 +25,24 @@ export interface RayHit {
   body: RigidBody | null;
 }
 
+/** Result of a wheel/ground probe; written in place to avoid per-frame allocation. */
+export interface Probe {
+  hit: boolean;
+  distance: number;
+  px: number; py: number; pz: number;
+  nx: number; ny: number; nz: number;
+  surface: Surface;
+}
+export const newProbe = (): Probe => ({ hit: false, distance: 0, px: 0, py: 0, pz: 0, nx: 0, ny: 1, nz: 0, surface: 'asphalt' });
+
 export interface BuildingBox {
   cx: number; cy: number; cz: number;
   hx: number; hy: number; hz: number;
 }
 
 const HEIGHT_CELL = 8; // metres per heightfield cell
+/** Physics runs at 60 × SUBSTEPS Hz so stiff vehicle suspension stays stable. */
+export const SUBSTEPS = 2;
 
 /**
  * Rapier world + the static colliders of the Phase 3 test world, with material-aware ray queries
@@ -47,7 +60,7 @@ export class Physics {
 
   private constructor(readonly R: Rapier) {
     this.world = new R.World({ x: 0, y: -16, z: 0 });
-    this.world.timestep = 1 / 60;
+    this.world.timestep = 1 / (60 * SUBSTEPS);
   }
 
   /** Loads the (large, WASM-inlined) Rapier chunk on demand. */
@@ -58,8 +71,16 @@ export class Physics {
     return new Physics(R);
   }
 
+  /** Hooks run before every physics sub-step (vehicle tyre/suspension forces). */
+  readonly substepHooks: ((h: number) => void)[] = [];
+
+  /** Advance one 1/60 s frame as SUBSTEPS physics steps. */
   step(): void {
-    this.world.step();
+    const h = 1 / (60 * SUBSTEPS);
+    for (let i = 0; i < SUBSTEPS; i++) {
+      for (const hook of this.substepHooks) hook(h);
+      this.world.step();
+    }
   }
 
   // -------------------------------------------------------------------- static world
@@ -179,6 +200,31 @@ export class Physics {
       }
     }
     return best;
+  }
+
+  /**
+   * Cast a ray into the static world and write the result into `out` (no allocation on our side).
+   * Used for wheel suspension, so it only sees WORLD geometry.
+   */
+  probe(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, len: number, exclude: Collider | undefined, out: Probe): Probe {
+    const r = this._ray;
+    r.origin.x = ox; r.origin.y = oy; r.origin.z = oz;
+    r.dir.x = dx; r.dir.y = dy; r.dir.z = dz;
+    const hit = this.world.castRayAndGetNormal(r as unknown as Ray, len, true, undefined, groups(0xffff, GROUP.WORLD), exclude);
+    out.hit = false;
+    let best = hit ? hit.timeOfImpact : Infinity;
+    if (hit && hit.timeOfImpact >= 0) {
+      out.hit = true;
+      out.distance = hit.timeOfImpact;
+      out.px = ox + dx * best; out.py = oy + dy * best; out.pz = oz + dz * best;
+      out.nx = hit.normal.x; out.ny = hit.normal.y; out.nz = hit.normal.z;
+      const h = hit.collider.handle;
+      const tagged = this.surfaces.get(h);
+      out.surface = this.buildingIndex.has(h) ? 'concrete' : h === this.terrainCollider?.handle ? this.groundSurface(out.px, out.pz) : (tagged ?? 'concrete');
+    }
+    // the sea is solid for wheels only as a shallow-water drag surface; vehicles don't float yet
+    void best;
+    return out;
   }
 
   /** How open the sky/surroundings are around a point, 0 (canyon / indoors) … 1 (open field). Drives gunshot reverb. */

@@ -13,6 +13,8 @@ import { Player } from './player/Player';
 import { Viewmodel } from './player/Viewmodel';
 import { WeaponSystem } from './player/WeaponSystem';
 import { Effects } from './world/Effects';
+import { VehicleManager } from './vehicles/VehicleManager';
+import { Vehicle } from './vehicles/Vehicle';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
@@ -40,6 +42,7 @@ export class Game {
   weapon: WeaponSystem | null = null;
   viewmodel: Viewmodel | null = null;
   effects: Effects | null = null;
+  vehicles: VehicleManager | null = null;
   private baseFov = 75;
   /** 0 → 1 camera swoop from the title shot into the player's eyes. */
   private intro = 1;
@@ -120,6 +123,7 @@ export class Game {
     this.player = new Player(this.physics, this.input, this.audio);
     this.player.teleport(100, 0, -Math.PI / 2);
     this.setupWeapon();
+    this.setupVehicles();
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
     this.world.update(0, false);
@@ -143,6 +147,15 @@ export class Game {
     this.state = 'title';
     this.ui.hideLoading();
     this.ui.showTitle();
+  }
+
+  private setupVehicles(): void {
+    const mgr = new VehicleManager(this.physics!);
+    this.vehicles = mgr;
+    this.world.scene.add(mgr.group);
+    // A showroom row on the beach lot, facing the city: five cars and a bike.
+    const row: [string, number][] = [['pico', -34], ['marlow', -22], ['barrage', -10], ['veloce', 2], ['ridgeback', 14], ['sparrow', 24]];
+    for (const [id, z] of row) mgr.spawn(id, 168, z, -Math.PI / 2);
   }
 
   private setupWeapon(): void {
@@ -182,6 +195,8 @@ export class Game {
 
   private fixedUpdate(dt: number): void {
     if (this.state !== 'playing' || !this.physics || !this.player) return;
+    Vehicle.wetness = this.world.weather.wetness;
+    this.vehicles?.fixedUpdate(dt);
     this.player.fixedUpdate(dt);
     this.physics.step();
     this.world.props?.fixedUpdate();
@@ -239,6 +254,7 @@ export class Game {
     if (!player) return;
     player.update(dt, alpha, this.camera);
     this.world.props?.update(alpha);
+    this.vehicles?.update(alpha);
     const weapon = this.weapon;
     const vm = this.viewmodel;
     if (weapon && vm && this.effects) {
