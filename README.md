@@ -5,10 +5,11 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 4 — Vehicles.** Five cars and a sport bike on a custom tyre/suspension model, a chase camera,
-> seamless first ↔ third person enter/exit, procedural engine audio, and a vehicle lot on the beach next to the shooting
-> range. Built on Phase 3 (first-person hands, pistol, physics) and Phase 2 (physical sky, weather, cinematic post).
-> Real districts come next. See the [roadmap](#roadmap).
+> Status: **Phase 5 — Port Valeria.** A streamed, procedurally planned city (about 1.5 km across): downtown towers,
+> midtown, a seaside strip with boardwalk, pier and Ferris wheel, residential rows, an industrial district, a stadium,
+> hospital, police HQ and mall, plus a villa-lined spiral road up Crestview Hill. Roads, crossings and lane paint are
+> drawn by the terrain shader; buildings, trees, streetlights and traffic signals stream in 256 m chunks with physics.
+> A rotating minimap and a full map with waypoint routing come with it. See the [roadmap](#roadmap).
 
 ## Run locally
 
@@ -40,8 +41,16 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` | Sprint · Crouch (latching) |
 | Draw / holster · inspect | `1` · `G` | D-pad ↓ · — | Arms |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
+| Map (full-screen, set waypoint) | `M` | `Back` (View) | Map |
 | Menu | `Esc` or `P` | `Start` (Options) | Menu |
 | Noclip (debug) | `F9` | — | — |
+
+### Map and navigation
+
+The minimap (top right) rotates with your heading and zooms out as you speed up; it shows the district, the street
+you are on, and the road distance to your waypoint. Press `M` for the full map: click (or `A` on a pad, tap on touch)
+to set a waypoint, drag / left stick to pan, scroll / triggers / pinch to zoom, right-click or `X` to clear, `C` / `Y`
+to centre. The route follows the road grid and a light beam marks the waypoint in the world.
 
 ### Vehicles
 
@@ -66,7 +75,8 @@ src/
   core/    game loop (fixed timestep + interpolation), renderer + HDR post pipeline, quality presets, settings
   input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
-  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, placeholder city, props, effects
+  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, props, effects, landmarks
+  world/city/  Port Valeria: plan (roads, blocks, districts, buildings), road/zone textures, routing
   physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
@@ -84,8 +94,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 1. **Foundation** ✅
 2. **Core look** ✅ — sky, day/night, lighting, post-processing, terrain, weather
 3. **Player on foot** ✅ — first-person hands, movement, vault/climb, pistol
-4. **Vehicles** ✅ (this build) — 5 cars + 1 bike, chase camera, enter/exit
-5. World streaming and Port Valeria
+4. **Vehicles** ✅ — 5 cars + 1 bike, chase camera, enter/exit
+5. **World streaming and Port Valeria** ✅ (this build) — city, chunk streaming, minimap and map (airport, studio lot, metro and the full amusement park are still to come)
 6. NPCs and traffic
 7. Combat and police
 8. Remaining biomes

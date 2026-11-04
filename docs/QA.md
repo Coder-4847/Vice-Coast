@@ -129,3 +129,24 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Engine pitch follows RPM, with shift blips; tyres squeal while sliding; wind rises with speed; horn on `H`; sound stops when you get out.
 - [ ] Speedometer shows km/h, gear, RPM bar and vehicle name.
 - [ ] Gamepad: triggers are analogue throttle/brake; rumble on impact. Touch: driving layout (gas, brake, drift, exit, cam, look back, horn, lights) replaces the foot buttons while in a vehicle.
+
+
+## Phase 5 — Port Valeria, streaming and maps
+
+### The city
+- [ ] From the beach the skyline shows downtown towers over a low seaside strip; walking east, buildings gain detail with no visible pop-in at the edge of the streaming radius.
+- [ ] Streets have lane paint (double yellow on avenues, dashed on streets), zebra crossings at every junction, kerbs and sidewalks; markings fade out with distance (no shimmer).
+- [ ] Districts read differently: glass towers + plazas (Valeria Core), brick/stone mid-rise (Midtown), pastel hotels + neon + palms (Seaside), yards and trees (Orchard Row), warehouses, containers, tanks and chimneys (Rustwater).
+- [ ] Landmarks: Valeria Arena (stadium with floodlights), St. Aurelia Medical Center (red cross, helipad), Valeria PD HQ (blue strip, mast), Galleria Costa (mall + car park), Seaside Pier + Sunwheel Ferris wheel (turns, lit at night), Crestview Hills villas on a spiral road.
+- [ ] At night windows, shopfronts, neon, streetlights (with light pools) and traffic signals (cycling red/amber/green) are lit; rain darkens and glosses the roads.
+- [ ] Buildings, lamp posts and tree trunks are solid for the player and vehicles; bullets spark on concrete and glass differently.
+
+### Streaming
+- [ ] Driving the length of Valeria Avenue at speed shows no hitch when chunks load (FPS panel: draws, tris, 1 % low stay flat); loading is one chunk per frame, colliders trickle in over a few frames.
+- [ ] Far buildings beyond the radius still show as a simple skyline and are swapped for detailed ones as you approach.
+- [ ] Changing the quality preset rebuilds the city without a reload.
+
+### Map and minimap
+- [ ] Minimap rotates with the heading, N marker stays north, zooms out when driving fast; district and street names update as you move.
+- [ ] `M` opens the full map (mouse released, game paused); `M`/`Esc`/Close returns to the game; clicking sets a waypoint with a route and a light beam in the world; right-click clears; arriving clears it with a toast.
+- [ ] Gamepad: `Back` opens, sticks pan, triggers zoom, `A` sets, `X` clears, `B` closes. Touch: Map button opens, drag pans, pinch zooms, tap sets.

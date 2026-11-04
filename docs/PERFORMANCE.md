@@ -89,6 +89,25 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - Cars are ~25 draw calls each (body, glass, wheels, lights, interior). Phase 6 traffic will need instancing/LOD for distant cars.
 - Vehicle audio is one oscillator-based voice (3 oscillators + 4 filtered noise sources); only the driven vehicle is audible.
 
+## Phase 5 cost notes
+
+- **Roads cost no geometry.** Two 4096×2 half-float textures (road distance fields along x and z) and one 1024² RGBA8 zone
+  mask are sampled by the terrain shader, which paints asphalt, kerbs, sidewalks, lane paint, zebra crossings, parks, plazas,
+  car parks and boardwalk planks. Paint fades out beyond ~260 m to avoid shimmer.
+- **Buildings are instanced boxes** (plus cylinders for tanks, silos and the stadium's masts) in a few pooled `InstancedMesh`
+  objects: one draw call per pool regardless of how many chunks are loaded. A building is 2–6 boxes (podium, tower, crown,
+  roof clutter, neon sign). Facade windows, shopfronts, neon and stadium seating are all procedural in one fragment patch.
+- **Streaming**: 256 m chunks, one load and one unload per frame, nearest first, 1 chunk of hysteresis. Radius by preset:
+  Low 520 m, Medium 760 m, High 1000 m, Ultra 1300 m. Generating a chunk and writing its instances took 1–3 ms on a
+  desktop CPU (≤ 15 ms worst case on a slow software-rendering box); physics colliders (≈ 250 per chunk: buildings, lamp posts,
+  tree trunks) are created at most 180 per frame.
+- **Far skyline**: every building outside the radius is kept in a separate pool (≈ 1–2 k boxes, no shadows), with tower tiers
+  stretched to the ground so there are no gaps under podium roofs. It is swapped for the detailed version as a chunk loads.
+- Typical loaded counts around downtown on Medium: ~2.3 k building boxes, ~4 k colliders, ~35–45 chunks. Streetlight pools
+  are additive quads (night only). Tree crowns and props do not cast shadows.
+- Not yet done: terrain is still one mesh with one heightfield collider (fine at 3.8 × 3.6 km; it must be chunked with LOD when
+  the world grows to 10 × 10 km in Phase 8), and there is no occlusion culling.
+
 ## Deferred from the master prompt (not silently dropped)
 
 - **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both are still pending — vehicles now exist, so they move to Phase 14
