@@ -174,6 +174,25 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   down(action: Action): boolean {
     return this.cur[action];
   }
+  /**
+   * 0–1 analogue value for an action: gamepad triggers report how far they are pulled (pedals), everything
+   * else is 0 or 1. Honours the same gameplay gating as `down`.
+   */
+  analog(action: Action): number {
+    if (!this._gameplayEnabled) return 0;
+    let v = 0;
+    const b = this.binding(action);
+    for (const k of b.kbm) if (this.keys.has(k) && !this.suppressed.has(k)) return 1;
+    if (this.touchHeld.has(action)) return 1;
+    if (this.pad) {
+      for (const i of b.pad) {
+        const btn = this.pad.buttons[i];
+        if (btn) v = Math.max(v, btn.value > 0.02 ? btn.value : btn.pressed ? 1 : 0);
+      }
+    }
+    return v;
+  }
+
   pressed(action: Action): boolean {
     return this.cur[action] && !this.prev[action];
   }

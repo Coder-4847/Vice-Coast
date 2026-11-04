@@ -9,6 +9,8 @@ import { h } from './dom';
 import { SettingsMenu, type EnvControls } from './SettingsMenu';
 
 /** Everything the in-game HUD shows about the player and weapon, polled once per frame. */
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+
 export interface HudState {
   weaponName: string;
   ammo: number;
@@ -25,6 +27,10 @@ export interface HudState {
   prompt: { action: 'jump'; label: string } | null;
   fovDeg: number;
   viewportH: number;
+  /** Set while driving. */
+  vehicle: { name: string; speedKmh: number; gear: number; reversing: boolean; rpmFrac: number; headlights: boolean; health: number } | null;
+  /** Prompt to enter a nearby vehicle. */
+  enter: string | null;
 }
 
 export interface UIHooks {
@@ -75,6 +81,13 @@ export class UI {
   private readonly staminaEl: HTMLElement;
   private readonly staminaBar: HTMLElement;
   private readonly promptEl: HTMLElement;
+  private readonly speedoEl: HTMLElement;
+  private readonly speedNum: HTMLElement;
+  private readonly speedGear: HTMLElement;
+  private readonly speedName: HTMLElement;
+  private readonly rpmBar: HTMLElement;
+  private readonly speedFlags: HTMLElement;
+  private shownSpeed = -1;
   private shownAmmo = -1;
   private ammoAnim = 0;
   private ammoTarget = 0;
@@ -119,7 +132,13 @@ export class UI {
     this.staminaBar = h('i');
     this.staminaEl = h('div', 'stamina', this.staminaBar);
     this.promptEl = h('div', 'prompt panel-glass is-hidden', '');
-    this.hud = h('div', 'hud is-hidden', this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl);
+    this.speedNum = h('b', 'speed-num', '0');
+    this.speedGear = h('span', 'speed-gear', 'N');
+    this.speedName = h('span', 'speed-name', '');
+    this.rpmBar = h('i');
+    this.speedFlags = h('span', 'speed-flags', '');
+    this.speedoEl = h('div', 'speedo panel-glass is-hidden', h('div', 'speed-row', this.speedNum, h('span', 'speed-unit', 'km/h'), this.speedGear), h('div', 'rpm', this.rpmBar), h('div', 'speed-foot', this.speedName, this.speedFlags));
+    this.hud = h('div', 'hud is-hidden', this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl, this.speedoEl);
 
     this.toasts = h('div', 'toasts');
     this.editBar = h('div', 'edit-bar panel-glass is-hidden');
@@ -260,8 +279,28 @@ export class UI {
     this.staminaBar.style.transform = `scaleX(${st.stamina.toFixed(3)})`;
     this.staminaEl.classList.toggle('on', st.stamina < 0.995);
 
+    // vehicle gauges
+    const veh = st.vehicle;
+    this.speedoEl.classList.toggle('is-hidden', !veh);
+    if (veh) {
+      const sp = Math.round(veh.speedKmh);
+      if (sp !== this.shownSpeed) {
+        this.shownSpeed = sp;
+        this.speedNum.textContent = String(sp);
+      }
+      this.speedGear.textContent = veh.reversing ? 'R' : String(veh.gear);
+      this.rpmBar.style.transform = `scaleX(${clamp01(veh.rpmFrac).toFixed(3)})`;
+      this.rpmBar.classList.toggle('hot', veh.rpmFrac > 0.92);
+      if (this.speedName.textContent !== veh.name) this.speedName.textContent = veh.name;
+      this.speedFlags.textContent = (veh.headlights ? '◐ ' : '') + (veh.health < 400 ? '⚠ damaged' : '');
+    }
+
     // contextual prompt
-    if (st.prompt) {
+    if (st.enter && !veh) {
+      const html = `<kbd>${this.input.glyph('interact')}</kbd> ${st.enter}`;
+      if (this.promptEl.innerHTML !== html) this.promptEl.innerHTML = html;
+      this.promptEl.classList.remove('is-hidden');
+    } else if (st.prompt) {
       const html = `<kbd>${this.input.glyph(st.prompt.action)}</kbd> ${st.prompt.label}`;
       if (this.promptEl.innerHTML !== html) this.promptEl.innerHTML = html;
       this.promptEl.classList.remove('is-hidden');

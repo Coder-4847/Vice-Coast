@@ -76,6 +76,8 @@ export class Player {
   /** Set by the weapon system: some weapon states (reload from sprint etc.) allow sprint, others not. */
   sprintAllowed = true;
   noclip = false;
+  /** While true the controller doesn't move or read look input (vehicle enter/exit sequences). */
+  frozen = false;
 
   mantle: MantleState | null = null;
   /** Ledge in front of the player this frame (for the on-screen prompt), if any. */
@@ -142,6 +144,20 @@ export class Player {
     this.body.setTranslation({ x, y, z }, true);
   }
 
+  /** Move the player (used by sequences that script its position). Also resets interpolation. */
+  placeAt(x: number, y: number, z: number): void {
+    this.pos.set(x, y, z);
+    this.prevPos.copy(this.pos);
+    this.vel.set(0, 0, 0);
+    this.body.setTranslation({ x, y, z }, true);
+    this.body.setNextKinematicTranslation({ x, y, z });
+  }
+
+  /** Disable/enable the physical presence of the player (hidden inside a vehicle). */
+  setCollisionEnabled(on: boolean): void {
+    this.collider.setEnabled(on);
+  }
+
   /** Eye position (world), valid after update(). */
   get eyePosition(): THREE.Vector3 {
     return this.eye;
@@ -164,6 +180,10 @@ export class Player {
 
   fixedUpdate(dt: number): void {
     this.prevPos.copy(this.pos);
+    if (this.frozen) {
+      this.body.setNextKinematicTranslation({ x: this.pos.x, y: this.pos.y, z: this.pos.z });
+      return;
+    }
     const inp = this.input;
     if (inp.pressed('jump')) this.jumpBuffer = 0.14;
     this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
@@ -475,8 +495,10 @@ export class Player {
   update(dt: number, alpha: number, camera: THREE.PerspectiveCamera): void {
     const inp = this.input;
     inp.consumeLook(_look);
-    this.yaw -= _look.x * this.lookScale;
-    this.pitch = clamp(this.pitch - _look.y * this.lookScale, -MAX_PITCH, MAX_PITCH);
+    if (!this.frozen) {
+      this.yaw -= _look.x * this.lookScale;
+      this.pitch = clamp(this.pitch - _look.y * this.lookScale, -MAX_PITCH, MAX_PITCH);
+    }
 
     // Recoil recovery: the view settles back toward where it was before firing.
     if (this.recoilDebt > 0) {

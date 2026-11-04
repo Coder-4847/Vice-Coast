@@ -230,8 +230,8 @@ export class CarModel {
       const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.06, len, 0.07), this.bodyMat);
       m.position.set(x, (a[1] + b[1]) / 2, (a[0] + b[0]) / 2 - L / 2);
-      m.rotation.x = Math.atan2(b[0] - a[0], b[1] - a[1]) * -1 * 1;
-      m.rotation.x = -Math.atan2(b[0] - a[0], b[1] - a[1]);
+      // a box's long (Y) axis rotated about X by θ points along (z = sin θ, y = cos θ): θ = atan2(Δd, Δh)
+      m.rotation.x = Math.atan2(b[0] - a[0], b[1] - a[1]);
       this.shell.add(m);
     };
     const cb = sil.cabin;

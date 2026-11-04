@@ -5,7 +5,8 @@ export type Action =
   | 'jump' | 'sprint' | 'crouch' | 'interact'
   | 'fire' | 'aim' | 'reload'
   | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause'
-  | 'holster' | 'inspect';
+  | 'holster' | 'inspect'
+  | 'horn' | 'headlights' | 'cameraMode';
 
 export interface ActionBinding {
   /** KeyboardEvent.code values, or `Mouse0`..`Mouse4`. */
@@ -17,7 +18,7 @@ export interface ActionBinding {
 export interface ActionDef extends ActionBinding {
   id: Action;
   label: string;
-  group: 'Movement' | 'Actions' | 'Combat' | 'Menus';
+  group: 'Movement' | 'Actions' | 'Combat' | 'Vehicle' | 'Menus';
   /** Whether the player may rebind it (movement axes stay on keys, pause stays reachable). */
   rebindable: boolean;
 }
@@ -34,15 +35,18 @@ export const ACTION_DEFS: ActionDef[] = [
   { id: 'moveBack', label: 'Move back', group: 'Movement', kbm: ['KeyS', 'ArrowDown'], pad: [], rebindable: true },
   { id: 'moveLeft', label: 'Move left', group: 'Movement', kbm: ['KeyA', 'ArrowLeft'], pad: [], rebindable: true },
   { id: 'moveRight', label: 'Move right', group: 'Movement', kbm: ['KeyD', 'ArrowRight'], pad: [], rebindable: true },
-  { id: 'jump', label: 'Jump / ascend', group: 'Movement', kbm: ['Space'], pad: [PAD.A], rebindable: true },
+  { id: 'jump', label: 'Jump · vehicle handbrake', group: 'Movement', kbm: ['Space'], pad: [PAD.A], rebindable: true },
   { id: 'sprint', label: 'Sprint', group: 'Movement', kbm: ['ShiftLeft'], pad: [PAD.L3], rebindable: true },
-  { id: 'crouch', label: 'Crouch / descend', group: 'Movement', kbm: ['KeyC'], pad: [PAD.R3], rebindable: true },
-  { id: 'interact', label: 'Interact / enter vehicle', group: 'Actions', kbm: ['KeyE'], pad: [PAD.Y], rebindable: true },
+  { id: 'crouch', label: 'Crouch · vehicle look behind', group: 'Movement', kbm: ['KeyC'], pad: [PAD.R3], rebindable: true },
+  { id: 'interact', label: 'Interact · enter / exit vehicle', group: 'Actions', kbm: ['KeyE'], pad: [PAD.Y], rebindable: true },
   { id: 'reload', label: 'Reload', group: 'Combat', kbm: ['KeyR'], pad: [PAD.X], rebindable: true },
   { id: 'fire', label: 'Fire', group: 'Combat', kbm: ['Mouse0'], pad: [PAD.RT], rebindable: true },
   { id: 'aim', label: 'Aim', group: 'Combat', kbm: ['Mouse2'], pad: [PAD.LT], rebindable: true },
   { id: 'holster', label: 'Draw / holster weapon', group: 'Combat', kbm: ['Digit1'], pad: [PAD.DOWN], rebindable: true },
-  { id: 'inspect', label: 'Inspect weapon', group: 'Combat', kbm: ['KeyG'], pad: [PAD.RIGHT], rebindable: true },
+  { id: 'inspect', label: 'Inspect weapon', group: 'Combat', kbm: ['KeyG'], pad: [], rebindable: true },
+  { id: 'horn', label: 'Vehicle horn', group: 'Vehicle', kbm: ['KeyH'], pad: [PAD.L3], rebindable: true },
+  { id: 'headlights', label: 'Vehicle headlights', group: 'Vehicle', kbm: ['KeyL'], pad: [], rebindable: true },
+  { id: 'cameraMode', label: 'Vehicle camera', group: 'Vehicle', kbm: ['KeyV'], pad: [PAD.RIGHT], rebindable: true },
   { id: 'weaponWheel', label: 'Weapon wheel', group: 'Menus', kbm: ['Tab'], pad: [PAD.LB], rebindable: true },
   { id: 'radioWheel', label: 'Radio wheel', group: 'Menus', kbm: ['KeyQ'], pad: [PAD.RB], rebindable: true },
   { id: 'phone', label: 'Phone', group: 'Menus', kbm: ['KeyT'], pad: [PAD.UP], rebindable: true },

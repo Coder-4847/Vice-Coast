@@ -98,6 +98,12 @@ export class AudioEngine {
     return buf;
   }
 
+  /** Create the continuous sound for a vehicle (null until the context exists). */
+  createVehicleSound(): VehicleSound | null {
+    if (!this.ctx) return null;
+    return new VehicleSound(this.ctx, this.master, this.noise);
+  }
+
   /** Output node for a sound, spatialised if a world position is given. */
   private out(pos?: Node3, refDistance = 6): AudioNode {
     const ctx = this.ctx!;
@@ -334,5 +340,211 @@ export class AudioEngine {
     const hard = surface !== 'dirt' && surface !== 'sand';
     this.tone(o, t, { freq: (hard ? 4200 : 2600) + Math.random() * 800, peak: hard ? 0.12 : 0.04, decay: hard ? 0.09 : 0.03 });
     if (hard) this.tone(o, t + 0.12, { freq: 5200 + Math.random() * 700, peak: 0.06, decay: 0.07 });
+  }
+}
+
+/** What the engine sound needs to know each frame. */
+export interface EngineSoundState {
+  rpm: number;
+  idleRpm: number;
+  redlineRpm: number;
+  /** 0–1 */
+  load: number;
+  cylinders: number;
+  turbo: boolean;
+  speedKmh: number;
+  /** 0–1 tyre slip */
+  skid: number;
+  airborne: boolean;
+  braking: boolean;
+  shifted: boolean;
+  impact: number;
+  horn: boolean;
+  /** 0 off, 1 on (parked/unoccupied vehicles are silent). */
+  active: boolean;
+}
+
+/**
+ * Continuous vehicle sound: engine (sawtooth pair + sub, distorted, filtered by load), intake/exhaust noise,
+ * tyre squeal, wind, turbo whistle and horn. All parameters are smoothed with `setTargetAtTime`, so RPM sweeps
+ * are free of zipper noise. Created from the audio engine's context.
+ */
+export class VehicleSound {
+  private readonly ctx: AudioContext;
+  private readonly out: GainNode;
+  private readonly osc1: OscillatorNode;
+  private readonly osc2: OscillatorNode;
+  private readonly sub: OscillatorNode;
+  private readonly engFilter: BiquadFilterNode;
+  private readonly engGain: GainNode;
+  private readonly noiseGain: GainNode;
+  private readonly noiseFilter: BiquadFilterNode;
+  private readonly squealGain: GainNode;
+  private readonly squealFilter: BiquadFilterNode;
+  private readonly windGain: GainNode;
+  private readonly windFilter: BiquadFilterNode;
+  private readonly turboOsc: OscillatorNode;
+  private readonly turboGain: GainNode;
+  private readonly hornGain: GainNode;
+  private readonly hornA: OscillatorNode;
+  private readonly hornB: OscillatorNode;
+  private noiseSrc: AudioBufferSourceNode[] = [];
+  private running = false;
+  private lastImpact = 0;
+
+  constructor(ctx: AudioContext, dest: AudioNode, noise: AudioBuffer) {
+    this.ctx = ctx;
+    this.out = ctx.createGain();
+    this.out.gain.value = 0;
+    this.out.connect(dest);
+
+    // engine: two detuned saws one octave apart + a sine sub, soft-clipped, then low-passed by load
+    const shaper = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < curve.length; i++) {
+      const x = (i / (curve.length - 1)) * 2 - 1;
+      curve[i] = Math.tanh(x * 2.2);
+    }
+    shaper.curve = curve;
+    this.osc1 = ctx.createOscillator(); this.osc1.type = 'sawtooth';
+    this.osc2 = ctx.createOscillator(); this.osc2.type = 'square';
+    this.sub = ctx.createOscillator(); this.sub.type = 'sine';
+    const g1 = ctx.createGain(); g1.gain.value = 0.5;
+    const g2 = ctx.createGain(); g2.gain.value = 0.22;
+    const g3 = ctx.createGain(); g3.gain.value = 0.55;
+    this.engFilter = ctx.createBiquadFilter();
+    this.engFilter.type = 'lowpass';
+    this.engFilter.Q.value = 1.2;
+    this.engGain = ctx.createGain();
+    this.engGain.gain.value = 0;
+    this.osc1.connect(g1).connect(shaper);
+    this.osc2.connect(g2).connect(shaper);
+    this.sub.connect(g3).connect(shaper);
+    shaper.connect(this.engFilter).connect(this.engGain).connect(this.out);
+
+    // noise layers (intake/exhaust rasp, tyre squeal, wind) share one looping noise buffer
+    const mkNoise = (): AudioBufferSourceNode => {
+      const s = ctx.createBufferSource();
+      s.buffer = noise;
+      s.loop = true;
+      this.noiseSrc.push(s);
+      return s;
+    };
+    this.noiseFilter = ctx.createBiquadFilter(); this.noiseFilter.type = 'bandpass'; this.noiseFilter.Q.value = 0.8;
+    this.noiseGain = ctx.createGain(); this.noiseGain.gain.value = 0;
+    mkNoise().connect(this.noiseFilter).connect(this.noiseGain).connect(this.out);
+
+    this.squealFilter = ctx.createBiquadFilter(); this.squealFilter.type = 'bandpass'; this.squealFilter.frequency.value = 2400; this.squealFilter.Q.value = 6;
+    this.squealGain = ctx.createGain(); this.squealGain.gain.value = 0;
+    mkNoise().connect(this.squealFilter).connect(this.squealGain).connect(this.out);
+
+    this.windFilter = ctx.createBiquadFilter(); this.windFilter.type = 'lowpass'; this.windFilter.frequency.value = 500;
+    this.windGain = ctx.createGain(); this.windGain.gain.value = 0;
+    mkNoise().connect(this.windFilter).connect(this.windGain).connect(this.out);
+
+    this.turboOsc = ctx.createOscillator(); this.turboOsc.type = 'sine';
+    this.turboGain = ctx.createGain(); this.turboGain.gain.value = 0;
+    this.turboOsc.connect(this.turboGain).connect(this.out);
+
+    this.hornA = ctx.createOscillator(); this.hornA.type = 'sawtooth'; this.hornA.frequency.value = 392;
+    this.hornB = ctx.createOscillator(); this.hornB.type = 'sawtooth'; this.hornB.frequency.value = 494;
+    this.hornGain = ctx.createGain(); this.hornGain.gain.value = 0;
+    const hornFilter = ctx.createBiquadFilter(); hornFilter.type = 'lowpass'; hornFilter.frequency.value = 1800;
+    this.hornA.connect(hornFilter); this.hornB.connect(hornFilter);
+    hornFilter.connect(this.hornGain).connect(this.out);
+  }
+
+  start(): void {
+    if (this.running) return;
+    this.running = true;
+    for (const o of [this.osc1, this.osc2, this.sub, this.turboOsc, this.hornA, this.hornB]) o.start();
+    for (const n of this.noiseSrc) n.start(0, Math.random() * 1.5);
+  }
+
+  dispose(): void {
+    if (!this.running) return;
+    this.running = false;
+    for (const o of [this.osc1, this.osc2, this.sub, this.turboOsc, this.hornA, this.hornB]) {
+      try { o.stop(); } catch { /* already stopped */ }
+    }
+    for (const n of this.noiseSrc) {
+      try { n.stop(); } catch { /* already stopped */ }
+    }
+    this.out.disconnect();
+  }
+
+  update(s: EngineSoundState): void {
+    const t = this.ctx.currentTime;
+    const k = 0.04;
+    const level = s.active ? 1 : 0;
+    this.out.gain.setTargetAtTime(level * 0.9, t, 0.12);
+    const rpmF = Math.max(0, Math.min(1, (s.rpm - s.idleRpm) / (s.redlineRpm - s.idleRpm)));
+    // firing frequency: a 4-stroke fires cylinders/2 times per revolution
+    const fire = (s.rpm / 60) * (s.cylinders / 2);
+    this.osc1.frequency.setTargetAtTime(fire, t, k);
+    this.osc2.frequency.setTargetAtTime(fire * 2.005, t, k);
+    this.sub.frequency.setTargetAtTime(fire * 0.5, t, k);
+    this.engFilter.frequency.setTargetAtTime(280 + rpmF * 1500 + s.load * 2600, t, 0.06);
+    this.engGain.gain.setTargetAtTime(0.16 + 0.14 * rpmF + 0.2 * s.load, t, 0.06);
+    // rasp rises with load and revs
+    this.noiseFilter.frequency.setTargetAtTime(500 + rpmF * 2400, t, 0.08);
+    this.noiseGain.gain.setTargetAtTime(0.012 + 0.07 * s.load * (0.4 + rpmF), t, 0.08);
+    // tyre squeal on slip
+    const squeal = Math.max(0, s.skid - 0.55) * 1.8 * (s.airborne ? 0 : 1) * Math.min(1, s.speedKmh / 25);
+    this.squealGain.gain.setTargetAtTime(Math.min(0.5, squeal * 0.4), t, 0.05);
+    this.squealFilter.frequency.setTargetAtTime(2000 + s.skid * 900 + s.speedKmh * 4, t, 0.1);
+    // wind
+    const wind = Math.min(1, s.speedKmh / 220);
+    this.windGain.gain.setTargetAtTime(wind * wind * 0.4, t, 0.2);
+    this.windFilter.frequency.setTargetAtTime(300 + wind * 1700, t, 0.2);
+    // turbo whistle: spools with load and rpm, fluttering when the throttle is lifted
+    if (s.turbo) {
+      this.turboOsc.frequency.setTargetAtTime(1800 + rpmF * 4200, t, 0.1);
+      this.turboGain.gain.setTargetAtTime(0.03 * s.load * rpmF, t, 0.1);
+    } else {
+      this.turboGain.gain.setTargetAtTime(0, t, 0.1);
+    }
+    // horn
+    this.hornGain.gain.setTargetAtTime(s.horn ? 0.18 : 0, t, 0.015);
+    // collisions and gear changes are one-shots
+    if (s.impact > 0 && t - this.lastImpact > 0.12) {
+      this.lastImpact = t;
+      this.crash(Math.min(1, s.impact / 14));
+    }
+    if (s.shifted) this.shiftBlip();
+    void s.braking;
+  }
+
+  private crash(v: number): void {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseSrc[0]!.buffer;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900 + v * 2200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.7 * v + 0.1, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28 + 0.3 * v);
+    src.connect(f).connect(g).connect(this.out);
+    src.start(t, Math.random());
+    src.stop(t + 0.7);
+    const thud = ctx.createOscillator(); thud.type = 'sine';
+    thud.frequency.setValueAtTime(130, t); thud.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+    const tg = ctx.createGain();
+    tg.gain.setValueAtTime(0.0001, t); tg.gain.linearRampToValueAtTime(0.8 * v + 0.1, t + 0.005); tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    thud.connect(tg).connect(this.out);
+    thud.start(t); thud.stop(t + 0.35);
+  }
+
+  private shiftBlip(): void {
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseSrc[0]!.buffer;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.07, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    src.connect(f).connect(g).connect(this.out);
+    src.start(t, Math.random()); src.stop(t + 0.2);
   }
 }

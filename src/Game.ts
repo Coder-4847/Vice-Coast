@@ -15,6 +15,7 @@ import { WeaponSystem } from './player/WeaponSystem';
 import { Effects } from './world/Effects';
 import { VehicleManager } from './vehicles/VehicleManager';
 import { Vehicle } from './vehicles/Vehicle';
+import { Driving } from './vehicles/Driving';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
@@ -43,6 +44,7 @@ export class Game {
   viewmodel: Viewmodel | null = null;
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
+  driving: Driving | null = null;
   private baseFov = 75;
   /** 0 → 1 camera swoop from the title shot into the player's eyes. */
   private intro = 1;
@@ -166,6 +168,11 @@ export class Game {
     // A showroom row on the beach lot, facing the city: five cars and a bike.
     const row: [string, number][] = [['pico', -34], ['marlow', -22], ['barrage', -10], ['veloce', 2], ['ridgeback', 14], ['sparrow', 24]];
     for (const [id, z] of row) mgr.spawn(id, 168, z, -Math.PI / 2);
+    this.driving = new Driving({
+      input: this.input, player: this.player!, vehicles: mgr, physics: this.physics!, audio: this.audio,
+      weapon: this.weapon!, viewmodel: this.viewmodel!, camera: this.camera,
+      baseFov: () => this.baseFov, night: () => this.world.tod.look.night, toast: (m) => this.ui.toast(m),
+    });
   }
 
   private setupWeapon(): void {
@@ -206,6 +213,7 @@ export class Game {
   private fixedUpdate(dt: number): void {
     if (this.state !== 'playing' || !this.physics || !this.player) return;
     Vehicle.wetness = this.world.weather.wetness;
+    this.driving?.fixedUpdate(dt);
     this.vehicles?.fixedUpdate(dt);
     this.player.fixedUpdate(dt);
     this.physics.step();
@@ -262,7 +270,9 @@ export class Game {
   private updatePlaying(dt: number, alpha: number): void {
     const player = this.player;
     if (!player) return;
-    player.update(dt, alpha, this.camera);
+    const driving = this.driving;
+    const inCar = driving?.mode === 'driving';
+    if (!inCar) player.update(dt, alpha, this.camera);
     this.world.props?.update(alpha);
     if (this.vehicles) {
       this.vehicles.night = this.world.tod.look.night;
@@ -271,29 +281,18 @@ export class Game {
     const weapon = this.weapon;
     const vm = this.viewmodel;
     if (weapon && vm && this.effects) {
-      weapon.update(dt);
-      // zoom in a little when aiming, out a little when sprinting
-      this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
-      this.camera.updateProjectionMatrix();
-      vm.update(dt, player, weapon, this.camera, this.camera.aspect);
+      if (!inCar) {
+        weapon.update(dt);
+        // zoom in a little when aiming, out a little when sprinting
+        this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
+        this.camera.updateProjectionMatrix();
+        vm.update(dt, player, weapon, this.camera, this.camera.aspect);
+      }
       this.effects.update(dt);
-      this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
-      this.ui.updateHud(dt, {
-        weaponName: weapon.name,
-        ammo: weapon.ammo,
-        reserve: weapon.reserve,
-        spread: weapon.spread,
-        ads: weapon.ads,
-        drawn: weapon.isDrawn,
-        reloading: weapon.state === 'reloading',
-        lowAmmo: weapon.ammo <= 3,
-        hitMarker: weapon.hitMarker,
-        stamina: player.stamina,
-        prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,
-        fovDeg: this.camera.fov,
-        viewportH: this.gfx.renderer.domElement.clientHeight,
-      });
     }
+    // vehicle sequencing and the chase camera run after the first-person pose is on the camera
+    driving?.update(dt);
+    if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
     if (this.intro < 1) {
       // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.
       this.intro = Math.min(1, this.intro + dt / 2.4);
@@ -304,6 +303,26 @@ export class Game {
       if (this.intro >= 1) this.input.gameplayEnabled = true;
     }
     this.audio.setListener(this.camera);
+    if (weapon) {
+      const v = driving?.mode === 'driving' || driving?.mode === 'exiting' ? driving.vehicle : null;
+      this.ui.updateHud(dt, {
+        weaponName: weapon.name,
+        ammo: weapon.ammo,
+        reserve: weapon.reserve,
+        spread: weapon.spread,
+        ads: weapon.ads,
+        drawn: weapon.isDrawn && !inCar && driving?.mode !== 'entering',
+        reloading: weapon.state === 'reloading',
+        lowAmmo: weapon.ammo <= 3,
+        hitMarker: weapon.hitMarker,
+        stamina: player.stamina,
+        prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,
+        fovDeg: this.camera.fov,
+        viewportH: this.gfx.renderer.domElement.clientHeight,
+        vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
+        enter: driving?.hint ? `Enter ${driving.hint.spec.name}` : null,
+      });
+    }
   }
 
   /** Slow golden-hour dolly over the city toward the sunset coast. */
