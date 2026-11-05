@@ -70,6 +70,8 @@ export class WeaponSystem {
   hitThisFrame: HitEvent | null = null;
   /** The most recent hit, kept until the next one (HUD, tests, debugging). */
   lastHit: HitEvent | null = null;
+  /** Pedestrian hit-testing and alarm hooks, installed by the NPC system. */
+  npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown } | null; hurt(target: unknown, dx: number, dz: number, damage: number): void; alarm(x: number, z: number): void } | null = null;
   /** Total shots fired this session. */
   shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
@@ -298,10 +300,19 @@ export class WeaponSystem {
     _origin.copy(p.eyePosition);
 
     const hit = this.physics.raycast(_origin, _dir, 300, undefined, GROUP.WORLD | GROUP.PROP);
-    const end = hit ? hit.point : new THREE.Vector3().copy(_origin).addScaledVector(_dir, 120);
+    // pedestrians are not physics bodies: test them separately and keep whichever is nearer
+    const npcHit = this.npc?.rayHit(_origin.x, _origin.y, _origin.z, _dir.x, _dir.y, _dir.z, hit ? hit.distance : 300) ?? null;
+    this.npc?.alarm(_origin.x, _origin.z);
+    const end = npcHit ? new THREE.Vector3().copy(_origin).addScaledVector(_dir, npcHit.t) : hit ? hit.point : new THREE.Vector3().copy(_origin).addScaledVector(_dir, 120);
     // tracer starts at the muzzle (as seen in the world pass) and runs to the hit
     this.effects.tracer(this.muzzleWorld, end);
-    if (hit) {
+    if (npcHit) {
+      const n = new THREE.Vector3().copy(_dir).negate();
+      this.effects.impact(end, n, 'flesh', false);
+      this.npc?.hurt(npcHit.target, _dir.x, _dir.z, 40);
+      this.hitMarker = 0.18;
+      this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
+    } else if (hit) {
       const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _dir, 22);
       this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);
       this.hitThisFrame = this.lastHit = { hit, target };

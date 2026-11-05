@@ -104,6 +104,30 @@ export class AudioEngine {
     return new VehicleSound(this.ctx, this.master, this.noise);
   }
 
+  /** Continuous sirens, city ambience and street music (null until the context exists). */
+  createSiren(): SirenVoice | null {
+    return this.ctx ? new SirenVoice(this.ctx, this.master) : null;
+  }
+  createAmbience(): AmbienceBed | null {
+    return this.ctx ? new AmbienceBed(this.ctx, this.master, this.noise) : null;
+  }
+  createMusic(): StreetMusic | null {
+    return this.ctx ? new StreetMusic(this.ctx, this.master) : null;
+  }
+
+  /** Seagull cry: two falling whistles with a breathy edge. */
+  gull(pos: Node3): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.out(pos, 25);
+    const f0 = 1500 + Math.random() * 500;
+    for (let k = 0; k < 2 + Math.floor(Math.random() * 2); k++) {
+      const t0 = t + k * 0.28;
+      this.tone(o, t0, { freq: f0 * 1.25, to: f0 * 0.7, peak: 0.07, decay: 0.24, type: 'triangle' });
+      this.burst(o, t0, { type: 'bandpass', freq: f0, q: 2, peak: 0.05, decay: 0.2 });
+    }
+  }
+
   /** Output node for a sound, spatialised if a world position is given. */
   private out(pos?: Node3, refDistance = 6): AudioNode {
     const ctx = this.ctx!;
@@ -192,6 +216,81 @@ export class AudioEngine {
     this.burst(o, t + 0.012, { type: 'lowpass', freq: 700, q: 0.5, peak: 0.45, decay: 0.28, send: 0.3 });         // muzzle blast
     // slide cycling just after the shot
     this.burst(o, t + 0.045, { type: 'bandpass', freq: 3200, q: 3, peak: 0.12, decay: 0.03 });
+  }
+
+  /** Car horn: two detuned sawtooth voices (a minor third apart), slightly different per call. */
+  honk(pos?: Node3, long = false): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.out(pos, 14);
+    const base = 380 + Math.random() * 90;
+    const dur = long ? 0.9 : 0.32 + Math.random() * 0.12;
+    for (const mult of [1, 1.26]) {
+      const ctx = this.ctx!;
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = base * mult;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 1700;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.015);
+      g.gain.setValueAtTime(0.16, t + dur);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+      osc.connect(f).connect(g).connect(o);
+      osc.start(t);
+      osc.stop(t + dur + 0.1);
+    }
+  }
+
+  /** A startled shout: a voiced sawtooth through two vowel-like formants, rising and wavering. */
+  scream(pos: Node3): void {
+    if (!this.ready()) return;
+    const ctx = this.ctx!;
+    const t = this.now();
+    const o = this.out(pos, 10);
+    const base = 330 + Math.random() * 300;
+    const dur = 0.55 + Math.random() * 0.4;
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(base, t);
+    osc.frequency.linearRampToValueAtTime(base * 1.8, t + dur * 0.35);
+    osc.frequency.linearRampToValueAtTime(base * 1.45, t + dur);
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 6.5 + Math.random() * 2;
+    const lg = ctx.createGain();
+    lg.gain.value = base * 0.035;
+    lfo.connect(lg).connect(osc.frequency);
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.linearRampToValueAtTime(0.14, t + 0.04);
+    out.gain.setValueAtTime(0.14, t + dur * 0.6);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const [f, q, g] of [[900, 6, 1], [2500, 8, 0.6]] as const) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(f * 0.8, t);
+      bp.frequency.linearRampToValueAtTime(f * 1.15, t + dur * 0.4);
+      bp.Q.value = q;
+      const pg = ctx.createGain();
+      pg.gain.value = g;
+      osc.connect(bp).connect(pg).connect(out);
+    }
+    out.connect(o);
+    osc.start(t); lfo.start(t);
+    osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+  }
+
+  /** Metal-on-metal crash, `strength` 0–1. */
+  crash(pos: Node3, strength: number): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.out(pos, 18);
+    this.burst(o, t, { type: 'bandpass', freq: 900, sweepTo: 200, q: 0.5, peak: 0.9 * (0.4 + strength), attack: 0.002, decay: 0.35, send: 0.4 });
+    this.burst(o, t, { type: 'highpass', freq: 3000, q: 0.7, peak: 0.5 * (0.3 + strength), decay: 0.25, send: 0.3 });
+    this.tone(o, t, { freq: 120, to: 40, peak: 0.8 * (0.3 + strength), decay: 0.3 });
+    for (let k = 0; k < 4; k++) this.tone(o, t + 0.03 + k * 0.05 + Math.random() * 0.04, { freq: 1200 + Math.random() * 2400, peak: 0.08 * strength, decay: 0.12, type: 'triangle' });
   }
 
   dryClick(): void {
@@ -546,5 +645,164 @@ export class VehicleSound {
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.07, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
     src.connect(f).connect(g).connect(this.out);
     src.start(t, Math.random()); src.stop(t + 0.2);
+  }
+}
+
+
+/**
+ * One emergency siren (police wail/yelp or ambulance hi-lo). Created once, then fed the vehicle's position and velocity
+ * each frame; a cheap Doppler shift comes from the radial speed relative to the listener.
+ */
+export class SirenVoice {
+  private readonly osc: OscillatorNode;
+  private readonly gain: GainNode;
+  private readonly panner: PannerNode;
+  private t = 0;
+  private started = false;
+
+  constructor(private readonly ctx: AudioContext, dest: AudioNode) {
+    this.osc = ctx.createOscillator();
+    this.osc.type = 'sawtooth';
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1100;
+    bp.Q.value = 0.7;
+    const sh = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) curve[i] = Math.tanh((i / 128 - 1) * 2.2);
+    sh.curve = curve;
+    this.gain = ctx.createGain();
+    this.gain.gain.value = 0;
+    this.panner = ctx.createPanner();
+    this.panner.panningModel = 'equalpower';
+    this.panner.distanceModel = 'inverse';
+    this.panner.refDistance = 30;
+    this.panner.rolloffFactor = 1.3;
+    this.panner.maxDistance = 600;
+    this.osc.connect(sh).connect(bp).connect(this.gain).connect(this.panner).connect(dest);
+  }
+
+  /** `kind`: 0 police wail, 1 police yelp, 2 ambulance hi-lo. `radial` is m/s towards (−) or away from (+) the listener. */
+  update(dt: number, x: number, y: number, z: number, kind: 0 | 1 | 2, on: boolean, radial: number): void {
+    if (!this.started) { this.osc.start(); this.started = true; }
+    this.t += dt;
+    const now = this.ctx.currentTime;
+    let f: number;
+    if (kind === 0) f = 650 + 520 * (0.5 - 0.5 * Math.cos((this.t / 3.6) * Math.PI * 2));
+    else if (kind === 1) f = 700 + 480 * (0.5 - 0.5 * Math.cos((this.t / 0.34) * Math.PI * 2));
+    else f = Math.floor(this.t / 0.52) % 2 === 0 ? 960 : 770;
+    const doppler = 343 / (343 + Math.max(-60, Math.min(60, radial)));
+    this.osc.frequency.setTargetAtTime(f * doppler, now, 0.02);
+    this.gain.gain.setTargetAtTime(on ? 0.1 : 0, now, 0.08);
+    if (this.panner.positionX) {
+      this.panner.positionX.setTargetAtTime(x, now, 0.03);
+      this.panner.positionY.setTargetAtTime(y, now, 0.03);
+      this.panner.positionZ.setTargetAtTime(z, now, 0.03);
+    }
+  }
+
+  dispose(): void {
+    try { this.osc.stop(); } catch { /* not started */ }
+    this.panner.disconnect();
+  }
+}
+
+/** Distant traffic rumble and crowd murmur; levels (0–1) are set each frame from what is near the player. */
+export class AmbienceBed {
+  private readonly trafficGain: GainNode;
+  private readonly crowdGain: GainNode;
+  private readonly trafficFilter: BiquadFilterNode;
+  private readonly srcs: AudioBufferSourceNode[] = [];
+
+  constructor(ctx: AudioContext, dest: AudioNode, noise: AudioBuffer) {
+    const mk = (type: BiquadFilterType, freq: number, q: number) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = type;
+      f.frequency.value = freq;
+      f.Q.value = q;
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      src.connect(f).connect(g).connect(dest);
+      src.start(0, Math.random() * 1.5);
+      this.srcs.push(src);
+      return { f, g };
+    };
+    const t = mk('lowpass', 260, 0.6);
+    this.trafficGain = t.g;
+    this.trafficFilter = t.f;
+    const c = mk('bandpass', 700, 0.5);
+    this.crowdGain = c.g;
+    // slow wobble so the murmur breathes
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.23;
+    const lg = ctx.createGain();
+    lg.gain.value = 220;
+    lfo.connect(lg).connect(c.f.frequency);
+    lfo.start();
+  }
+
+  update(traffic: number, crowd: number, ctx: AudioContext): void {
+    const t = ctx.currentTime;
+    this.trafficGain.gain.setTargetAtTime(Math.min(1, traffic) * 0.16, t, 0.6);
+    this.trafficFilter.frequency.setTargetAtTime(200 + traffic * 260, t, 0.6);
+    this.crowdGain.gain.setTargetAtTime(Math.min(1, crowd) * 0.12, t, 0.6);
+  }
+
+  dispose(): void {
+    for (const s of this.srcs) { try { s.stop(); } catch { /* done */ } }
+  }
+}
+
+/** A street musician's guitar: a lazy pentatonic arpeggio of plucked notes, positioned in the world. */
+export class StreetMusic {
+  private readonly panner: PannerNode;
+  private t = 0;
+  private step = 0;
+  private note = 0;
+  private readonly scale = [0, 3, 5, 7, 10, 12, 15];
+  private root = 164.81; // E3
+
+  constructor(private readonly ctx: AudioContext, dest: AudioNode) {
+    this.panner = ctx.createPanner();
+    this.panner.panningModel = 'equalpower';
+    this.panner.distanceModel = 'inverse';
+    this.panner.refDistance = 8;
+    this.panner.rolloffFactor = 1.4;
+    this.panner.maxDistance = 120;
+    this.panner.connect(dest);
+  }
+
+  update(dt: number, x: number, y: number, z: number, listenerDist: number): void {
+    if (listenerDist > 70) return;
+    if (this.panner.positionX) { this.panner.positionX.value = x; this.panner.positionY.value = y; this.panner.positionZ.value = z; }
+    this.t -= dt;
+    if (this.t > 0) return;
+    this.t = 0.3 + (this.step % 4 === 3 ? 0.18 : 0);
+    this.step++;
+    // random walk on the scale
+    this.note = Math.max(0, Math.min(this.scale.length - 1, this.note + (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.3 ? 2 : 1)));
+    if (this.step % 16 === 0) this.root *= Math.random() < 0.5 ? 1.122 : 0.891;
+    if (this.root > 260) this.root *= 0.5; else if (this.root < 120) this.root *= 2;
+    const f = this.root * Math.pow(2, this.scale[this.note]! / 12);
+    const now = this.ctx.currentTime;
+    for (const [mult, peak] of [[1, 0.22], [2, 0.08], [3, 0.03]] as const) {
+      const o = this.ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = f * mult;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(peak, now + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.9 / mult + 0.2);
+      o.connect(g).connect(this.panner);
+      o.start(now);
+      o.stop(now + 1.2);
+    }
+  }
+
+  dispose(): void {
+    this.panner.disconnect();
   }
 }

@@ -17,6 +17,7 @@ import { Effects } from './world/Effects';
 import { VehicleManager } from './vehicles/VehicleManager';
 import { Vehicle } from './vehicles/Vehicle';
 import { Driving } from './vehicles/Driving';
+import { Npcs } from './npc/Npcs';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
@@ -47,6 +48,7 @@ export class Game {
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
+  npcs: Npcs | null = null;
   private carSound: ReturnType<AudioEngine['createVehicleSound']> = null;
   private baseFov = 75;
   /** 0 → 1 camera swoop from the title shot into the player's eyes. */
@@ -141,6 +143,8 @@ export class Game {
     this.player.teleport(100, 0, -Math.PI / 2);
     this.setupWeapon();
     this.setupVehicles();
+    this.npcs = new Npcs(this.world, this.physics, this.audio, this.resolvePreset());
+    if (this.weapon) this.weapon.npc = this.npcs;
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
     this.world.update(0, false);
@@ -225,12 +229,27 @@ export class Game {
 
   // ------------------------------------------------------------------ loop
 
+  /** Hand the NPC systems this tick's view of the player and vehicles. */
+  private syncNpcs(): void {
+    const n = this.npcs;
+    if (!n || !this.player || !this.vehicles) return;
+    const d = this.driving;
+    n.ctx = {
+      pos: this.player.pos,
+      driving: d && d.mode === 'driving' ? d.vehicle : null,
+      vehicles: this.vehicles.vehicles,
+      camera: this.camera,
+    };
+  }
+
   private fixedUpdate(dt: number): void {
     if (this.state !== 'playing' || !this.physics || !this.player) return;
     Vehicle.wetness = this.world.weather.wetness;
     this.driving?.fixedUpdate(dt);
     this.vehicles?.fixedUpdate(dt);
     this.player.fixedUpdate(dt);
+    this.syncNpcs();
+    this.npcs?.fixedUpdate(dt);
     this.physics.step();
     this.world.props?.fixedUpdate();
   }
@@ -262,7 +281,7 @@ export class Game {
 
     this.updateFov(dt);
     this.lastDt = dt;
-    this.world.update(dt, this.state === 'playing' && !this.timeFrozen);
+    this.world.update(dt, this.state === 'playing' && !this.timeFrozen, this.state === 'playing');
     this.gfx.govern(
       this.loop.recentAverage(60), dt,
       this.settings.data.graphics.dynamicResolution && !document.hidden,
@@ -334,6 +353,7 @@ export class Game {
     }
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
+    this.npcs?.update(dt, alpha);
     this.updateVehicleAudio(driving);
     this.touch.setMode(driving && driving.mode !== 'foot' ? 'vehicle' : 'foot');
     if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
@@ -528,6 +548,7 @@ export class Game {
     if (preset.name !== this.gfx.preset.name) {
       this.gfx.applyQuality(preset);
       this.world.applyQuality(preset);
+      this.npcs?.setQuality(preset);
     }
     if (this.gfx.userScale !== this.settings.data.graphics.resolutionScale) {
       this.gfx.userScale = this.settings.data.graphics.resolutionScale;

@@ -474,19 +474,16 @@ export class CityPlan {
         }
       }
     }
-    // Traffic signals at the corners of every junction involving an arterial.
+    // Traffic signals: one pole per approach, on the driver's right just before the crossing, lens facing the traffic.
     for (const rx of this.X) {
       if (!inX(rx.pos)) continue;
       for (const rz of this.Z) {
-        if (!inZ(rz.pos) || !(rx.arterial || rz.arterial) || !this.inCity(rx.pos, rz.pos)) continue;
-        for (const sx of [-1, 1]) {
-          for (const sz of [-1, 1]) {
-            // pole on the corner, head faces the traffic on whichever road it controls
-            const px = rx.pos + sx * (rx.hw + 1.4);
-            const pz = rz.pos + sz * (rz.hw + 1.4);
-            out.signals.push({ x: px, z: pz, yaw: sx * sz > 0 ? 0 : Math.PI / 2, axis: sx * sz > 0 ? 0 : 1 });
-          }
-        }
+        if (!inZ(rz.pos) || !this.inCity(rx.pos, rz.pos)) continue;
+        const ax = rx.hw + 1.4, az = rz.hw + 1.4;
+        out.signals.push({ x: rx.pos - ax, z: rz.pos + az, yaw: -Math.PI / 2, axis: 1 }); // heading east
+        out.signals.push({ x: rx.pos + ax, z: rz.pos - az, yaw: Math.PI / 2, axis: 1 }); // heading west
+        out.signals.push({ x: rx.pos - ax, z: rz.pos - az, yaw: Math.PI, axis: 0 }); // heading south (+z)
+        out.signals.push({ x: rx.pos + ax, z: rz.pos + az, yaw: 0, axis: 0 }); // heading north (−z)
       }
     }
   }

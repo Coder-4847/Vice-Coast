@@ -6,6 +6,7 @@ import type { QualityPreset } from '../core/Quality';
 import { clamp, damp } from '../core/math';
 import { GROUP, type Physics } from '../physics/Physics';
 import { Atmosphere } from './Atmosphere';
+import { SignalClock } from '../npc/Signals';
 import { City } from './City';
 import { FerrisWheel, HillRoad, WaypointBeacon } from './Landmarks';
 import { LightRig } from './LightRig';
@@ -23,6 +24,9 @@ const _fwd = new THREE.Vector3();
  * procedural terrain + ocean, a placeholder city, and the HDR post-processing pipeline.
  */
 export class World {
+  /** Emissive-instance patch (traffic lights, siren bars): glow in the instance colour. */
+  static glow = City.glowPatch;
+
   readonly scene = new THREE.Scene();
   readonly tod = new TimeOfDay();
   readonly weather: Weather;
@@ -30,7 +34,8 @@ export class World {
   readonly rig: LightRig;
   readonly terrain: Terrain;
   readonly ocean = new Ocean();
-  readonly city = new City();
+  readonly signals = new SignalClock();
+  readonly city = new City(this.signals);
   readonly hillRoad: HillRoad;
   readonly wheel = new FerrisWheel();
   readonly beacon = new WaypointBeacon();
@@ -125,11 +130,12 @@ export class World {
     if (instant) this.atmosphere.markEnvDirty();
   }
 
-  update(dt: number, running: boolean): void {
+  update(dt: number, running: boolean, playing = running): void {
     this.clock += dt;
     this.frame++;
     const cam = this.camera;
     if (running) this.tod.advance(dt);
+    if (playing) this.signals.update(dt);
     const w = this.weather;
     w.update(dt, cam, this.gfx.renderer.domElement.height, this.atmosphere.skyLuma);
     this.atmosphere.update(dt, cam, this.tod, w, w.flash);

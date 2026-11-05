@@ -5,10 +5,11 @@ import { CITY, Terrain } from './Terrain';
 import { NOISE_GLSL } from './skyGlsl';
 import { buildCityFields, type CityFields } from './city/fields';
 import { CHUNK, CityPlan, MODE, type ChunkData, type Prim } from './city/plan';
+import type { SignalClock } from '../npc/Signals';
 
 const G = CITY.height;
 
-function radialTexture(): THREE.CanvasTexture {
+export function radialTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d')!;
@@ -189,11 +190,10 @@ export class City {
   private lamps = true;
   private builtKey = '';
   private sigState = -1;
-  private time = 0;
   /** Streaming statistics for the debug panel. */
   stats = { chunks: 0, loadMs: 0, maxLoadMs: 0, colliders: 0, loads: 0 };
 
-  constructor() {
+  constructor(private readonly signals: SignalClock) {
     this.fields = buildCityFields(this.plan);
     Terrain.cityData = this.fields;
     this.poolMaterial = new THREE.MeshBasicMaterial({
@@ -270,7 +270,7 @@ export class City {
     this.pPool = mk(new THREE.PlaneGeometry(26, 26).rotateX(-Math.PI / 2), this.poolMaterial, 4000);
     this.pPool.mesh.renderOrder = 5;
     this.pSigPole = mk(new THREE.BoxGeometry(0.22, 6.4, 0.22).translate(0, 3.2, 0), this.poleMaterial, 1800);
-    this.pSigHead = mk(new THREE.BoxGeometry(0.55, 1.5, 0.45).translate(0, 5.9, 0), this.signalMaterial, 1800, true);
+    this.pSigHead = mk(new THREE.BoxGeometry(0.5, 1.4, 0.4).translate(0, 5.6, 0.3), this.signalMaterial, 1800, true);
     this.pTrunk = mk(new THREE.CylinderGeometry(0.16, 0.26, 1, 6).translate(0, 0.5, 0), this.trunkMaterial, 9000);
     this.pBlob = mk(new THREE.IcosahedronGeometry(1, 1), this.leafMaterial, 8000);
     this.pPalm = mk(palmCrownGeometry(), this.leafMaterial, 4000);
@@ -330,8 +330,7 @@ export class City {
    * Per-frame streaming, nearest first. Each call does at most one heavy step so a frame never pays for several at once:
    * queued collider removals, then one chunk unload, otherwise one chunk load (+ a small slice of collider creation).
    */
-  update(dt: number, px: number, pz: number): void {
-    this.time += dt;
+  update(_dt: number, px: number, pz: number): void {
     let heavy = this.drainRemovals(140);
     if (!heavy) {
       for (const [key, r] of this.rec) {
@@ -513,22 +512,18 @@ export class City {
 
   // ------------------------------------------------------------------------------------- lighting
 
-  /** Signal cycle: 16 s, with an amber phase and an all-red clearance interval. */
+  /** Signal heads follow the shared clock: green / amber / red per axis. */
   private updateSignals(): void {
-    const t = this.time % 16;
-    const state = t < 6 ? 0 : t < 7.5 ? 1 : t < 8 ? 2 : t < 14 ? 3 : t < 15.5 ? 4 : 5;
+    const l0 = this.signals.light(0), l1 = this.signals.light(1);
+    const state = l0 * 3 + l1;
     if (state === this.sigState) return;
     this.sigState = state;
     const col = this.pSigHead.mesh.instanceColor!;
     const arr = col.array as Float32Array;
     const par = (this.pSigHead.mesh.geometry.getAttribute('aParam') as THREE.InstancedBufferAttribute).array as Float32Array;
-    const green = [0.2, 1, 0.3], amber = [1, 0.62, 0.05], red = [1, 0.1, 0.06];
+    const rgb = [[0.2, 1, 0.3], [1, 0.62, 0.05], [1, 0.1, 0.06]];
     for (let i = 0; i < this.pSigHead.count; i++) {
-      const axis = par[i * 2]!;
-      // axis 0 is green in states 0–1 (amber in 1), axis 1 in states 3–4
-      let c = red;
-      if (axis === 0) c = state === 0 ? green : state === 1 ? amber : red;
-      else c = state === 3 ? green : state === 4 ? amber : red;
+      const c = rgb[par[i * 2]! === 0 ? l0 : l1]!;
       arr[i * 3] = c[0]!; arr[i * 3 + 1] = c[1]!; arr[i * 3 + 2] = c[2]!;
     }
     col.needsUpdate = true;
@@ -538,11 +533,21 @@ export class City {
   setNight(night: number, wet: number): void {
     this.headMaterial.emissiveIntensity = night * 9;
     this.poolMaterial.opacity = night * (0.42 + 0.3 * wet);
-    this.signalMaterial.emissiveIntensity = 1.2 + night * 3.2;
+    this.signalMaterial.emissiveIntensity = 2.2 + night * 3.2;
   }
 
   /** Signal heads glow in the colour of their instance. */
   static signalPatch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vFace;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFace = normal.z;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vFace;')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor.rgb * step(0.5, vFace);');
+  };
+
+  /** Emissive instances glow in their instance colour on every face (traffic lights, siren bars). */
+  static glowPatch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
     shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor.rgb;');
   };
 

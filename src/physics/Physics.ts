@@ -13,7 +13,7 @@ export const GROUP = {
   PLAYER: 0x0004,
   VEHICLE: 0x0008,
 } as const;
-const groups = (member: number, filter: number): number => ((member << 16) | filter) >>> 0;
+export const groups = (member: number, filter: number): number => ((member << 16) | filter) >>> 0;
 
 export interface RayHit {
   point: THREE.Vector3;
