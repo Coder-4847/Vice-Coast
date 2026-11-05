@@ -81,7 +81,16 @@ export class Npcs {
     if (!drv) t.addObstacle(ctx.pos.x, ctx.pos.z, 0.55, 0, 0, 'player');
     for (const p of this.peds.peds) if (p.active && (p.onRoad || p.state === 'down') && p.dist < 130) t.addObstacle(p.x, p.z, 0.5, 0, 0, 'ped');
     t.focus.copy(drv ? drv.position : ctx.pos);
-    t.playerBody = drv ? { collider: drv.collider, body: drv.body } : null;
+    // the vehicle that can wreck traffic: the driven one, or any other that is moving fast (a shoved or abandoned car)
+    let mover: Vehicle | null = drv;
+    let top = drv ? Math.hypot(drv.body.linvel().x, drv.body.linvel().z) : 3;
+    for (const v of ctx.vehicles) {
+      if (v === drv) continue;
+      const lv = v.body.linvel();
+      const sp = Math.hypot(lv.x, lv.z);
+      if (sp > top) { top = sp; mover = v; }
+    }
+    t.playerBody = mover ? { collider: mover.collider, body: mover.body } : null;
     t.target = Math.round(this.preset.traffic * trafficDensity(this.world.tod.hour));
     t.night = this.world.tod.look.night;
     t.fixedUpdate(dt);

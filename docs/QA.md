@@ -150,3 +150,26 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Minimap rotates with the heading, N marker stays north, zooms out when driving fast; district and street names update as you move.
 - [ ] `M` opens the full map (mouse released, game paused); `M`/`Esc`/Close returns to the game; clicking sets a waypoint with a route and a light beam in the world; right-click clears; arriving clears it with a toast.
 - [ ] Gamepad: `Back` opens, sticks pan, triggers zoom, `A` sets, `X` clears, `B` closes. Touch: Map button opens, drag pans, pinch zooms, tap sets.
+
+
+## Phase 6 — NPCs and traffic
+
+### Traffic
+- [ ] Cars drive in their lanes (right-hand traffic), queue behind each other, and stop at red lights; heads on the signal poles match what the cars obey (green → amber → red cycle ≈ 32 s with an all-red gap).
+- [ ] Cars turn left and right at junctions; left turns wait for oncoming traffic; nobody drives through you — they stop, then honk if you block a lane.
+- [ ] Driving into a car wrecks it (it tumbles, hazard lights blink, it stays for ~2.5 min); a gentle tap just bumps you. Wrecks block their lane and traffic queues behind them.
+- [ ] Rush hour (~08:00, ~17:30) is busier than the small hours; at night cars have headlight glow ahead of them and red tail lights.
+- [ ] Sirens (police wail/yelp, ambulance hi-lo) are audible with a Doppler shift; traffic ahead of a siren pulls to the right and stops.
+- [ ] Quality presets scale the traffic: Low 22 / Medium 36 / High 52 / Ultra 70 cars at peak.
+
+### Pedestrians
+- [ ] Crowds walk the sidewalks (peak around lunch and the evening commute, thin before dawn), wait at kerbs for the walk phase, cross on the zebras; cars stop for people in the crossing.
+- [ ] Variety: commuters in suits downtown at rush hour, joggers on the seafront, hi-vis workers in Rustwater, tourists and kids at the beach, partygoers and the odd stumbling drunk downtown / Seaside at night.
+- [ ] Gunshots make nearby people run and scream; farther away some stop and film you on their phones.
+- [ ] A car hitting someone knocks them down (no gore) and alarms the others; three pistol hits put a pedestrian down; they disappear after ~45 s. There is no police response yet (Phase 7).
+- [ ] People step aside when you walk into them and sprint out of the way of a car coming fast.
+
+### Ambient events
+- [ ] Every few minutes a crash happens somewhere out of sight (two wrecks, onlookers filming); police and an ambulance race there with sirens, park with lights flashing and leave later.
+- [ ] A street musician plays (spatial guitar) to a small audience; a protest march with signs walks up and down a downtown sidewalk by day; on the beach there are sunbathers, strollers and joggers and seagulls wheel over the water with the odd cry.
+- [ ] A city ambience bed (traffic rumble, crowd murmur) follows what is near you; the beach is quieter.

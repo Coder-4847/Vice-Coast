@@ -110,6 +110,23 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - Not yet done: terrain is still one mesh with one heightfield collider (fine at 3.8 × 3.6 km; it must be chunked with LOD when
   the world grows to 10 × 10 km in Phase 8), and there is no occlusion culling.
 
+## Phase 6 cost notes
+
+- **Traffic**: up to 96 cars simulated at 60 Hz with an intelligent-driver-model controller over a lane graph (≈ 1.6 k lane
+  segments). Cost is per-car O(neighbours): a sorted car list per lane, obstacle scans (player vehicles, wrecks, pedestrians
+  on the road). Only cars within ~60 m of the player get a kinematic Rapier body (≈ 2–25 bodies); a hard hit converts the car to
+  a dynamic wreck. Rendering is five instanced meshes (body, cabin, wheels, hubs, lights) + one for night headlight glow, all
+  filled each frame: about 10 instances per car, **6 draw calls total** for all traffic regardless of count.
+- **Pedestrians**: up to 170 simulated, each drawn as seven instanced parts (head, hair, torso, arms, legs, shoes,
+  accessories): **7 draw calls total**, ≈ 11 matrices per person per frame written on the CPU. They follow a ~2.7 k-edge
+  sidewalk graph (four corners per junction); no per-ped pathfinding beyond picking the next edge at a corner.
+- **Presets** (peak, scaled by time of day): Low 22 cars / 45 peds, Medium 36 / 80, High 52 / 120, Ultra 70 / 160.
+- Spawning happens out of sight (outside the view frustum, or beyond 130–240 m) at one car every 0.35 s and one pedestrian every
+  0.12 s; despawn beyond ~235 m (peds) / ~380 m (cars). No allocation in the per-frame paths except small temporaries in the
+  renderers (to be pooled in the polish phase).
+- Not done: LOD for distant pedestrians (all parts are drawn at any distance), skinned animation (limbs are rigid boxes
+  rotated about hip/shoulder), and web-worker simulation.
+
 ## Deferred from the master prompt (not silently dropped)
 
 - **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both are still pending — vehicles now exist, so they move to Phase 14
