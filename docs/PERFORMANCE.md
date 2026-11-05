@@ -124,6 +124,11 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - Spawning happens out of sight (outside the view frustum, or beyond 130–240 m) at one car every 0.35 s and one pedestrian every
   0.12 s; despawn beyond ~235 m (peds) / ~380 m (cars). No allocation in the per-frame paths except small temporaries in the
   renderers (to be pooled in the polish phase).
+- **Draw calls (Medium, downtown, all passes incl. 2 shadow cascades): ≈ 1.46 k, 635 k triangles.** Measured by hiding
+  groups: traffic adds ~9, pedestrians ~22, gulls 0 (only near the coast), the whole city group ~37 and ~370 k triangles. The
+  other ~1.4 k come from earlier phases' content (the six hero vehicle models, the shooting-range props, weather and post
+  passes) drawn once per shadow cascade. This is the main FPS risk for integrated GPUs and is queued for Phase 14: merge each
+  hero vehicle's meshes, stop casting shadows from distant props, and cull per cascade.
 - Not done: LOD for distant pedestrians (all parts are drawn at any distance), skinned animation (limbs are rigid boxes
   rotated about hip/shoulder), and web-worker simulation.
 
