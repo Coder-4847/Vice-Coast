@@ -6,6 +6,7 @@ import { GROUP, type Physics, type RayHit } from '../physics/Physics';
 import type { Effects } from '../world/Effects';
 import type { Props } from '../world/Props';
 import type { Player } from './Player';
+import { WEAPONS, type WeaponDef, type WeaponId } from './Weapons';
 
 export type WeaponState = 'holstered' | 'drawing' | 'ready' | 'reloading' | 'holstering' | 'inspecting';
 
@@ -25,13 +26,12 @@ export const DRAW_TIME = 0.6;
 export const HOLSTER_TIME = 0.45;
 export const INSPECT_TIME = 2.8;
 
-const FIRE_INTERVAL = 0.105;
-const MAG_SIZE = 12;
 
 const _dir = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _up = new THREE.Vector3();
 const _origin = new THREE.Vector3();
+const _aim = new THREE.Vector3();
 
 export interface HitEvent {
   hit: RayHit;
@@ -44,11 +44,73 @@ export interface HitEvent {
  * the physics world with per-material impact effects. Presentation lives in the Viewmodel.
  */
 export class WeaponSystem {
-  readonly name = 'VC-9';
+  /** The weapon currently in hand, and what you carry. */
+  def: WeaponDef = WEAPONS.vc9;
+  readonly inv: Record<WeaponId, { ammo: number; reserve: number; owned: boolean }> = {
+    vc9: { ammo: 13, reserve: 60, owned: true },
+    smg: { ammo: 0, reserve: 0, owned: false },
+    shotgun: { ammo: 0, reserve: 0, owned: false },
+    rifle: { ammo: 0, reserve: 0, owned: false },
+  };
+  private pendingId: WeaponId | null = null;
+  /** Called when the held weapon changes (HUD, audio). */
+  onSwap: ((def: WeaponDef) => void) | null = null;
+
+  get name(): string {
+    return this.def.name;
+  }
+
+  /** Largest ammo count the gun can hold (pistols carry one in the chamber). */
+  get maxAmmo(): number {
+    return this.def.mag + (this.def.pistol ? 1 : 0);
+  }
+
+  /** Give a weapon (and ammunition). Returns true if it was new. */
+  give(id: WeaponId, rounds: number): boolean {
+    const slot = this.inv[id];
+    const fresh = !slot.owned;
+    slot.owned = true;
+    const def = WEAPONS[id];
+    if (id === this.def.id) {
+      this.reserve = Math.min(def.reserveMax, this.reserve + rounds);
+    } else {
+      if (fresh) slot.ammo = def.mag;
+      slot.reserve = Math.min(def.reserveMax, slot.reserve + rounds);
+    }
+    return fresh;
+  }
+
+  /** Switch weapons (holsters the current one first). */
+  select(id: WeaponId): void {
+    if (!this.inv[id].owned || (id === this.def.id && this.pendingId === null)) return;
+    if (this.state === 'reloading') return;
+    if (this.state === 'holstered') {
+      this.swap(id);
+      this.toggleHolster();
+      return;
+    }
+    this.pendingId = id;
+    if (this.state !== 'holstering') {
+      this.setState('holstering');
+      this.audio.mech('holster');
+    }
+  }
+
+  private swap(id: WeaponId): void {
+    this.inv[this.def.id].ammo = this.ammo;
+    this.inv[this.def.id].reserve = this.reserve;
+    this.def = WEAPONS[id];
+    this.ammo = this.inv[id].ammo;
+    this.reserve = this.inv[id].reserve;
+    this.slideLocked = this.def.pistol && this.ammo === 0;
+    this.slide = this.slideLocked ? 1 : 0;
+    this.shotsInBurst = 0;
+    this.onSwap?.(this.def);
+  }
   state: WeaponState = 'drawing';
   stateT = 0;
   /** Rounds in the gun, chamber included (max 13). */
-  ammo = MAG_SIZE + 1;
+  ammo = 13;
   reserve = 60;
   /** 0 hip … 1 fully aimed. */
   ads = 0;
@@ -132,7 +194,7 @@ export class WeaponSystem {
   }
 
   startReload(): void {
-    if (this.state !== 'ready' || this.reserve <= 0 || this.ammo >= MAG_SIZE + 1) return;
+    if (this.state !== 'ready' || this.reserve <= 0 || this.ammo >= this.maxAmmo) return;
     this.tactical = this.ammo > 0;
     this.reloadT = 0;
     this.reloadFired.clear();
@@ -156,8 +218,8 @@ export class WeaponSystem {
     const busy = p.mantle !== null || p.state === 'swim' || p.noclip;
     const sprintBlocked = p.sprintBlend > 0.35;
 
-    // Weapon wheel / holster button toggles draw (temporary until the Phase 7 wheel).
-    if (inp.pressed('holster') || inp.pressed('weaponWheel')) {
+    // The holster button draws / holsters; the weapon wheel (Game) picks the weapon.
+    if (inp.pressed('holster')) {
       if (!busy) this.toggleHolster();
     }
     if (busy && this.state === 'ready' && p.mantle) {
@@ -170,7 +232,15 @@ export class WeaponSystem {
         if (this.stateT >= DRAW_TIME) this.setState('ready');
         break;
       case 'holstering':
-        if (this.stateT >= HOLSTER_TIME) this.setState('holstered');
+        if (this.stateT >= HOLSTER_TIME) {
+          if (this.pendingId) {
+            const id = this.pendingId;
+            this.pendingId = null;
+            this.setState('holstered');
+            this.swap(id);
+            this.toggleHolster();
+          } else this.setState('holstered');
+        }
         break;
       case 'inspecting':
         if (this.stateT >= INSPECT_TIME || inp.pressed('fire')) this.setState('ready');
@@ -203,15 +273,17 @@ export class WeaponSystem {
     this.trigger = damp(this.trigger, fireDown && this.state === 'ready' ? 1 : 0, 40, dt);
 
     const canFire = this.state === 'ready' && !busy && !sprintBlocked;
-    if (this.fireBuffer > 0 && canFire && this.cooldown <= 0) {
+    if ((this.fireBuffer > 0 || (this.def.auto && fireDown)) && canFire && this.cooldown <= 0) {
       this.fireBuffer = 0;
       if (this.ammo > 0) this.shoot();
-      else this.dryFire();
+      else if (firePressed || this.def.auto) this.dryFire();
     }
 
     // Slide returns after firing unless locked back on an empty gun.
     const slideTarget = this.slideLocked ? 1 : 0;
     this.slide = damp(this.slide, slideTarget, this.slideLocked ? 40 : 28, dt);
+    // pump-action gun: the forend works back and forth after each shot
+    if (this.def.id === 'shotgun' && this.sinceShot < 0.55 && this.sinceShot > 0.12) this.slide = Math.sin(((this.sinceShot - 0.12) / 0.43) * Math.PI);
 
     if (this.sinceShot > 0.45) this.shotsInBurst = 0;
     this.updateSpread(dt);
@@ -231,14 +303,14 @@ export class WeaponSystem {
           case 'grab': this.audio.mech('cloth'); break;
           case 'insert': {
             this.audio.mech('magIn');
-            const need = MAG_SIZE - (this.tactical ? this.ammo - 1 : 0);
+            const need = this.def.mag - (this.tactical ? this.ammo - (this.def.pistol ? 1 : 0) : 0);
             const take = Math.min(need, this.reserve);
             this.reserve -= take;
             this.ammo = (this.tactical ? this.ammo : 0) + take;
             break;
           }
           case 'slideRelease':
-            if (!this.tactical) {
+            if (!this.tactical && this.def.pistol) {
               this.audio.mech('rack');
               this.slideLocked = false;
               if (this.ammo > 0) this.ammo = Math.max(this.ammo, 1);
@@ -282,46 +354,52 @@ export class WeaponSystem {
 
   private shoot(): void {
     const p = this.player;
+    const def = this.def;
     this.ammo--;
     this.shotsFired++;
     this.firedThisFrame = true;
-    this.cooldown = FIRE_INTERVAL;
+    this.cooldown = def.interval;
     this.sinceShot = 0;
     this.shotsInBurst++;
-    if (this.ammo === 0) this.slideLocked = true;
-    this.slide = 1; // slide snaps back, then returns via damping
+    if (this.ammo === 0 && def.pistol) this.slideLocked = true;
+    this.slide = 1; // slide / bolt snaps back, then returns via damping
 
-    // --- ray: eye → aim direction with a random point inside the spread cone -----------------------
-    p.lookDirection(_dir);
+    p.lookDirection(_aim);
     _right.set(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
-    _up.crossVectors(_right, _dir).normalize();
-    const cone = THREE.MathUtils.degToRad(this.spread) * 0.5;
-    const r = Math.sqrt(Math.random()) * cone;
-    const a = Math.random() * Math.PI * 2;
-    _dir.addScaledVector(_right, Math.cos(a) * r).addScaledVector(_up, Math.sin(a) * r).normalize();
+    _up.crossVectors(_right, _aim).normalize();
     _origin.copy(p.eyePosition);
-
-    const hit = this.physics.raycast(_origin, _dir, 300, undefined, GROUP.WORLD | GROUP.PROP);
-    // pedestrians are not physics bodies: test them separately and keep whichever is nearer
-    const npcHit = this.npc?.rayHit(_origin.x, _origin.y, _origin.z, _dir.x, _dir.y, _dir.z, hit ? hit.distance : 300) ?? null;
     this.npc?.alarm(_origin.x, _origin.z);
-    const end = npcHit ? new THREE.Vector3().copy(_origin).addScaledVector(_dir, npcHit.t) : hit ? hit.point : new THREE.Vector3().copy(_origin).addScaledVector(_dir, 120);
-    // tracer starts at the muzzle (as seen in the world pass) and runs to the hit
-    this.effects.tracer(this.muzzleWorld, end);
-    if (npcHit) {
-      const n = new THREE.Vector3().copy(_dir).negate();
-      this.effects.impact(end, n, 'flesh', false);
-      this.npc?.hurt(npcHit.target, _dir.x, _dir.z, 40, npcHit.head);
-      this.hitMarker = 0.18;
-      this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
-    } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, 22)) {
-      this.effects.impact(hit.point, hit.normal, hit.surface, false);
-      this.hitThisFrame = this.lastHit = { hit, target: false };
-    } else if (hit) {
-      const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _dir, 22);
-      this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);
-      this.hitThisFrame = this.lastHit = { hit, target };
-      if (target) this.hitMarker = 0.18;
+
+    // --- one ray per pellet: eye → aim direction with a random point inside the spread cone --------------------
+    for (let k = 0; k < def.pellets; k++) {
+      const deg = this.spread * def.spreadMul + (def.pellets > 1 ? def.pelletSpread : 0);
+      const cone = THREE.MathUtils.degToRad(deg) * 0.5;
+      const r = Math.sqrt(Math.random()) * cone;
+      const a = Math.random() * Math.PI * 2;
+      _dir.copy(_aim).addScaledVector(_right, Math.cos(a) * r).addScaledVector(_up, Math.sin(a) * r).normalize();
+
+      const hit = this.physics.raycast(_origin, _dir, def.range * 2.5, undefined, GROUP.WORLD | GROUP.PROP);
+      // pedestrians (and aircraft) are not physics bodies: test them separately and keep whichever is nearer
+      const npcHit = this.npc?.rayHit(_origin.x, _origin.y, _origin.z, _dir.x, _dir.y, _dir.z, hit ? hit.distance : def.range * 2.5) ?? null;
+      const end = npcHit ? new THREE.Vector3().copy(_origin).addScaledVector(_dir, npcHit.t) : hit ? hit.point : new THREE.Vector3().copy(_origin).addScaledVector(_dir, 120);
+      if (k < 3) this.effects.tracer(this.muzzleWorld, end);
+      if (npcHit) {
+        const n = new THREE.Vector3().copy(_dir).negate();
+        this.effects.impact(end, n, 'flesh', false);
+        // damage falls off past the gun's effective range
+        const fall = npcHit.t > def.range ? Math.max(0.35, 1 - (npcHit.t - def.range) / (def.range * 1.5)) : 1;
+        this.npc?.hurt(npcHit.target, _dir.x, _dir.z, def.damage * fall, npcHit.head);
+        this.hitMarker = 0.18;
+        this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
+      } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, def.damage * 0.55)) {
+        this.effects.impact(hit.point, hit.normal, hit.surface, false);
+        this.hitThisFrame = this.lastHit = { hit, target: false };
+      } else if (hit) {
+        const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _dir, 22 * (def.damage / 40));
+        if (k < 4 || !hit.body) this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);
+        this.hitThisFrame = this.lastHit = { hit, target };
+        if (target) this.hitMarker = 0.18;
+      }
     }
 
     // --- brass ---------------------------------------------------------------------------------
@@ -329,16 +407,16 @@ export class WeaponSystem {
     this.effects.casing(this.ejectWorld, _right, _up.set(0, 1, 0), _dir.set(-Math.sin(p.yaw), 0, -Math.cos(p.yaw)).negate());
 
     // --- sound, haptics, recoil ----------------------------------------------------------------
-    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld);
-    this.input.rumble(0.55, 0.35, 70);
+    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, def.sound);
+    this.input.rumble(Math.min(1, 0.55 * def.kick), 0.35, 70);
     // Recoil pattern: a reliable climb with a gentle sideways drift that flips now and then.
     const n = Math.min(this.shotsInBurst, 7);
     const aimed = 1 - 0.3 * this.ads;
-    const pitch = (0.0085 + n * 0.0011) * aimed * (1 - 0.25 * p.crouchBlend);
+    const pitch = (0.0085 + n * 0.0011) * aimed * (1 - 0.25 * p.crouchBlend) * def.recoil;
     if (Math.random() < 0.18) this.yawDrift = -this.yawDrift;
-    const yaw = this.yawDrift * (0.0012 + Math.random() * 0.0022) * aimed;
+    const yaw = this.yawDrift * (0.0012 + Math.random() * 0.0022) * aimed * def.recoil;
     p.addRecoil(pitch, yaw);
-    this.bloom = Math.min(3.2, this.bloom + 0.55);
-    this.onFire?.(1 + n * 0.06);
+    this.bloom = Math.min(3.2, this.bloom + 0.55 * Math.min(1.6, def.recoil));
+    this.onFire?.((1 + n * 0.06) * def.kick);
   }
 }

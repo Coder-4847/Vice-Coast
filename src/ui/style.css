@@ -315,3 +315,13 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .flow.wasted .flow-title { color: #ff5a4a; }
 .flow.busted .flow-title { color: #6aa8ff; }
 .flow-sub { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+
+/* ---- Weapon wheel -------------------------------------------------------- */
+.wheel { position: fixed; left: 50%; top: 50%; width: 360px; height: 360px; margin: -180px 0 0 -180px; z-index: 27; border-radius: 50%; background: radial-gradient(circle, rgba(10, 12, 18, 0.72) 0%, rgba(10, 12, 18, 0.55) 62%, rgba(10, 12, 18, 0) 72%); display: block; pointer-events: auto; }
+.wheel.is-hidden { display: none; }
+.wheel-centre { position: absolute; left: 50%; top: 50%; width: 120px; transform: translate(-50%, -50%); text-align: center; font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.wslot { position: absolute; width: 112px; transform: translate(-50%, -50%); padding: 9px 6px; text-align: center; background: var(--glass-strong); border: 1px solid var(--line); border-radius: 12px; color: var(--text); font-family: var(--font); cursor: pointer; transition: transform 90ms var(--ease), border-color 90ms var(--ease), background 90ms var(--ease); }
+.wslot b { display: block; font-weight: 500; font-size: var(--fs-sm); letter-spacing: 0.08em; }
+.wslot span { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.wslot.on { transform: translate(-50%, -50%) scale(1.12); border-color: var(--accent); background: rgba(255, 122, 89, 0.16); }
+.wslot.locked { opacity: 0.4; }

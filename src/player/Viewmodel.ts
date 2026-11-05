@@ -3,6 +3,8 @@ import { clamp, damp, easeOutCubic, Spring } from '../core/math';
 import { ArmRig, HandRig, POSES, type HandPose } from './HandRig';
 import type { Player } from './Player';
 import { Pistol } from './Pistol';
+import { LongGun, type GunModel } from './LongGun';
+import type { WeaponId } from './Weapons';
 import { DRAW_TIME, HOLSTER_TIME, INSPECT_TIME, RELOAD, type WeaponSystem } from './WeaponSystem';
 
 /** Layer used for everything the first-person camera draws on top of the world. */
@@ -47,7 +49,6 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
 };
 
 const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
-const ADS = pose(0, -0.0595, -0.40, 0, 0, 0);
 const SPRINT = pose(0.12, -0.2, -0.38, -0.66, 0.44, 0.18);
 const HOLSTER = pose(0.22, -0.66, -0.12, -1.15, 0.2, 0.2);
 const SWIM = pose(0.12, -0.28, -0.36, -0.5, 0.3, 0.1);
@@ -72,6 +73,10 @@ export class Viewmodel {
   readonly group = new THREE.Group();
   readonly camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.01, 6);
   readonly pistol = new Pistol();
+  private model: GunModel = this.pistol;
+  private readonly longs = new Map<WeaponId, LongGun>();
+  private currentId: WeaponId = 'vc9';
+  private adsPose: Pose = pose(0, -0.0595, -0.40, 0, 0, 0);
   readonly materials: THREE.Material[] = [];
 
   private readonly gun = new THREE.Group();
@@ -127,6 +132,13 @@ export class Viewmodel {
     this.materials.push(skin, sleeve, cuff, ...this.pistol.materials);
 
     this.gun.add(this.pistol.group);
+    for (const id of ['smg', 'shotgun', 'rifle'] as const) {
+      const lg = new LongGun(id);
+      lg.group.visible = false;
+      this.longs.set(id, lg);
+      this.gun.add(lg.group);
+      this.materials.push(...lg.materials);
+    }
     // muzzle flash: two crossed additive quads
     this.flash = new THREE.Group();
     const c = document.createElement('canvas');
@@ -164,7 +176,21 @@ export class Viewmodel {
   }
 
   private cloneMagazine(): THREE.Object3D[] {
-    return this.pistol.magazine.children.map((c) => c.clone());
+    return this.model.magazine.children.map((c) => c.clone());
+  }
+
+  /** Swap the gun model in the hands (called when the selected weapon changes). */
+  private setWeapon(id: WeaponId): void {
+    this.currentId = id;
+    this.pistol.group.visible = id === 'vc9';
+    for (const [k, g] of this.longs) g.group.visible = k === id;
+    this.model = id === 'vc9' ? this.pistol : this.longs.get(id)!;
+    this.flash.position.copy(this.model.muzzle);
+    this.spareMag.clear();
+    this.spareMag.add(...this.cloneMagazine());
+    const sp = this.model.sightPoint;
+    this.adsPose = pose(-sp.x, -(sp.y + 0.001), -0.40 - sp.z, 0, 0, 0);
+    this.magDropped = false;
   }
 
   // ------------------------------------------------------------------------------------ events
@@ -197,6 +223,7 @@ export class Viewmodel {
 
   update(dt: number, p: Player, w: WeaponSystem, cam: THREE.PerspectiveCamera, aspect: number): void {
     const dbg = this.debug;
+    if (w.def.id !== this.currentId) this.setWeapon(w.def.id);
     // follow the main camera exactly; only the FOV differs
     this.group.position.copy(cam.position);
     this.group.quaternion.copy(cam.quaternion);
@@ -249,7 +276,7 @@ export class Viewmodel {
 
     // --- base gun pose ---------------------------------------------------------------------------
     const gp = this.gunPose;
-    lerpPose(HIP, ADS, easeInOut(this.adsB) * (1 - this.sprintB), gp);
+    lerpPose(HIP, this.adsPose, easeInOut(this.adsB) * (1 - this.sprintB), gp);
     lerpPose(gp, SPRINT, this.sprintB, gp);
     lerpPose(gp, SWIM, this.swimB, gp);
     lerpPose(gp, MANTLE, this.mantleB, gp);
@@ -308,8 +335,8 @@ export class Viewmodel {
     this.gunMatrix.copy(this.gun.matrix);
 
     // --- gun internals --------------------------------------------------------------------------
-    this.pistol.setSlide(w.slide);
-    this.pistol.setTrigger(w.trigger);
+    this.model.setSlide(w.slide);
+    this.model.setTrigger(w.trigger);
     this.updateMagazine(rt, reloading);
     if (this.flashT > 0) {
       this.flashT -= dt;
@@ -322,13 +349,13 @@ export class Viewmodel {
     this.left.root.updateMatrixWorld(true);
 
     // effects want the muzzle and ejection port in world space
-    this.gunPoint(this.pistol.muzzle, cam, w.muzzleWorld);
-    this.gunPoint(this.pistol.eject, cam, w.ejectWorld);
+    this.gunPoint(this.model.muzzle, cam, w.muzzleWorld);
+    this.gunPoint(this.model.eject, cam, w.ejectWorld);
   }
 
   // magazine visibility, positions and the held spare
   private updateMagazine(rt: number, reloading: boolean): void {
-    const mag = this.pistol.magazine;
+    const mag = this.model.magazine;
     mag.visible = true;
     mag.position.set(0, -0.006, 0);
     if (!reloading) {
@@ -360,14 +387,14 @@ export class Viewmodel {
     const mt = this.mantleB;
 
     // --- right hand: on the grip (or resting / on the ledge) --------------------------------------
-    _m.multiplyMatrices(this.gunMatrix, this.pistol.rightGrip);
+    _m.multiplyMatrices(this.gunMatrix, this.model.rightGrip);
     _m.decompose(this.handR.p, this.handR.q, _s);
     lerpPose(REST_R, this.handR, grab * (1 - mt), this.tmpPose);
     this.handR.p.copy(this.tmpPose.p);
     this.handR.q.copy(this.tmpPose.q);
 
     // --- left hand: support grip, reload choreography, or resting ----------------------------------
-    _m.multiplyMatrices(this.gunMatrix, this.pistol.leftGrip);
+    _m.multiplyMatrices(this.gunMatrix, this.model.leftGrip);
     _m.decompose(this.handL.p, this.handL.q, _s);
     let leftPose: HandPose = POSES.support;
     let leftBlend = 0;
@@ -410,7 +437,7 @@ export class Viewmodel {
 
   /** Left-hand choreography during a reload, in view space. Returns pose + finger pose blend. */
   private reloadLeft(t: number, done: number): { pos: THREE.Vector3; quat: THREE.Quaternion; a: HandPose; b: HandPose; t: number } {
-    const P = this.pistol;
+    const P = this.model;
     const out = this._reloadOut;
     // gun-space key positions
     const magAxis = P.magAxis;

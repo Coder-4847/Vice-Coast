@@ -173,6 +173,7 @@ export class Ped {
   /** Gun raised (renders the aiming pose with a weapon). */
   aim = false;
   fireT = 0;
+  burstN = 0;
   /** Combat AI: currently has line of sight to its target. */
   sees = false;
   /** Never despawned by distance (police units are managed by the police director). */

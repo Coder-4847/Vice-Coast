@@ -34,12 +34,12 @@ const TIERS: Tier[] = [
   { ...T0, swat: 2, fed: 2, apc: 2, tank: 2, heli: ['attack', 'attack', 'gunship'], snipers: 1, jets: true, footCap: 12 },
 ];
 
-interface Spec { dmg: number; interval: number; range: number; spread: number; pellets: number; burst: number; speed: number; sight: number }
-const PISTOL: Spec = { dmg: 6, interval: 0.7, range: 38, spread: 0.03, pellets: 1, burst: 1, speed: 4.4, sight: 70 };
-const SHOTGUN: Spec = { dmg: 5, interval: 1.3, range: 24, spread: 0.07, pellets: 7, burst: 1, speed: 4.6, sight: 60 };
-const RIFLE: Spec = { dmg: 6, interval: 0.13, range: 60, spread: 0.035, pellets: 1, burst: 4, speed: 4.2, sight: 90 };
-const HEAVY: Spec = { dmg: 8, interval: 0.12, range: 70, spread: 0.03, pellets: 1, burst: 5, speed: 3.8, sight: 100 };
-const FED: Spec = { dmg: 8, interval: 0.14, range: 80, spread: 0.022, pellets: 1, burst: 4, speed: 4.8, sight: 110 };
+interface Spec { dmg: number; interval: number; range: number; spread: number; pellets: number; burst: number; speed: number; sight: number; pause?: number }
+const PISTOL: Spec = { dmg: 5, interval: 1.0, range: 36, spread: 0.05, pellets: 1, burst: 1, speed: 4.4, sight: 70 };
+const SHOTGUN: Spec = { dmg: 3.5, interval: 1.7, range: 22, spread: 0.08, pellets: 7, burst: 1, speed: 4.6, sight: 60 };
+const RIFLE: Spec = { dmg: 4, interval: 0.17, range: 58, spread: 0.05, pellets: 1, burst: 3, pause: 1.4, speed: 4.2, sight: 90 };
+const HEAVY: Spec = { dmg: 5, interval: 0.15, range: 66, spread: 0.045, pellets: 1, burst: 4, pause: 1.3, speed: 3.8, sight: 100 };
+const FED: Spec = { dmg: 5.5, interval: 0.16, range: 76, spread: 0.035, pellets: 1, burst: 3, pause: 1.1, speed: 4.8, sight: 110 };
 
 interface Strip { x: number; z: number; yaw: number; half: number; mesh: THREE.Mesh }
 interface Sniper { ped: Ped; charge: number; laser: THREE.Mesh }
@@ -463,7 +463,9 @@ export class Police {
 
   /** Fire a burst/shot/shotgun blast at the player from `p`. */
   private shoot(p: Ped, spec: Spec, d: number): void {
-    p.fireT = spec.burst > 1 ? spec.interval : spec.interval * (0.8 + Math.random() * 0.5);
+    p.burstN++;
+    if (p.burstN >= spec.burst) { p.burstN = 0; p.fireT = (spec.pause ?? spec.interval) * (0.8 + Math.random() * 0.5); }
+    else p.fireT = spec.interval;
     this.fireAt(p.x + Math.sin(p.yaw) * 0.5, p.y + 1.4, p.z + Math.cos(p.yaw) * 0.5, spec, d, p.x, p.z);
   }
 
@@ -471,11 +473,11 @@ export class Police {
     const { effects, audio, combat } = this.d;
     const t = this.tgt;
     this.stats.shots++;
-    const sigma = spec.spread + d * 0.0016;
+    const sigma = spec.spread + d * 0.0026;
     let hits = 0;
-    const reach = t.car ? 1.5 : 0.45;
+    const reach = t.car ? 1.4 : 0.38;
     // moving targets are harder to hit
-    const evade = 1 + Math.min(1.4, t.speed * 0.06);
+    const evade = 1 + Math.min(2.2, t.speed * 0.1);
     for (let k = 0; k < spec.pellets; k++) {
       const ex = gauss() * sigma * d * evade, ey = gauss() * sigma * d * 0.7;
       if (Math.abs(ex) < reach && Math.abs(ey) < (t.car ? 1.0 : 0.85)) hits++;

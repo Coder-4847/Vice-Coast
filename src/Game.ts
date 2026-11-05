@@ -22,6 +22,9 @@ import { Combat } from './combat/Combat';
 import { Police } from './combat/Police';
 import { Wanted } from './combat/Wanted';
 import { Heli } from './combat/Aircraft';
+import { Pickups } from './world/Pickups';
+import { WeaponWheel } from './ui/WeaponWheel';
+import { WEAPON_ORDER } from './player/Weapons';
 import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
@@ -57,6 +60,8 @@ export class Game {
   combat: Combat | null = null;
   wanted: Wanted | null = null;
   police: Police | null = null;
+  pickups: Pickups | null = null;
+  wheel: WeaponWheel | null = null;
   combatHud: CombatHud | null = null;
   private carSound: ReturnType<AudioEngine['createVehicleSound']> = null;
   private baseFov = 75;
@@ -169,6 +174,30 @@ export class Game {
         hud: this.combatHud, camera: this.camera,
       });
       const pol = this.police;
+      // weapon crates, armour and medkits next to the spawn point
+      const px = 112;
+      this.pickups = new Pickups([
+        { kind: 'smg', x: px, z: -7 }, { kind: 'shotgun', x: px, z: -3.5 }, { kind: 'rifle', x: px, z: 0 },
+        { kind: 'armour', x: px, z: 3.5 }, { kind: 'medkit', x: px, z: 7 },
+      ]);
+      for (const m of this.pickups.materials) this.world.rig.register(m);
+      this.world.scene.add(this.pickups.group);
+      const weapon = this.weapon;
+      this.pickups.onPick = (kind) => {
+        if (kind === 'armour') this.combat?.vitals.addArmour(100);
+        else if (kind === 'medkit') this.combat?.vitals.heal(100);
+        else {
+          const fresh = weapon.give(kind, kind === 'shotgun' ? 24 : 90);
+          if (fresh && weapon.isDrawn) weapon.select(kind);
+        }
+        this.audio.mech('magIn');
+        this.ui.toast(`Picked up: ${Pickups.label(kind)}`);
+      };
+      this.wheel = new WeaponWheel(document.getElementById('ui')!, () => {
+        weapon.inv[weapon.def.id].ammo = weapon.ammo;
+        weapon.inv[weapon.def.id].reserve = weapon.reserve;
+        return weapon.inv;
+      }, (id) => weapon.select(id));
       this.npcs.extraRay = (ox, oy, oz, dx, dy, dz, max) => { const h = pol.rayHit(ox, oy, oz, dx, dy, dz, max); return h ? { t: h.t, target: h.heli } : null; };
       this.npcs.extraHurt = (t, dmg) => {
         if (t instanceof Heli) { pol.hurtHeli(t, dmg); return true; }
@@ -259,6 +288,33 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ loop
+
+  /** Weapon wheel (hold), touch cycling, and pickup collection. */
+  private updateWheel(dt: number, weapon: WeaponSystem): void {
+    const wheel = this.wheel;
+    const input = this.input;
+    const p = this.player;
+    if (!wheel || !p) return;
+    const dead = !!this.combat?.flow;
+    if (this.pickups) this.pickups.update(dt, p.pos.x, p.pos.y, p.pos.z, !dead && this.driving?.mode === 'foot');
+    if (dead) { wheel.finish(); return; }
+    if (input.activeDevice === 'touch') {
+      // touch: the Arms button cycles through the weapons you own
+      if (input.pressed('weaponWheel')) {
+        const owned = WEAPON_ORDER.filter((id) => weapon.inv[id].owned || id === weapon.def.id);
+        const next = owned[(owned.indexOf(weapon.def.id) + 1) % owned.length];
+        if (next && next !== weapon.def.id) weapon.select(next);
+        else weapon.toggleHolster();
+      }
+      return;
+    }
+    if (input.down('weaponWheel') && weapon.state !== 'reloading') wheel.open();
+    if (wheel.isOpen) {
+      wheel.tick();
+      p.lookScale = 0;
+      if (!input.down('weaponWheel')) wheel.finish();
+    }
+  }
 
   private updateCombat(dt: number): void {
     const c = this.combat;
@@ -390,6 +446,7 @@ export class Game {
     if (weapon && vm && this.effects) {
       if (!inCar) {
         if (!this.combat?.flow) weapon.update(dt);
+        this.updateWheel(dt, weapon);
         // zoom in a little when aiming, out a little when sprinting
         this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
         this.camera.updateProjectionMatrix();
