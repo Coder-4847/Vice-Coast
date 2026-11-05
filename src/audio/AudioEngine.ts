@@ -104,6 +104,10 @@ export class AudioEngine {
     return new VehicleSound(this.ctx, this.master, this.noise);
   }
 
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+
   /** Continuous sirens, city ambience and street music (null until the context exists). */
   createSiren(): SirenVoice | null {
     return this.ctx ? new SirenVoice(this.ctx, this.master) : null;

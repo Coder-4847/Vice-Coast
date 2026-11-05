@@ -43,6 +43,6 @@ export class SignalClock {
   /** May a pedestrian start crossing a road whose traffic runs along `axis`? (Early in that axis's red.) */
   walk(axis: 0 | 1): boolean {
     const e = this.redElapsed(axis);
-    return e > 1.2 && e < 9;
+    return e > 1.0 && e < 4.5;
   }
 }

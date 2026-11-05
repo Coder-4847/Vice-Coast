@@ -331,6 +331,16 @@ export class Pedestrians {
     }
   }
 
+  /** Return a scripted pedestrian to ordinary life: back onto the nearest sidewalk. */
+  resume(p: Ped): void {
+    if (!p.active || p.state === 'down') return;
+    p.state = 'walk';
+    p.speed = p.baseSpeed;
+    p.accessory = 0;
+    if (p.arch === 'sunbather') p.arch = 'local';
+    this.snapToGraph(p);
+  }
+
   private startFlee(p: Ped, x: number, z: number, secs: number): void {
     if (p.state === 'down') return;
     p.state = 'flee';

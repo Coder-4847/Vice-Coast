@@ -6,6 +6,7 @@ import type { Vehicle } from '../vehicles/Vehicle';
 import { radialTexture } from '../world/City';
 import { World } from '../world/World';
 import { Traffic, TrafficRenderer } from './Traffic';
+import { Ambient } from './Ambient';
 import { PedRenderer, Pedestrians, pedDensity, type Ped, type VehicleHit } from './Pedestrians';
 
 /** Relative traffic volume through the day: rush hours at ~8 and ~17:30, quiet from midnight to 5. */
@@ -30,6 +31,7 @@ export class Npcs {
   readonly trafficView: TrafficRenderer;
   readonly peds: Pedestrians;
   readonly pedView: PedRenderer;
+  readonly ambient: Ambient;
   private readonly hits: VehicleHit[] = [];
   private preset: QualityPreset;
   private readonly pv = new THREE.Matrix4();
@@ -48,6 +50,9 @@ export class Npcs {
     this.pedView = new PedRenderer(170);
     for (const m of this.pedView.materials) world.rig.register(m);
     world.scene.add(this.pedView.group);
+    this.ambient = new Ambient(this.traffic, this.peds, world.city.plan, audio);
+    world.rig.register(this.ambient.flock.mat);
+    world.scene.add(this.ambient.flock.group);
     this.traffic.hooks = {
       honk: (x, z) => this.audio.honk(new THREE.Vector3(x, 5.5, z)),
       crash: (x, z, s) => {
@@ -110,6 +115,7 @@ export class Npcs {
     }
     p.update(Math.min(dt, 0.1), this.hits, ctx.pos);
     this.pedView.sync(p.peds);
+    this.ambient.update(Math.min(dt, 0.1), { x: p.focus.x, z: p.focus.z, hour, frustum: this.traffic.frustum });
   }
 
   // ---- hooks for the weapon system -------------------------------------------------------------------------
