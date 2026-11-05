@@ -109,6 +109,20 @@ export class Heli {
   }
 
   update(dt: number, tx: number, tz: number, night: number, listener: THREE.Vector3): void {
+    if (!this.active) {
+      // stood down: climb away
+      this.vel.y = Math.min(32, this.vel.y + dt * 12);
+      this.vel.x += (Math.cos(this.angle) * 24 - this.vel.x) * Math.min(1, dt * 0.5);
+      this.vel.z += (Math.sin(this.angle) * 24 - this.vel.z) * Math.min(1, dt * 0.5);
+      this.pos.addScaledVector(this.vel, dt);
+      this.group.position.copy(this.pos);
+      this.rotor += dt * 40;
+      this.model.spin(this.rotor);
+      this.lightMat.opacity = 0;
+      this.pool.visible = false;
+      this.voice?.update(this.pos.x, this.pos.y, this.pos.z, 1, 0);
+      return;
+    }
     this.angle += (dt * this.orbit.speed) / this.orbit.r;
     const gx = tx + Math.cos(this.angle) * this.orbit.r, gz = tz + Math.sin(this.angle) * this.orbit.r;
     const ground = Math.max(terrainHeight(tx, tz), 4.5);

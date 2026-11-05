@@ -553,7 +553,6 @@ export class Police {
     for (const h of [...this.helis]) {
       if (!h.active) {
         h.update(dt, cx, cz, night, camera.position);
-        h.pos.y += dt * 14;
         if (h.pos.y > 320 || Math.hypot(h.pos.x - t.x, h.pos.z - t.z) > 900) this.removeHeli(h);
         continue;
       }
@@ -603,7 +602,6 @@ export class Police {
     for (const h of [...this.helis]) {
       h.active = false;
       h.update(dt, t.x, t.z, this.d.world.tod.look.night, this.d.camera.position);
-      h.pos.y += dt * 16;
       if (h.pos.y > 300) this.removeHeli(h);
     }
     for (const j of [...this.jets]) this.stepJet(j, dt);
@@ -685,9 +683,9 @@ export class Police {
       const cand: { x: number; y: number; z: number }[] = [];
       for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const r of this.roofs(cx0 + i, cz0 + j)) {
         const d = Math.hypot(r.x - t.x, r.z - t.z);
-        if (d > 90 && d < 230) cand.push(r);
+        if (d > 60 && d < 240) cand.push(r);
       }
-      for (let a = 0; a < 12 && cand.length; a++) {
+      for (let a = 0; a < 45 && cand.length; a++) {
         const r = cand[Math.floor(Math.random() * cand.length)]!;
         const px = r.x + (Math.random() - 0.5) * 4, pz = r.z + (Math.random() - 0.5) * 4;
         if (!this.los(px, r.y + 1.6, pz, t.x, t.y, t.z)) continue;
@@ -762,8 +760,8 @@ export class Police {
       if (!c.active) this.blocks.splice(this.blocks.indexOf(c), 1);
     }
     this.blockT -= dt;
-    const groups = this.blocks.filter((c) => c.blocker).length / Math.max(1, tier.blockSize || 1);
-    if (tier.blocks > 0 && groups < tier.blocks && this.blockT <= 0 && this.d.wanted.response <= 0) {
+    const nBlockers = this.blocks.filter((c) => c.blocker).length;
+    if (tier.blocks > 0 && nBlockers < tier.blocks * tier.blockSize && this.blockT <= 0 && this.d.wanted.response <= 0) {
       this.blockT = 7;
       const { traffic } = this.d.npcs;
       const nodes = traffic.net.nodes;
