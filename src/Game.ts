@@ -203,7 +203,11 @@ export class Game {
         if (t instanceof Heli) { pol.hurtHeli(t, dmg); return true; }
         return false;
       };
-      this.npcs.onGunshot = (x, z) => this.combat?.crime?.(2.5, x, z);
+      // the beach shooting range is a safe place to practise: gunfire there is not a crime
+      this.npcs.onGunshot = (x, z) => {
+        if (x > 90 && x < 205 && z > -45 && z < 125) return;
+        this.combat?.crime?.(2.5, x, z);
+      };
     }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);

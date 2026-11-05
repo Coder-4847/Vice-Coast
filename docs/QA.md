@@ -173,3 +173,21 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Every few minutes a crash happens somewhere out of sight (two wrecks, onlookers filming); police and an ambulance race there with sirens, park with lights flashing and leave later.
 - [ ] A street musician plays (spatial guitar) to a small audience; a protest march with signs walks up and down a downtown sidewalk by day; on the beach there are sunbathers, strollers and joggers and seagulls wheel over the water with the odd cry.
 - [ ] A city ambience bed (traffic rumble, crowd murmur) follows what is near you; the beach is quieter.
+
+
+## Phase 7 — Combat and police
+
+### Weapons and health
+- [ ] Crates beside the spawn give the WASP-9, HAMMER-12 and FALCON AR-7 (+ammo), armour and a medkit; they reappear after ~75 s. A toast names each pickup.
+- [ ] Hold `Tab` (pad: `LB`): the wheel opens, moving the mouse / right stick highlights a weapon, releasing equips it (holster → draw animation). `2`–`5` pick directly; on touch the Arms button cycles.
+- [ ] SMG and rifle fire full-auto while held; pistol and shotgun are semi-auto; the shotgun fires 8 pellets and pumps after each shot; each gun has its own sound, recoil and reload. Headshots do ~2.6× damage.
+- [ ] Armour bar (blue) drains before the health bar; health regenerates to 60 % after ~5 s without being hit; the screen flashes red when hurt; falls from a few metres hurt.
+- [ ] Shooting a car damages it; at low health it smokes, then burns and explodes ~5 s after reaching zero (damaging anything nearby, including you if you are inside or close).
+- [ ] Dying shows **WASTED** (grayscale, camera drops) then respawns you at the hospital with your cars restored; being arrested shows **BUSTED** and respawns you at police HQ with most reserve ammo gone.
+
+### Wanted level
+- [ ] Firing a gun near pedestrians, killing someone, running someone over or blowing something up raises a star only if it was witnessed (a nearby pedestrian or officer); out of sight it barely registers. The shooting range is exempt.
+- [ ] Stars flash and a search bar runs down when no officer can see you; getting spotted resets it; at zero stars the units stand down, aircraft fly away, dispatch says the suspect was lost.
+- [ ] Escalation matches the table in the README: 1★ patrol cars and pistol officers; 2★ roadblocks, spike strips (tyres burst: much less grip), shotguns; 3★ SWAT van + police helicopter with a searchlight; 4★ armoured truck, snipers with red laser, ramming; 5★ federal agents + strafing gunship; 6★ tanks (shells explode near you), APCs, attack helicopters with missiles, jet strikes, 4 helicopters at once.
+- [ ] Standing still next to officers (≤ 3 stars) arrests you; at 4★+ they shoot to kill. Cars on the road ahead stop for officers; helicopters can be shot down (big wanted jump).
+- [ ] Dispatch lines appear as subtitles (and are spoken where the browser supports speech synthesis) with a radio squelch.

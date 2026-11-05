@@ -132,6 +132,18 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - Not done: LOD for distant pedestrians (all parts are drawn at any distance), skinned animation (limbs are rigid boxes
   rotated about hip/shoulder), and web-worker simulation.
 
+## Phase 7 cost notes
+
+- **Police units reuse existing systems**: patrol/SWAT/federal/armoured/APC/tank vehicles are traffic cars in pursuit mode (same
+  six instanced draw calls, tanks and APCs add turret boxes), officers on foot are pedestrians with a combat AI (same seven draw
+  calls; pool raised to 210), helicopters (≤ 4) and jets (≤ 2) are small plain meshes of a handful of boxes each, roadblocks are
+  static kinematic cars, snipers' lasers one thin additive box each.
+- **Per-frame cost** is dominated by line-of-sight rays: each officer re-checks every 0.22–0.4 s, plus a combined “is anybody
+  seeing the player” pass every 0.3 s; a 6-star scene (≈ 15 unit vehicles, 13 officers, 4 helicopters) adds ~60 raycasts per
+  second — negligible against the physics step.
+- **Explosions** are ≈ 100 particles in the shared particle system; burning cars emit two puffs per 0.13 s.
+- Weapons add three small procedural meshes (≈ 12 meshes each, hidden when not held) to the viewmodel pass.
+
 ## Deferred from the master prompt (not silently dropped)
 
 - **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both are still pending — vehicles now exist, so they move to Phase 14
