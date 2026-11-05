@@ -19,6 +19,9 @@ import { Vehicle } from './vehicles/Vehicle';
 import { Driving } from './vehicles/Driving';
 import { Npcs } from './npc/Npcs';
 import { Combat } from './combat/Combat';
+import { Police } from './combat/Police';
+import { Wanted } from './combat/Wanted';
+import { Heli } from './combat/Aircraft';
 import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
@@ -52,6 +55,8 @@ export class Game {
   driving: Driving | null = null;
   npcs: Npcs | null = null;
   combat: Combat | null = null;
+  wanted: Wanted | null = null;
+  police: Police | null = null;
   combatHud: CombatHud | null = null;
   private carSound: ReturnType<AudioEngine['createVehicleSound']> = null;
   private baseFov = 75;
@@ -157,6 +162,19 @@ export class Game {
         canvas: this.canvas, camera: this.camera, toast: (m) => this.ui.toast(m),
       });
       this.weapon.onColliderHit = (h, d) => this.combat!.hitCollider(h, d);
+      this.wanted = new Wanted();
+      this.police = new Police({
+        world: this.world, physics: this.physics, audio: this.audio, effects: this.effects, player: this.player,
+        driving: this.driving, vehicles: this.vehicles, npcs: this.npcs, combat: this.combat, wanted: this.wanted,
+        hud: this.combatHud, camera: this.camera,
+      });
+      const pol = this.police;
+      this.npcs.extraRay = (ox, oy, oz, dx, dy, dz, max) => { const h = pol.rayHit(ox, oy, oz, dx, dy, dz, max); return h ? { t: h.t, target: h.heli } : null; };
+      this.npcs.extraHurt = (t, dmg) => {
+        if (t instanceof Heli) { pol.hurtHeli(t, dmg); return true; }
+        return false;
+      };
+      this.npcs.onGunshot = (x, z) => this.combat?.crime?.(2.5, x, z);
     }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
@@ -246,9 +264,13 @@ export class Game {
     const c = this.combat;
     if (!c || !this.combatHud) return;
     c.update(dt);
+    if (this.police && !c.flow) this.police.update(dt);
+    const w = this.wanted;
+    const arrest = this.police ? this.police.arresting : 0;
     this.combatHud.update(dt, {
       health: c.vitals.health, armour: c.vitals.armour, hurt: c.vitals.hurtFlash,
-      stars: 0, seen: false, search: 0, status: '',
+      stars: w ? w.stars : 0, seen: !!w && w.seen, search: w ? w.searchFrac : 0,
+      status: arrest > 0.15 ? 'Arresting…' : w && w.stars > 0 ? (w.seen ? 'Wanted' : w.response > 0 ? 'Dispatching' : 'Searching') : '',
     });
     c.cameraEffect(this.camera);
   }

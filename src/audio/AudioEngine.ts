@@ -115,6 +115,10 @@ export class AudioEngine {
   createAmbience(): AmbienceBed | null {
     return this.ctx ? new AmbienceBed(this.ctx, this.master, this.noise) : null;
   }
+  /** Rotor thump (kind 0) or jet roar (kind 1) at a moving position. */
+  createAirVoice(kind: 0 | 1): AirVoice | null {
+    return this.ctx ? new AirVoice(this.ctx, this.master, this.noise, kind) : null;
+  }
   createMusic(): StreetMusic | null {
     return this.ctx ? new StreetMusic(this.ctx, this.master) : null;
   }
@@ -284,6 +288,16 @@ export class AudioEngine {
     out.connect(o);
     osc.start(t); lfo.start(t);
     osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+  }
+
+  /** Short radio squelch + beeps (dispatch chatter, wanted-level changes). */
+  radioChirp(): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.master;
+    this.burst(o, t, { type: 'bandpass', freq: 1800, q: 1.2, peak: 0.12, decay: 0.09 });
+    this.tone(o, t + 0.02, { freq: 1400, peak: 0.07, decay: 0.07, type: 'square' });
+    this.tone(o, t + 0.1, { freq: 1900, peak: 0.07, decay: 0.07, type: 'square' });
   }
 
   /** Explosion: a low thump, a wide noise burst and a long rumbling tail. `size` 1 ≈ a car. */
@@ -819,6 +833,74 @@ export class StreetMusic {
   }
 
   dispose(): void {
+    this.panner.disconnect();
+  }
+}
+
+
+/** Continuous sound for an aircraft: helicopter rotor thump or jet engine roar, positioned and Doppler-shifted. */
+export class AirVoice {
+  private readonly gain: GainNode;
+  private readonly filter: BiquadFilterNode;
+  private readonly panner: PannerNode;
+  private readonly src: AudioBufferSourceNode;
+  private readonly lfo: OscillatorNode;
+  private readonly sub: OscillatorNode;
+  private readonly modGain: GainNode;
+
+  constructor(private readonly ctx: AudioContext, dest: AudioNode, noise: AudioBuffer, private readonly kind: 0 | 1) {
+    this.src = ctx.createBufferSource();
+    this.src.buffer = noise;
+    this.src.loop = true;
+    this.filter = ctx.createBiquadFilter();
+    this.filter.type = kind === 0 ? 'lowpass' : 'bandpass';
+    this.filter.frequency.value = kind === 0 ? 420 : 1400;
+    this.filter.Q.value = kind === 0 ? 0.7 : 0.5;
+    this.modGain = ctx.createGain();
+    this.modGain.gain.value = kind === 0 ? 0.5 : 1;
+    this.gain = ctx.createGain();
+    this.gain.gain.value = 0;
+    this.panner = ctx.createPanner();
+    this.panner.panningModel = 'equalpower';
+    this.panner.distanceModel = 'inverse';
+    this.panner.refDistance = kind === 0 ? 40 : 120;
+    this.panner.rolloffFactor = 1.2;
+    this.panner.maxDistance = 1500;
+    // blade-pass pulse
+    this.lfo = ctx.createOscillator();
+    this.lfo.type = 'square';
+    this.lfo.frequency.value = 13.5;
+    const depth = ctx.createGain();
+    depth.gain.value = kind === 0 ? 0.45 : 0;
+    this.lfo.connect(depth).connect(this.modGain.gain);
+    this.sub = ctx.createOscillator();
+    this.sub.type = 'sine';
+    this.sub.frequency.value = kind === 0 ? 48 : 90;
+    const subGain = ctx.createGain();
+    subGain.gain.value = kind === 0 ? 0.35 : 0.2;
+    this.src.connect(this.filter).connect(this.modGain).connect(this.gain);
+    this.sub.connect(subGain).connect(this.gain);
+    this.gain.connect(this.panner).connect(dest);
+    this.src.start(0, Math.random());
+    this.lfo.start();
+    this.sub.start();
+  }
+
+  update(x: number, y: number, z: number, level: number, radial: number): void {
+    const t = this.ctx.currentTime;
+    const k = 343 / (343 + Math.max(-90, Math.min(90, radial)));
+    this.lfo.frequency.setTargetAtTime(13.5 * k, t, 0.1);
+    this.filter.frequency.setTargetAtTime((this.kind === 0 ? 420 : 1400) * k, t, 0.1);
+    this.gain.gain.setTargetAtTime(level * (this.kind === 0 ? 0.55 : 0.5), t, 0.15);
+    if (this.panner.positionX) {
+      this.panner.positionX.setTargetAtTime(x, t, 0.05);
+      this.panner.positionY.setTargetAtTime(y, t, 0.05);
+      this.panner.positionZ.setTargetAtTime(z, t, 0.05);
+    }
+  }
+
+  dispose(): void {
+    for (const n of [this.src, this.lfo, this.sub]) { try { n.stop(); } catch { /* done */ } }
     this.panner.disconnect();
   }
 }

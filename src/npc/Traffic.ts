@@ -22,6 +22,10 @@ export interface CarType {
   emergency?: EmergencyKind;
   /** Only spawned in industrial parts of town. */
   industrial?: boolean;
+  /** Extra boxes drawn on the body; `turret` ones swing with the car's turret yaw. */
+  extras?: { ox: number; oy: number; oz: number; sx: number; sy: number; sz: number; turret?: boolean }[];
+  /** Relative speed (m/s) at which the player's vehicle wrecks this car. */
+  sturdy?: number;
 }
 
 export const CAR_TYPES: CarType[] = [
@@ -31,7 +35,14 @@ export const CAR_TYPES: CarType[] = [
   { id: 'van', L: 5.2, W: 2.0, clear: 0.28, bodyH: 1.15, cabinH: 0.62, cabinL: 1.6, cabinX: 1.5, wheelR: 0.34, weight: 1.2, colors: [0xe8e8e4, 0xc8c8c4, 0x2f4b7a, 0x8a9296] },
   { id: 'pickup', L: 5.4, W: 2.0, clear: 0.34, bodyH: 0.72, cabinH: 0.62, cabinL: 1.9, cabinX: 0.6, wheelR: 0.38, weight: 1.1, colors: [0x2f4a2f, 0x9b2d30, 0xc8c8c4, 0x1d1f23, 0xb48a4a] },
   { id: 'truck', L: 7.6, W: 2.4, clear: 0.5, bodyH: 2.1, cabinH: 0.7, cabinL: 2.0, cabinX: 2.8, wheelR: 0.5, weight: 0.8, industrial: true, colors: [0xd0d0cc, 0xb3472f, 0x2f6b8a, 0xc9a227] },
-  { id: 'police', L: 4.7, W: 1.86, clear: 0.24, bodyH: 0.62, cabinH: 0.54, cabinL: 2.35, cabinX: -0.25, wheelR: 0.33, weight: 0, emergency: 'police', colors: [0x1c2a4a] },
+  { id: 'police', L: 4.7, W: 1.86, clear: 0.24, bodyH: 0.62, cabinH: 0.54, cabinL: 2.35, cabinX: -0.25, wheelR: 0.33, weight: 0, emergency: 'police', hp: 130, sturdy: 6, colors: [0x1c2a4a] },
+  { id: 'swatvan', L: 5.6, W: 2.1, clear: 0.3, bodyH: 1.3, cabinH: 0.6, cabinL: 1.6, cabinX: 1.9, wheelR: 0.36, weight: 0, emergency: 'police', hp: 220, sturdy: 8, colors: [0x15171a] },
+  { id: 'armored', L: 6.4, W: 2.5, clear: 0.4, bodyH: 1.8, cabinH: 0.7, cabinL: 1.8, cabinX: 2.1, wheelR: 0.5, weight: 0, emergency: 'police', hp: 520, sturdy: 14, colors: [0x1c2026] },
+  { id: 'fedsuv', L: 5.1, W: 2.0, clear: 0.3, bodyH: 0.95, cabinH: 0.62, cabinL: 2.7, cabinX: -0.2, wheelR: 0.37, weight: 0, emergency: 'police', hp: 160, sturdy: 7, colors: [0x101214] },
+  { id: 'apc', L: 6.8, W: 2.7, clear: 0.45, bodyH: 1.5, cabinH: 0.7, cabinL: 3.0, cabinX: 0.4, wheelR: 0.6, weight: 0, hp: 700, sturdy: 18, colors: [0x4d5a3a],
+    extras: [{ ox: 0, oy: 2.35, oz: 0.3, sx: 1.3, sy: 0.5, sz: 1.5, turret: true }, { ox: 0, oy: 2.45, oz: 1.6, sx: 0.14, sy: 0.14, sz: 1.5, turret: true }] },
+  { id: 'tank', L: 7.6, W: 3.4, clear: 0.45, bodyH: 1.15, cabinH: 0.01, cabinL: 0.1, cabinX: 0, wheelR: 0.7, weight: 0, hp: 1400, sturdy: 99, colors: [0x4a5238],
+    extras: [{ ox: 0, oy: 1.95, oz: -0.2, sx: 2.9, sy: 0.95, sz: 3.6, turret: true }, { ox: 0, oy: 2.1, oz: 3.4, sx: 0.3, sy: 0.3, sz: 4.4, turret: true }] },
   { id: 'ambulance', L: 5.6, W: 2.1, clear: 0.3, bodyH: 1.4, cabinH: 0.6, cabinL: 1.5, cabinX: 1.9, wheelR: 0.36, weight: 0, emergency: 'ambulance', colors: [0xf2f2ee] },
 ];
 const TYPE = Object.fromEntries(CAR_TYPES.map((t) => [t.id, t])) as Record<string, CarType>;
@@ -73,6 +84,15 @@ export class TrafficCar {
   wreckAge = 0;
   /** Set when a car has been hit hard enough to turn into a wreck. */
   angry = false;
+  /** Police / military unit chasing the player (ignores signals, drives faster). */
+  pursuit = false;
+  unit: string | null = null;
+  /** Ramming unit: does not brake for the player's vehicle. */
+  ram = false;
+  deployed = false;
+  blocker = false;
+  turretYaw = 0;
+  fireT = 0;
   hp = 100;
   /** Seconds until a burning wreck explodes (−1 = not burning). */
   fuse = -1;
@@ -181,8 +201,8 @@ export class Traffic {
     const i = c.route.indexOf(lane.b, Math.max(0, c.routeIdx - 1));
     if (i >= 0) c.routeIdx = i;
     const nextNode = c.route[c.routeIdx + 1];
-    if (nextNode === undefined) return null;
-    return this.net.laneToward(lane.b, nextNode, lane.laneIdx);
+    if (nextNode === undefined) return c.pursuit ? this.net.choose(lane, this.rnd) : null;
+    return this.net.laneToward(lane.b, nextNode, lane.laneIdx) ?? (c.pursuit ? this.net.choose(lane, this.rnd) : null);
   }
 
   spawnAmbient(): boolean {
@@ -227,6 +247,13 @@ export class Traffic {
     c.life = 0;
     c.hp = type.hp ?? 100;
     c.fuse = -1;
+    c.pursuit = false;
+    c.unit = null;
+    c.deployed = false;
+    c.blocker = false;
+    c.ram = false;
+    c.turretYaw = 0;
+    c.fireT = 2;
     this.place(c, lane, u, v);
   }
 
@@ -262,6 +289,75 @@ export class Traffic {
       return c;
     }
     return null;
+  }
+
+  /** Nearest valid junction to (x, z). */
+  nearestNode(x: number, z: number): number {
+    let best = -1, bd = Infinity;
+    this.net.nodes.forEach((n, k) => {
+      if (!n.ok) return;
+      const d = Math.hypot(n.x - x, n.z - z);
+      if (d < bd) { bd = d; best = k; }
+    });
+    return best;
+  }
+
+  /** Send a pursuit unit towards `node`: route from the end of its current lane. */
+  reroute(c: TrafficCar, node: number): void {
+    if (!c.lane || c.state === 'wreck' || c.state === 'park') return;
+    const r = this.net.route(c.lane.b, node);
+    if (!r || r.length < 2) { c.route = null; return; }
+    c.route = r;
+    c.routeIdx = 0;
+    if (c.state === 'lane') c.next = this.routed(c, c.lane);
+  }
+
+  /** Spawn a police / military unit on a lane 130–260 m from (fx, fz), out of the player's view. */
+  spawnUnit(type: CarType, fx: number, fz: number, unit: string, minD = 130, maxD = 260): TrafficCar | null {
+    const c = this.free();
+    if (!c) return null;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const { lane, u } = this.net.random(this.rnd);
+      this.net.point(lane, u, _pt);
+      const d = Math.hypot(_pt.x - fx, _pt.z - fz);
+      if (d < minD || d > maxD) continue;
+      _p.set(_pt.x, G + 1, _pt.z);
+      if (d < 220 && this.frustum.containsPoint(_p)) continue;
+      if (!this.clearAt(lane, u, 16)) continue;
+      this.activate(c, type, lane, u, lane.speed * 0.8);
+      c.pursuit = true;
+      c.unit = unit;
+      c.siren = !!type.emergency;
+      c.v0f = 1.45;
+      return c;
+    }
+    return null;
+  }
+
+  /** A stationary car (roadblock) with a solid body; wrecks when the player rams it. */
+  spawnBlocker(type: CarType, x: number, z: number, yaw: number): TrafficCar | null {
+    const c = this.free();
+    if (!c) return null;
+    c.active = true;
+    c.id = this.nextId++;
+    c.type = type;
+    c.color = type.colors[0]!;
+    c.state = 'park';
+    c.lane = null;
+    c.next = null;
+    c.route = null;
+    c.v = 0;
+    c.hp = type.hp ?? 100;
+    c.fuse = -1;
+    c.pursuit = false;
+    c.unit = 'blocker';
+    c.blocker = true;
+    c.siren = !!type.emergency;
+    c.hazard = false;
+    c.brake = 1;
+    c.x = c.px = x; c.z = c.pz = z; c.yaw = c.pyaw = yaw;
+    c.fx = Math.sin(yaw); c.fz = Math.cos(yaw);
+    return c;
   }
 
   /** Wreck a car right now (explosions, shooting). */
@@ -362,6 +458,7 @@ export class Traffic {
       this.stats.active++;
       c.dist = Math.hypot(c.x - this.focus.x, c.z - this.focus.z);
       if (c.state === 'wreck') { this.updateWreck(c, dt); this.stats.wrecks++; continue; }
+      if (c.blocker) { this.staticCar(c); continue; }
       this.drive(c, dt);
       if (c.v < 0.3) this.stats.stopped++;
       // physics body only for cars near the player
@@ -381,7 +478,7 @@ export class Traffic {
           if (ct) {
             const lv = pb.body.linvel();
             const rel = Math.hypot(lv.x - c.fx * c.v, lv.z - c.fz * c.v);
-            if (rel > 3.2) {
+            if (rel > (c.type.sturdy ?? (c.pursuit ? 5.5 : 3.2))) {
               this.makeWreck(c, lv.x * 0.55, lv.z * 0.55);
               this.hooks?.crash(c.x, c.z, Math.min(1, rel / 18));
             }
@@ -395,6 +492,22 @@ export class Traffic {
       let ambient = 0;
       for (const c of cars) if (c.active && !c.type.emergency && c.state !== 'wreck') ambient++;
       if (ambient < this.target) this.spawnAmbient();
+    }
+  }
+
+  /** Roadblock cars: solid kinematic body near the player, wrecked on a hard ram. */
+  private staticCar(c: TrafficCar): void {
+    c.dist = Math.hypot(c.x - this.focus.x, c.z - this.focus.z);
+    this.stats.stopped++;
+    if (c.dist < 80) this.ensureBody(c); else if (c.dist > 110) this.dropBody(c);
+    const pb = this.playerBody;
+    if (pb && c.collider && c.dist < 14) {
+      const ct = c.collider.contactCollider(pb.collider, 0.06);
+      if (ct) {
+        const lv = pb.body.linvel();
+        const rel = Math.hypot(lv.x, lv.z);
+        if (rel > (c.type.sturdy ?? 5.5)) { this.makeWreck(c, lv.x * 0.5, lv.z * 0.5); c.blocker = false; this.hooks?.crash(c.x, c.z, Math.min(1, rel / 18)); }
+      }
     }
   }
 
@@ -464,12 +577,12 @@ export class Traffic {
     }
 
     // --- signals and junction conflicts (only before entering the box) -----------------------------------
-    let v0 = lane.speed * c.v0f * (T.emergency ? 1.25 : 1);
+    let v0 = lane.speed * c.v0f * (T.emergency && !c.pursuit ? 1.25 : 1);
     if (c.state === 'lane' || c.state === 'park') {
       const dStop = lane.stopU - (c.u + T.L / 2);
       if (c.state === 'park') {
         consider(Math.max(0.05, lane.len - c.u - T.L / 2 - 2), 0);
-      } else if (!T.emergency) {
+      } else if (!T.emergency && !c.pursuit) {
         const lt = this.signals.light(lane.axis);
         if (lt === 2 && dStop > -1.2) consider(Math.max(0.05, dStop + 0.3), 0);
         else if (lt === 1 && dStop > 0 && dStop > (c.v * c.v) / (2 * 3.6) * 0.8) consider(Math.max(0.05, dStop + 0.3), 0);
@@ -502,6 +615,7 @@ export class Traffic {
     let blockedBy: Obstacle | null = null;
     for (let oi = 0; oi < this.nObs; oi++) {
       const o = this.obs[oi]!;
+      if (c.ram && o.kind === 'player') continue;
       const dx = o.x - c.x, dz = o.z - c.z;
       const d = dx * fx + dz * fz;
       if (d < -0.5 || d > 36) continue;
@@ -523,7 +637,7 @@ export class Traffic {
     }
 
     // --- intelligent driver model ---------------------------------------------------------------------------
-    const a = 2.3, b = 3.4, s0 = 2.2, Th = T.emergency ? 0.9 : 1.3;
+    const a = c.pursuit ? 3.4 : 2.3, b = 3.4, s0 = 2.2, Th = T.emergency || c.pursuit ? 0.9 : 1.3;
     let acc = a * (1 - Math.pow(c.v / Math.max(0.5, v0), 4));
     if (gap < 1e8) {
       const dv = c.v - lv;
@@ -557,7 +671,7 @@ export class Traffic {
     } else if (c.state === 'lane') {
       c.u += c.v * dt;
       // emergency arrival: stop at the end of the lane that reaches the destination
-      if (c.route && c.siren && c.next === null && c.u > lane.len - T.L / 2 - 3.5) {
+      if (c.route && c.siren && !c.pursuit && c.next === null && c.u > lane.len - T.L / 2 - 3.5) {
         c.state = 'park';
         c.parkT = 45;
       } else if (c.u >= lane.len) {
@@ -686,7 +800,7 @@ export class TrafficRenderer {
       this.group.add(im);
       return im;
     };
-    this.body = mk(carGeometry.box, this.bodyMat, cap, true);
+    this.body = mk(carGeometry.box, this.bodyMat, cap * 3, true);
     this.cabin = mk(carGeometry.cabin(), this.glassMat, cap, true);
     this.wheels = mk(new THREE.CylinderGeometry(1, 1, 1, 12).rotateZ(Math.PI / 2), this.tyreMat, cap * 4, false);
     this.hubs = mk(new THREE.CylinderGeometry(0.55, 0.55, 1.04, 8).rotateZ(Math.PI / 2), this.hubMat, cap * 4, false);
@@ -726,7 +840,7 @@ export class TrafficRenderer {
     this.flash += dt;
     const blink = Math.floor(this.flash * 3.2) % 2 === 0;
     const siren = Math.floor(this.flash * 5) % 2 === 0;
-    let nb = 0, nw = 0, nl = 0, np = 0;
+    let nb = 0, nc = 0, nw = 0, nl = 0, np = 0;
     const col = new THREE.Color();
     const tmp = new THREE.Color();
     const yawQ = new THREE.Quaternion();
@@ -750,11 +864,17 @@ export class TrafficRenderer {
       const dim = c.state === 'wreck' ? 0.55 : 1;
       col.setHex(c.color).multiplyScalar(dim);
       // body
-      this.put(this.body, nb, yawQ, 0, t.clear + t.bodyH / 2, 0, x, baseY, z, t.W, t.bodyH, t.L, col, tmp);
+      this.put(this.body, nb++, yawQ, 0, t.clear + t.bodyH / 2, 0, x, baseY, z, t.W, t.bodyH, t.L, col, tmp);
       // cabin
       tmp.setHex(c.color).multiplyScalar(0.28 * dim).add(new THREE.Color(0.02, 0.03, 0.045));
-      this.put(this.cabin, nb, yawQ, 0, t.clear + t.bodyH, t.cabinX, x, baseY, z, t.W * 0.9, t.cabinH, t.cabinL, tmp, col);
-      nb++;
+      this.put(this.cabin, nc++, yawQ, 0, t.clear + t.bodyH, t.cabinX, x, baseY, z, t.W * 0.9, t.cabinH, t.cabinL, tmp, col);
+      if (t.extras) {
+        const tq = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.turretYaw);
+        for (const e of t.extras) {
+          col.setHex(c.color).multiplyScalar(dim * 0.92);
+          this.put(this.body, nb++, e.turret ? tq : yawQ, e.ox, e.oy, e.oz, x, baseY, z, e.sx, e.sy, e.sz, col, tmp);
+        }
+      }
       // wheels
       const wz = t.L * 0.32;
       const wx = t.W / 2 - 0.1;
@@ -791,7 +911,8 @@ export class TrafficRenderer {
         this.pools.setMatrixAt(np++, _m);
       }
     }
-    this.body.count = this.cabin.count = nb;
+    this.body.count = nb;
+    this.cabin.count = nc;
     this.wheels.count = this.hubs.count = nw;
     this.lights.count = nl;
     this.pools.count = np;

@@ -36,6 +36,10 @@ export class Npcs {
   private preset: QualityPreset;
   private readonly pv = new THREE.Matrix4();
   ctx: NpcContext | null = null;
+  /** Extra shootable things (helicopters) and gunshot notifications, installed by the combat layer. */
+  extraRay: ((ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number) => { t: number; target: unknown } | null) | null = null;
+  extraHurt: ((target: unknown, damage: number) => boolean) | null = null;
+  onGunshot: ((x: number, z: number) => void) | null = null;
 
   constructor(private readonly world: World, physics: Physics, private readonly audio: AudioEngine, preset: QualityPreset) {
     this.preset = preset;
@@ -46,8 +50,8 @@ export class Npcs {
     world.rig.register(this.trafficView.lightMat, World.glow);
     world.scene.add(this.trafficView.group);
     world.pipeline.hideForAO.push(this.trafficView.poolMesh);
-    this.peds = new Pedestrians(world.city.plan, world.signals, 170);
-    this.pedView = new PedRenderer(170);
+    this.peds = new Pedestrians(world.city.plan, world.signals, 210);
+    this.pedView = new PedRenderer(210);
     for (const m of this.pedView.materials) world.rig.register(m);
     world.scene.add(this.pedView.group);
     this.ambient = new Ambient(this.traffic, this.peds, world.city.plan, audio);
@@ -128,16 +132,21 @@ export class Npcs {
   }
 
   // ---- hooks for the weapon system -------------------------------------------------------------------------
-  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: Ped; head: boolean } | null {
+  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null {
     const h = this.peds.rayHit(ox, oy, oz, dx, dy, dz, max);
+    const e = this.extraRay?.(ox, oy, oz, dx, dy, dz, h ? Math.min(max, h.t) : max) ?? null;
+    if (e && (!h || e.t < h.t)) return { t: e.t, target: e.target, head: false };
     return h ? { t: h.t, target: h.ped, head: h.head } : null;
   }
-  hurt(target: Ped, dx: number, dz: number, damage: number, head = false): void {
+  hurt(targetAny: unknown, dx: number, dz: number, damage: number, head = false): void {
+    if (this.extraHurt?.(targetAny, damage)) return;
+    const target = targetAny as Ped;
     this.peds.knockDown(target, dx * 1.2, dz * 1.2, damage, true, head);
     this.peds.alarm(target.x, target.z, 'crash');
   }
   alarm(x: number, z: number): void {
     this.peds.alarm(x, z, 'gunshot');
+    this.onGunshot?.(x, z);
   }
 
   /** Test helper: advance the simulation without rendering. */

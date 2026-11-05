@@ -173,6 +173,8 @@ export class Ped {
   /** Gun raised (renders the aiming pose with a weapon). */
   aim = false;
   fireT = 0;
+  /** Combat AI: currently has line of sight to its target. */
+  sees = false;
   /** Never despawned by distance (police units are managed by the police director). */
   keep = false;
 }
@@ -222,7 +224,7 @@ export class Pedestrians {
   private screamT = 0;
   stats = { active: 0, fleeing: 0, down: 0, crossing: 0 };
 
-  constructor(private readonly plan: CityPlan, private readonly signals: SignalClock, readonly capacity = 170) {
+  constructor(private readonly plan: CityPlan, private readonly signals: SignalClock, readonly capacity = 210) {
     this.net = new PedNet(plan);
     for (let i = 0; i < capacity; i++) this.peds.push(new Ped());
   }
@@ -316,8 +318,14 @@ export class Pedestrians {
 
   /** Scripted pedestrian placed anywhere (ambient events use this). */
   place(x: number, z: number, arch: Arch, state: PedState, yaw = 0, district?: District | 'beach'): Ped | null {
-    const p = this.free();
-    if (!p) return null;
+    let p = this.free();
+    if (!p) {
+      // no free slot: evict the farthest ordinary pedestrian
+      let far = 0;
+      for (const q of this.peds) if (q.active && q.role === 'civ' && !q.keep && q.dist > far) { far = q.dist; p = q; }
+      if (!p || far < 40) return null;
+    }
+    p.role = 'civ'; p.ai = null; p.aim = false; p.keep = false; p.armor = 0; p.sees = false; p.buddy = null;
     p.active = true;
     p.id = this.nextId++;
     this.outfit(p, arch, district ?? this.districtAt(x, z));
@@ -336,7 +344,7 @@ export class Pedestrians {
   /** A loud or alarming thing happened at (x, z): nearby pedestrians run, stare or film. */
   alarm(x: number, z: number, kind: 'gunshot' | 'crash' | 'siren'): void {
     for (const p of this.peds) {
-      if (!p.active || p.state === 'down' || p.state === 'lie') continue;
+      if (!p.active || p.state === 'down' || p.state === 'lie' || p.role !== 'civ') continue;
       const d = Math.hypot(p.x - x, p.z - z);
       const flee = kind === 'gunshot' ? 34 : kind === 'crash' ? 12 : 0;
       const film = kind === 'gunshot' ? 70 : kind === 'crash' ? 45 : 0;
