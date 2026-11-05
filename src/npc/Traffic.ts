@@ -685,7 +685,7 @@ export class TrafficRenderer {
   }
 
   get materials(): THREE.Material[] {
-    return [this.bodyMat, this.glassMat, this.tyreMat, this.hubMat, this.lightMat];
+    return [this.bodyMat, this.glassMat, this.tyreMat, this.hubMat];
   }
 
   get poolMesh(): THREE.Object3D {
