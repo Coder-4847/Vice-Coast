@@ -286,6 +286,18 @@ export class AudioEngine {
     osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
   }
 
+  /** Explosion: a low thump, a wide noise burst and a long rumbling tail. `size` 1 ≈ a car. */
+  explosion(pos: Node3, size = 1): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.out(pos, 28 * size);
+    this.wetOpen.gain.setTargetAtTime(0.6, t, 0.01);
+    this.tone(o, t, { freq: 90, to: 28, peak: 1.0, decay: 0.55 * size, send: 0.5 });
+    this.burst(o, t, { type: 'lowpass', freq: 1800, sweepTo: 120, q: 0.4, peak: 1.0, attack: 0.004, decay: 1.1 * size, send: 0.7 });
+    this.burst(o, t, { type: 'highpass', freq: 2500, q: 0.6, peak: 0.55, decay: 0.2, send: 0.4 });
+    this.burst(o, t + 0.12, { type: 'lowpass', freq: 400, q: 0.5, peak: 0.6, attack: 0.05, decay: 1.8 * size, send: 0.6 });
+  }
+
   /** Metal-on-metal crash, `strength` 0–1. */
   crash(pos: Node3, strength: number): void {
     if (!this.ready()) return;

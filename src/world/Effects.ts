@@ -254,6 +254,25 @@ export class Effects {
     pool.mesh.instanceMatrix.needsUpdate = true;
   }
 
+  /** A fireball with sparks, dust and a lingering smoke column. `size` 1 ≈ a car. */
+  explosion(p: THREE.Vector3, size = 1): void {
+    const up = new THREE.Vector3(0, 1, 0);
+    const n = (k: number) => Math.max(1, Math.round(k * size));
+    this.emit(p, up, { kind: 'smoke', color: [1.0, 0.55, 0.18], count: n(14), speed: 5 * size, life: 0.55, size: 1.3 * size, gravity: -1.5, alpha: 0.95 });
+    this.emit(p, up, { kind: 'spark', color: [1.0, 0.82, 0.45], count: n(44), speed: 22 * size, life: 0.9, size: 0.05, gravity: 9, alpha: 1 });
+    this.emit(p, up, { kind: 'smoke', color: [0.16, 0.15, 0.14], count: n(22), speed: 3.5, life: 3.4, size: 2.2 * size, gravity: -1.1, alpha: 0.7 });
+    this.emit(p, up, { kind: 'dust', color: [0.5, 0.45, 0.4], count: n(18), speed: 9 * size, life: 1.2, size: 1.4 * size, gravity: -0.3, alpha: 0.5 });
+  }
+
+  /** A drifting puff of dark (or orange, when burning) smoke. */
+  smoke(p: THREE.Vector3, burning: boolean): void {
+    const up = new THREE.Vector3(0, 1, 0);
+    this.emit(p, up, burning
+      ? { kind: 'smoke', color: [1.0, 0.5, 0.15], count: 2, speed: 1.6, life: 0.45, size: 0.5, gravity: -1.2, alpha: 0.8 }
+      : { kind: 'smoke', color: [0.2, 0.2, 0.2], count: 2, speed: 1.0, life: 1.8, size: 0.6, gravity: -0.9, alpha: 0.5 });
+    if (burning) this.emit(p, up, { kind: 'smoke', color: [0.12, 0.12, 0.12], count: 1, speed: 1.2, life: 2.6, size: 0.9, gravity: -1.0, alpha: 0.55 });
+  }
+
   /** Visible bullet trail. */
   tracer(from: THREE.Vector3, to: THREE.Vector3): void {
     const t = this.tracers[this.tracerCursor++ % this.tracers.length]!;

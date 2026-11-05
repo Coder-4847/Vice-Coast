@@ -35,6 +35,7 @@ export class VehicleManager {
     if (!spec) throw new Error(`Unknown vehicle ${id}`);
     const y = Math.max(terrainHeight(x, z), 0);
     const v = new Vehicle(this.physics, spec, x, y, z, yaw);
+    v.home = { x, z, yaw };
     if (color) (v as { paintOverride?: string }).paintOverride = color;
     this.vehicles.push(v);
     const visual = createVisual(v);
@@ -42,6 +43,19 @@ export class VehicleManager {
     this.group.add(visual.group);
     this.onVisual?.(visual);
     return v;
+  }
+
+  /** Put every vehicle back in its slot, repaired (after a wasted / busted respawn). */
+  resetAll(): void {
+    for (const v of this.vehicles) {
+      if (v.occupied || !v.home) continue;
+      v.health = 1000;
+      v.exploded = false;
+      for (const w of v.wheels) w.popped = false;
+      v.teleport(v.home.x, Math.max(terrainHeight(v.home.x, v.home.z), 0), v.home.z, v.home.yaw);
+      const m = this.models.get(v);
+      if (m) for (const mat of m.materials) { const c = (mat as THREE.MeshStandardMaterial).color; if (c && (mat as { userData: { burnt?: boolean } }).userData.burnt) { c.multiplyScalar(4); (mat as { userData: { burnt?: boolean } }).userData.burnt = false; } }
+    }
   }
 
   visualOf(v: Vehicle): VehicleVisual | undefined {
@@ -72,7 +86,7 @@ export class VehicleManager {
     let bestD = maxDist;
     const door = new THREE.Vector3();
     for (const v of this.vehicles) {
-      if (v.occupied) continue;
+      if (v.occupied || v.exploded) continue;
       this.doorWorld(v, door);
       const d = Math.hypot(door.x - pos.x, door.z - pos.z);
       // also allow approaching the nearest body corner

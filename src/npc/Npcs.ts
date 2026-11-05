@@ -114,13 +114,13 @@ export class Npcs {
     this.hits.length = 0;
     for (const c of this.traffic.cars) {
       if (!c.active || c.state === 'park' || c.v < 1.8) continue;
-      this.hits.push({ x: c.x, z: c.z, vx: c.fx * c.v, vz: c.fz * c.v, fx: c.fx, fz: c.fz, hl: c.type.L / 2, hw: c.type.W / 2 });
+      this.hits.push({ player: false, x: c.x, z: c.z, vx: c.fx * c.v, vz: c.fz * c.v, fx: c.fx, fz: c.fz, hl: c.type.L / 2, hw: c.type.W / 2 });
     }
     for (const v of ctx.vehicles) {
       const lv = v.body.linvel();
       const sp = Math.hypot(lv.x, lv.z);
       if (sp < 1.8) continue;
-      this.hits.push({ x: v.position.x, z: v.position.z, vx: lv.x, vz: lv.z, fx: lv.x / sp, fz: lv.z / sp, hl: v.spec.size.length / 2, hw: v.spec.size.width / 2 });
+      this.hits.push({ player: true, x: v.position.x, z: v.position.z, vx: lv.x, vz: lv.z, fx: lv.x / sp, fz: lv.z / sp, hl: v.spec.size.length / 2, hw: v.spec.size.width / 2 });
     }
     p.update(Math.min(dt, 0.1), this.hits, ctx.pos);
     this.pedView.sync(p.peds);
@@ -128,12 +128,12 @@ export class Npcs {
   }
 
   // ---- hooks for the weapon system -------------------------------------------------------------------------
-  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: Ped } | null {
+  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: Ped; head: boolean } | null {
     const h = this.peds.rayHit(ox, oy, oz, dx, dy, dz, max);
-    return h ? { t: h.t, target: h.ped } : null;
+    return h ? { t: h.t, target: h.ped, head: h.head } : null;
   }
-  hurt(target: Ped, dx: number, dz: number, damage: number): void {
-    this.peds.knockDown(target, dx * 1.2, dz * 1.2, damage);
+  hurt(target: Ped, dx: number, dz: number, damage: number, head = false): void {
+    this.peds.knockDown(target, dx * 1.2, dz * 1.2, damage, true, head);
     this.peds.alarm(target.x, target.z, 'crash');
   }
   alarm(x: number, z: number): void {

@@ -71,7 +71,9 @@ export class WeaponSystem {
   /** The most recent hit, kept until the next one (HUD, tests, debugging). */
   lastHit: HitEvent | null = null;
   /** Pedestrian hit-testing and alarm hooks, installed by the NPC system. */
-  npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown } | null; hurt(target: unknown, dx: number, dz: number, damage: number): void; alarm(x: number, z: number): void } | null = null;
+  npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null; hurt(target: unknown, dx: number, dz: number, damage: number, head: boolean): void; alarm(x: number, z: number): void } | null = null;
+  /** Bullets that hit a vehicle collider (installed by the combat system). */
+  onColliderHit: ((handle: number, damage: number) => boolean) | null = null;
   /** Total shots fired this session. */
   shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
@@ -309,9 +311,12 @@ export class WeaponSystem {
     if (npcHit) {
       const n = new THREE.Vector3().copy(_dir).negate();
       this.effects.impact(end, n, 'flesh', false);
-      this.npc?.hurt(npcHit.target, _dir.x, _dir.z, 40);
+      this.npc?.hurt(npcHit.target, _dir.x, _dir.z, 40, npcHit.head);
       this.hitMarker = 0.18;
       this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
+    } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, 22)) {
+      this.effects.impact(hit.point, hit.normal, hit.surface, false);
+      this.hitThisFrame = this.lastHit = { hit, target: false };
     } else if (hit) {
       const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _dir, 22);
       this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);

@@ -227,6 +227,30 @@ export class Driving {
     return out.applyQuaternion(v.quaternion).add(v.position);
   }
 
+  /** Leave the vehicle at once, wherever it is and however fast it is going (death, arrest, explosion). */
+  abort(): void {
+    const v = this.vehicle;
+    if (!v || this.mode === 'foot') return;
+    const { player, vehicles, viewmodel } = this.d;
+    vehicles.doorWorld(v, _a);
+    _r.set(1, 0, 0).applyQuaternion(v.quaternion);
+    _b.copy(_r).multiplyScalar(v.spec.doorSide);
+    _b.y = 0;
+    _b.normalize();
+    const x = _a.x + _b.x * 0.9, z = _a.z + _b.z * 0.9;
+    player.setCollisionEnabled(true);
+    player.placeAt(x, Math.max(terrainHeight(x, z), 0) + 0.02, z);
+    player.frozen = false;
+    viewmodel.group.visible = true;
+    v.occupied = false;
+    v.input.throttle = 0;
+    v.input.steer = 0;
+    this.mode = 'foot';
+    this.blend = 0;
+    this.parkBrake = true;
+    this.vehicle = null;
+  }
+
   /** Try to leave the vehicle (called when the interact key is pressed while driving). */
   tryExit(): void {
     const v = this.vehicle;

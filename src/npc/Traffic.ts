@@ -18,6 +18,7 @@ export interface CarType {
   wheelR: number;
   colors: number[];
   weight: number;
+  hp?: number;
   emergency?: EmergencyKind;
   /** Only spawned in industrial parts of town. */
   industrial?: boolean;
@@ -72,6 +73,9 @@ export class TrafficCar {
   wreckAge = 0;
   /** Set when a car has been hit hard enough to turn into a wreck. */
   angry = false;
+  hp = 100;
+  /** Seconds until a burning wreck explodes (−1 = not burning). */
+  fuse = -1;
 }
 
 export interface Obstacle { x: number; z: number; r: number; vx: number; vz: number; kind: 'player' | 'ped' | 'wreck' }
@@ -221,6 +225,8 @@ export class Traffic {
     c.siren = false;
     c.parkT = 0;
     c.life = 0;
+    c.hp = type.hp ?? 100;
+    c.fuse = -1;
     this.place(c, lane, u, v);
   }
 
@@ -258,6 +264,19 @@ export class Traffic {
     return null;
   }
 
+  /** Wreck a car right now (explosions, shooting). */
+  wreckCar(c: TrafficCar, ivx: number, ivz: number): void {
+    if (c.state === 'wreck' || !c.active) return;
+    if (c.siren) c.siren = false;
+    this.makeWreck(c, ivx, ivz);
+  }
+
+  /** Remove a car from the world immediately. */
+  remove(c: TrafficCar): void {
+    this.dropBody(c);
+    c.active = false;
+  }
+
   /** A crashed car left standing (a dynamic body), used by accident scenes. */
   spawnWreck(x: number, z: number, yaw: number, type: CarType = TYPE.sedan!, color?: number): TrafficCar | null {
     const c = this.free();
@@ -271,6 +290,7 @@ export class Traffic {
     c.route = null;
     c.siren = false;
     c.v = 0;
+    c.hp = 60; c.fuse = -1;
     c.x = c.px = x; c.z = c.pz = z; c.yaw = c.pyaw = yaw;
     c.fx = Math.sin(yaw); c.fz = Math.cos(yaw);
     this.makeWreck(c, 0, 0);

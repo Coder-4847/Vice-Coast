@@ -18,6 +18,8 @@ import { VehicleManager } from './vehicles/VehicleManager';
 import { Vehicle } from './vehicles/Vehicle';
 import { Driving } from './vehicles/Driving';
 import { Npcs } from './npc/Npcs';
+import { Combat } from './combat/Combat';
+import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
@@ -49,6 +51,8 @@ export class Game {
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
   npcs: Npcs | null = null;
+  combat: Combat | null = null;
+  combatHud: CombatHud | null = null;
   private carSound: ReturnType<AudioEngine['createVehicleSound']> = null;
   private baseFov = 75;
   /** 0 → 1 camera swoop from the title shot into the player's eyes. */
@@ -145,6 +149,15 @@ export class Game {
     this.setupVehicles();
     this.npcs = new Npcs(this.world, this.physics, this.audio, this.resolvePreset());
     if (this.weapon) this.weapon.npc = this.npcs;
+    this.combatHud = new CombatHud(document.getElementById('ui')!, this.ui.hudRoot);
+    if (this.weapon && this.effects && this.driving && this.vehicles && this.player) {
+      this.combat = new Combat({
+        world: this.world, physics: this.physics, audio: this.audio, effects: this.effects, player: this.player,
+        driving: this.driving, vehicles: this.vehicles, npcs: this.npcs, weapon: this.weapon, hud: this.combatHud,
+        canvas: this.canvas, camera: this.camera, toast: (m) => this.ui.toast(m),
+      });
+      this.weapon.onColliderHit = (h, d) => this.combat!.hitCollider(h, d);
+    }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
     this.world.update(0, false);
@@ -228,6 +241,17 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ loop
+
+  private updateCombat(dt: number): void {
+    const c = this.combat;
+    if (!c || !this.combatHud) return;
+    c.update(dt);
+    this.combatHud.update(dt, {
+      health: c.vitals.health, armour: c.vitals.armour, hurt: c.vitals.hurtFlash,
+      stars: 0, seen: false, search: 0, status: '',
+    });
+    c.cameraEffect(this.camera);
+  }
 
   /** Hand the NPC systems this tick's view of the player and vehicles. */
   private syncNpcs(): void {
@@ -343,7 +367,7 @@ export class Game {
     const vm = this.viewmodel;
     if (weapon && vm && this.effects) {
       if (!inCar) {
-        weapon.update(dt);
+        if (!this.combat?.flow) weapon.update(dt);
         // zoom in a little when aiming, out a little when sprinting
         this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
         this.camera.updateProjectionMatrix();
@@ -354,6 +378,7 @@ export class Game {
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
     this.npcs?.update(dt, alpha);
+    this.updateCombat(dt);
     this.updateVehicleAudio(driving);
     this.touch.setMode(driving && driving.mode !== 'foot' ? 'vehicle' : 'foot');
     if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);

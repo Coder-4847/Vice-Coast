@@ -20,6 +20,8 @@ export interface VehicleInput {
 }
 
 export interface WheelState {
+  /** Tyre shot out / burst on a spike strip: much less grip. */
+  popped: boolean;
   /** Local mount position (x, z). */
   x: number;
   z: number;
@@ -123,6 +125,10 @@ export class Vehicle {
   doorOpen = 0;
   occupied = false;
   health = 1000;
+  /** Burnt-out wreck (cannot be driven or entered). */
+  exploded = false;
+  /** World spawn slot, used when the lot is reset after wasted/busted. */
+  home: { x: number; z: number; yaw: number } | null = null;
 
   static wetness = 0;
 
@@ -185,7 +191,7 @@ export class Vehicle {
       const driven = spec.drive === 'awd' || (spec.drive === 'fwd' && front) || (spec.drive === 'rwd' && !front);
       this.wheels.push({
         x: wx, z: wz, mountY: -spec.comHeight + spec.wheelRadius + (spec.suspension.rest - x0), front, driven,
-        stiffness: k, damping: c, comp: x0, prevComp: x0, steer: 0, spin: 0, onGround: false, wasOnGround: false, load: 0, slip: 0,
+        stiffness: k, damping: c, comp: x0, prevComp: x0, steer: 0, spin: 0, onGround: false, wasOnGround: false, popped: false, load: 0, slip: 0,
         sliding: false, surface: 'asphalt', vLong: 0, probe: newProbe(), visualComp: x0, contact: new THREE.Vector3(),
       });
     }
@@ -453,6 +459,7 @@ export class Vehicle {
       let mu = SURFACE_MU[w.surface] ?? 1;
       if (mu < 1) mu = 1 - (1 - mu) * spec.grip.offroad; // off-road capable vehicles lose less grip
       if (w.surface === 'asphalt' || w.surface === 'concrete') mu *= 1 - 0.32 * wetness;
+      if (w.popped) mu *= 0.4;
       const muLong = spec.grip.long * mu;
       let muLat = spec.grip.lat * mu * (w.front ? spec.grip.balance : 1);
       const rear = !w.front;

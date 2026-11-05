@@ -77,7 +77,8 @@ export class PedNet {
 
 // ====================================================================================== appearances
 
-export type Arch = 'walker' | 'commuter' | 'jogger' | 'worker' | 'tourist' | 'party' | 'drunk' | 'kid' | 'musician' | 'listener' | 'protester' | 'sunbather' | 'stroller' | 'local';
+export type Role = 'civ' | 'cop' | 'swat' | 'fed' | 'sniper' | 'soldier';
+export type Arch = 'cop' | 'swat' | 'fed' | 'soldier' | 'walker' | 'commuter' | 'jogger' | 'worker' | 'tourist' | 'party' | 'drunk' | 'kid' | 'musician' | 'listener' | 'protester' | 'sunbather' | 'stroller' | 'local';
 export type PedState = 'walk' | 'wait' | 'idle' | 'flee' | 'film' | 'down' | 'stand' | 'path' | 'lie';
 
 const SKIN = [0xf1c7a5, 0xe0ac86, 0xc68863, 0xa8693f, 0x7a4a2b, 0x5b3a22];
@@ -111,6 +112,10 @@ export function lookFor(arch: Arch, district: District | 'beach', r: () => numbe
     case 'drunk': shirt = pick(r, CASUAL); pants = pick(r, JEANS); break;
     case 'jogger': shirt = pick(r, SPORT); pants = pick(r, [0x111114, 0x24262e, 0xc8c8c8]); shoe = pick(r, [0xf5f5f5, 0xff5a3c, 0x7dff3b]); long = r() < 0.3; break;
     case 'sunbather': shirt = pick(r, BRIGHT); pants = pick(r, [0x2a6ac8, 0xc83a4a, 0x1a1a1a, 0xf0f0f0]); long = false; shoe = skin; break;
+    case 'cop': shirt = 0x1f3358; pants = 0x161c2a; shoe = 0x0e0e10; break;
+    case 'swat': shirt = 0x16181b; pants = 0x1b1d20; shoe = 0x0c0c0c; break;
+    case 'fed': shirt = 0x14161a; pants = 0x14161a; shoe = 0x0c0c0c; break;
+    case 'soldier': shirt = 0x4a5238; pants = 0x434a33; shoe = 0x1a1a14; break;
     case 'protester': shirt = pick(r, [0xc83a3a, 0x1d1d22, 0x2a6a4a, 0xf0f0f0]); pants = pick(r, JEANS); break;
     case 'musician': shirt = pick(r, [0x6b2a2a, 0x1d2a3a, 0x3a3a2a]); pants = pick(r, JEANS); break;
     case 'kid': shirt = pick(r, BRIGHT); pants = pick(r, [...JEANS, ...SHORTS]); long = r() < 0.5; shoe = pick(r, [0xff5a3c, 0x2ee6ff, 0x111111]); break;
@@ -119,8 +124,10 @@ export function lookFor(arch: Arch, district: District | 'beach', r: () => numbe
       else if (district === 'downtown') { shirt = r() < 0.4 ? pick(r, SHIRT_BIZ) : pick(r, CASUAL); }
   }
   const kid = arch === 'kid';
+  // helmets / caps share the uniform colour
+  const hairOut = arch === 'swat' || arch === 'soldier' ? shirt : arch === 'cop' ? 0x172544 : arch === 'fed' ? 0x14161a : hair;
   return {
-    skin, hair, shirt, sleeve: long ? shirt : skin, pants, shoe,
+    skin, hair: hairOut, shirt, sleeve: long ? shirt : skin, pants, shoe,
     h: kid ? 0.62 + r() * 0.1 : 0.93 + r() * 0.14,
     w: kid ? 0.78 : 0.9 + r() * 0.24,
   };
@@ -159,13 +166,25 @@ export class Ped {
   screamed = false;
   seed = 0;
   dist = 1e9;
+  role: Role = 'civ';
+  armor = 0;
+  /** Combat AI (police etc.); when set it replaces the civilian state machine. */
+  ai: ((p: Ped, dt: number) => void) | null = null;
+  /** Gun raised (renders the aiming pose with a weapon). */
+  aim = false;
+  fireT = 0;
+  /** Never despawned by distance (police units are managed by the police director). */
+  keep = false;
 }
 
 export interface PedHooks {
   scream(x: number, z: number): void;
+  /** A pedestrian or officer was hit / killed (for the wanted system). */
+  hit?(p: Ped, byPlayer: boolean): void;
+  killed?(p: Ped, byPlayer: boolean): void;
 }
 
-export interface VehicleHit { x: number; z: number; vx: number; vz: number; fx: number; fz: number; hl: number; hw: number }
+export interface VehicleHit { player: boolean; x: number; z: number; vx: number; vz: number; fx: number; fz: number; hl: number; hw: number }
 
 const _q = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
@@ -354,23 +373,36 @@ export class Pedestrians {
     }
   }
 
-  knockDown(p: Ped, vx: number, vz: number, damage = 100): void {
-    p.health -= damage;
+  knockDown(p: Ped, vx: number, vz: number, damage = 100, byPlayer = false, head = false): void {
+    if (p.state === 'down') return;
+    let dmg = damage * (head ? 2.6 : 1);
+    if (p.armor > 0) {
+      const soak = Math.min(p.armor, dmg * 0.6);
+      p.armor -= soak;
+      dmg -= soak;
+    }
+    p.health -= dmg;
+    this.hooks?.hit?.(p, byPlayer);
     if (p.health > 0) {
-      this.startFlee(p, p.x - vx, p.z - vz, 9);
+      if (p.role === 'civ') this.startFlee(p, p.x - vx, p.z - vz, 9);
       return;
     }
     p.state = 'down';
+    p.ai = null;
+    p.aim = false;
+    p.keep = false;
     p.stateT = 0;
+    p.idleT = 0;
     p.vx = vx; p.vz = vz;
     p.fallSign = this.rnd() < 0.5 ? 1 : -1;
     p.fall = 0;
     p.onRoad = this.plan.roadAt(p.x, p.z).kind === 'road';
+    this.hooks?.killed?.(p, byPlayer);
   }
 
   /** Bullet test against all pedestrians; returns the nearest hit (distance along the ray). */
-  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): { ped: Ped; t: number } | null {
-    let best: { ped: Ped; t: number } | null = null;
+  rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, maxDist: number): { ped: Ped; t: number; head: boolean } | null {
+    let best: { ped: Ped; t: number; head: boolean } | null = null;
     for (const p of this.peds) {
       if (!p.active || p.state === 'lie') continue;
       const lying = p.state === 'down' ? p.fall > 0.5 : false;
@@ -388,7 +420,7 @@ export class Pedestrians {
       if (t < 0 || t > maxDist || (best && t >= best.t)) continue;
       const y = oy + dy * t;
       if (y < p.y || y > p.y + h) continue;
-      best = { ped: p, t };
+      best = { ped: p, t, head: !lying && y > p.y + 1.42 * p.look.h };
     }
     return best;
   }
@@ -404,7 +436,8 @@ export class Pedestrians {
       this.stats.active++;
       p.dist = Math.hypot(p.x - this.focus.x, p.z - this.focus.z);
       p.stateT -= dt;
-      switch (p.state) {
+      if (p.ai && p.state !== 'down') { p.ai(p, dt); }
+      else switch (p.state) {
         case 'walk': this.walk(p, dt); break;
         case 'wait': this.wait(p, dt); break;
         case 'idle':
@@ -431,7 +464,7 @@ export class Pedestrians {
       if (p.state !== 'down' && p.state !== 'lie') {
         const dx = p.x - player.x, dz = p.z - player.z;
         const d = Math.hypot(dx, dz);
-        if (d < 0.9 && d > 0.01) { p.x += (dx / d) * (0.9 - d) * Math.min(1, dt * 8); p.z += (dz / d) * (0.9 - d) * Math.min(1, dt * 8); }
+        if (d < 0.9 && d > 0.01 && p.role === 'civ') { p.x += (dx / d) * (0.9 - d) * Math.min(1, dt * 8); p.z += (dz / d) * (0.9 - d) * Math.min(1, dt * 8); }
         for (const v of vehicles) {
           const rx = p.x - v.x, rz = p.z - v.z;
           const sp = Math.hypot(v.vx, v.vz);
@@ -440,7 +473,7 @@ export class Pedestrians {
           const lx = rx * v.fz - rz * v.fx; // lateral
           const lz = rx * v.fx + rz * v.fz; // along
           if (Math.abs(lz) < v.hl + 0.3 && Math.abs(lx) < v.hw + 0.3) {
-            if (sp > 3.5) { this.knockDown(p, v.vx * 0.55, v.vz * 0.55); this.alarm(p.x, p.z, 'crash'); }
+            if (sp > 3.5) { this.knockDown(p, v.vx * 0.55, v.vz * 0.55, p.role === 'civ' ? 100 : 60, v.player); this.alarm(p.x, p.z, 'crash'); }
           } else if (lz > 0 && lz < 11 + sp * 0.5 && Math.abs(lx) < v.hw + 2.2 && p.state !== 'flee' && sp > 5) {
             // the car is coming: sprint sideways out of its path
             this.startFlee(p, v.x, v.z, 2.5);
@@ -458,7 +491,7 @@ export class Pedestrians {
     }
     // despawn those far away or out of sight
     for (const p of this.peds) {
-      if (!p.active || p.state === 'down' && p.dist < 90) continue;
+      if (!p.active || p.keep || p.state === 'down' && p.dist < 90) continue;
       if (p.dist > 235) p.active = false;
       else if (p.dist > 120 && p.state === 'walk' && this.rnd() < dt * 0.15) {
         _p.set(p.x, G + 1, p.z);
@@ -731,7 +764,8 @@ export class PedRenderer {
       let armR = -armL;
       let legL = sw, legR = -sw;
       if (p.state === 'down') { legL = 0.3; legR = -0.2; armL = 0.5; armR = -0.4; }
-      if (p.state === 'film') { armL = -1.35; armR = -1.35; }
+      if (p.aim) { armL = -1.5; armR = -1.5; }
+      else if (p.state === 'film') { armL = -1.35; armR = -1.35; }
       else if (p.arch === 'protester' || p.accessory === 2) { armL = -2.85; armR = -2.85; }
       else if (p.accessory === 3) { armL = -0.9; armR = -0.55; }
       else if (p.accessory === 1 && p.state !== 'down' && p.state !== 'flee') armR = -1.2;
@@ -751,7 +785,10 @@ export class PedRenderer {
         nl++;
       }
       // accessories
-      if (p.state === 'film' || (p.accessory === 1 && p.state !== 'down' && p.state !== 'flee')) {
+      if (p.role !== 'civ' && p.state !== 'down') {
+        const rifle = p.role !== 'cop' || p.look.h > 1.02;
+        this.set(this.acc, nacc++, _qb, 0.06 * w, 1.3 * h, (rifle ? 0.5 : 0.36) * h, bx, by, bz, rifle ? 0.07 : 0.05, rifle ? 0.1 : 0.1, rifle ? 0.85 : 0.3, 0x15171a);
+      } else if (p.state === 'film' || (p.accessory === 1 && p.state !== 'down' && p.state !== 'flee')) {
         this.set(this.acc, nacc++, _qb, 0.255 * w, 1.3 * h, 0.5 * h, bx, by, bz, 0.07, 0.14, 0.015, 0x111214);
       } else if (p.accessory === 4) {
         this.set(this.acc, nacc++, _qb, -0.3 * w, 0.62 * h, 0.04, bx, by, bz, 0.34, 0.26, 0.1, 0x2a2018);
