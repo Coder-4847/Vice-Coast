@@ -149,7 +149,31 @@ export class World {
     this.atmosphere.markEnvDirty();
   }
 
+  /** Local weather follows the land (snow high on Mount Kestrel, dust gusts on the desert plateau) until the player picks one. */
+  private regionalOn = true;
+  private regionalT = 0;
+  private regionalNow: WeatherType | null = null;
+  private baseWeather: WeatherType = 'clear';
+  private readonly grade = { sat: 1, r: 1, g: 1, b: 1 };
+  private readonly sfScratch = { desert: 0, forest: 0, salt: 0, dirt: 0 };
+
+  private regionalWeather(x: number, y: number, z: number): WeatherType | null {
+    if (!['clear', 'cloudy', 'overcast'].includes(this.baseWeather)) return null;
+    const K = GEO.kestrel;
+    if (y > 520 && Math.hypot(x - K.x, z - K.z) < 1100) return 'snow';
+    if (x > 2700 && x < 4700 && z > -900 && z < 2300 && y < 260) {
+      const hour = this.tod.hour;
+      // gusts come in on a slow, repeatable schedule through the afternoon
+      const k = Math.floor(hour * 2) % 7;
+      if (hour > 11 && hour < 19 && (k === 1 || k === 4)) return 'dust';
+    }
+    return null;
+  }
+
   setWeather(type: WeatherType, instant = false): void {
+    this.regionalOn = false;
+    this.regionalNow = null;
+    this.baseWeather = type;
     this.weather.set(type, instant);
     if (instant) this.atmosphere.markEnvDirty();
   }
@@ -171,6 +195,31 @@ export class World {
     this.wheel.update(running ? dt : 0, look.night);
     this.animated.update(running ? dt : 0, cam, look.night, w.current.wind);
     this.lake.sea.value = this.ocean.sea.value * 0.3;
+    if (this.regionalOn) {
+      this.regionalT -= dt;
+      if (this.regionalT <= 0) {
+        this.regionalT = 2.5;
+        const r = this.regionalWeather(cam.position.x, cam.position.y, cam.position.z);
+        if (r !== this.regionalNow) {
+          this.regionalNow = r;
+          this.weather.set(r ?? this.baseWeather);
+        }
+      }
+    }
+    // colour grade follows the biome: warmer and punchier in the desert, cooler and greener in the forests
+    {
+      const td = this.terrainData;
+      const g = this.grade;
+      let sat = 1, tr = 1, tg = 1, tb = 1;
+      if (td) {
+        const s = td.surface(cam.position.x, cam.position.z, this.sfScratch);
+        sat = 1 + 0.1 * s.desert - 0.03 * s.forest;
+        tr = 1 + 0.05 * s.desert - 0.02 * s.forest;
+        tg = 1 + 0.005 * s.desert + 0.015 * s.forest;
+        tb = 1 - 0.07 * s.desert + 0.005 * s.forest;
+      }
+      g.sat = damp(g.sat, sat, 0.5, dt); g.r = damp(g.r, tr, 0.5, dt); g.g = damp(g.g, tg, 0.5, dt); g.b = damp(g.b, tb, 0.5, dt);
+    }
     this.ocean.follow(cam);
     this.ocean.sea.value = clamp(0.3 + w.current.wind / 13, 0.3, 1.7);
     this.updateSunVisibility(dt);
@@ -179,7 +228,8 @@ export class World {
     const p = this.post;
     p.exposure = look.exposure * w.current.exposure;
     p.tint.copy(look.tint);
-    p.saturation = look.saturation * w.current.saturation;
+    p.tint.r *= this.grade.r; p.tint.g *= this.grade.g; p.tint.b *= this.grade.b;
+    p.saturation = look.saturation * w.current.saturation * this.grade.sat;
     p.bloom = look.bloom;
     p.vignette = look.vignette;
     p.flash = w.flash;

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import type { AmbienceBed, AudioEngine, SirenVoice, StreetMusic } from '../audio/AudioEngine';
+import type { AmbienceBed, AudioEngine, NatureBed, SirenVoice, StreetMusic } from '../audio/AudioEngine';
+import { TerrainData } from '../world/TerrainData';
+import { terrainHeight } from '../world/Terrain';
 import { CITY } from '../world/Terrain';
 import type { CityPlan } from '../world/city/plan';
 import { mulberry32 } from '../world/city/plan';
@@ -41,6 +43,9 @@ export class Ambient {
   private readonly timers: Record<Kind, number> = { accident: 40, musician: 14, protest: 70, beach: 3, patrol: 55 };
   private sirens: (SirenVoice | null)[] = [null, null];
   private bed: AmbienceBed | null = null;
+  private nature: NatureBed | null = null;
+  private chirpT = 3;
+  private readonly sf = { desert: 0, forest: 0, salt: 0, dirt: 0 };
   readonly flock: BirdFlock;
   private gullT = 6;
   stats = { events: 0, sirens: 0 };
@@ -298,7 +303,6 @@ export class Ambient {
   }
 
   private updateBed(dt: number, ctx: AmbientContext): void {
-    void dt;
     if (!this.bed) {
       this.bed = this.audio.createAmbience();
       if (!this.bed) return;
@@ -306,8 +310,25 @@ export class Ambient {
     let cars = 0, crowd = 0;
     for (const c of this.traffic.cars) if (c.active && c.state !== 'wreck' && Math.hypot(c.x - ctx.x, c.z - ctx.z) < 90) cars += Math.min(1, c.v / 6) + 0.3;
     for (const p of this.peds.peds) if (p.active && p.dist < 40) crowd++;
-    const city = ctx.x > 215 ? 1 : 0.25;
+    const inCity = Math.hypot(ctx.x - CITY.x, ctx.z - CITY.z) < 800 && ctx.x > 215;
+    const city = inCity ? 1 : ctx.x > 215 ? 0.0 : 0.25;
     this.bed.update((cars / 9) * city, (crowd / 14) * city, this.audio.context!);
+
+    // the natural soundscape: wind rises with height and in the open desert, trees rustle, surf on the coast, crickets at night
+    if (!this.nature) this.nature = this.audio.createNature();
+    const td = TerrainData.current;
+    if (this.nature && td) {
+      const s = td.surface(ctx.x, ctx.z, this.sf);
+      const h = terrainHeight(ctx.x, ctx.z);
+      const night = ctx.hour < 5.5 || ctx.hour > 20 ? 1 : ctx.hour < 7 || ctx.hour > 18.5 ? 0.4 : 0;
+      const wind = Math.min(1, 0.12 + Math.max(0, h - 40) / 700 + s.desert * 0.55 + s.salt * 0.3) * (inCity ? 0.4 : 1);
+      this.nature.update({ wind, forest: s.forest, surf: Math.max(0, 1 - Math.abs(ctx.x - 40) / 260) * (ctx.x < 300 ? 1 : 0), night: night * (inCity ? 0.2 : 1) });
+      this.chirpT -= dt;
+      if (this.chirpT <= 0) {
+        this.chirpT = 1.5 + Math.random() * 6;
+        if (night === 0 && s.forest > 0.3 && !inCity) this.nature.chirp();
+      }
+    }
   }
 }
 

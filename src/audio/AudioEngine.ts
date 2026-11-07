@@ -112,6 +112,9 @@ export class AudioEngine {
   createSiren(): SirenVoice | null {
     return this.ctx ? new SirenVoice(this.ctx, this.master) : null;
   }
+  createNature(): NatureBed | null {
+    return this.ctx ? new NatureBed(this.ctx, this.master, this.noise) : null;
+  }
   createAmbience(): AmbienceBed | null {
     return this.ctx ? new AmbienceBed(this.ctx, this.master, this.noise) : null;
   }
@@ -737,6 +740,106 @@ export class SirenVoice {
   dispose(): void {
     try { this.osc.stop(); } catch { /* not started */ }
     this.panner.disconnect();
+  }
+}
+
+/**
+ * The natural soundscape outside the city: wind (more of it high up and out in the desert), tree rustle in the forests,
+ * surf along the coast, night crickets, and the odd bird. Levels (0–1) are set every frame from where the player is.
+ */
+export class NatureBed {
+  private readonly windGain: GainNode;
+  private readonly windFilter: BiquadFilterNode;
+  private readonly leafGain: GainNode;
+  private readonly surfGain: GainNode;
+  private readonly cricketGain: GainNode;
+  private readonly srcs: (AudioBufferSourceNode | OscillatorNode)[] = [];
+
+  constructor(private readonly ctx: AudioContext, private readonly dest: AudioNode, noise: AudioBuffer) {
+    const mk = (type: BiquadFilterType, freq: number, q: number) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      src.connect(f).connect(g).connect(dest);
+      src.start(0, Math.random() * 1.5);
+      this.srcs.push(src);
+      return { f, g };
+    };
+    const w = mk('bandpass', 420, 0.35);
+    this.windGain = w.g; this.windFilter = w.f;
+    const gust = ctx.createOscillator();
+    gust.frequency.value = 0.11;
+    const gg = ctx.createGain();
+    gg.gain.value = 160;
+    gust.connect(gg).connect(w.f.frequency);
+    gust.start();
+    this.srcs.push(gust);
+    const l = mk('highpass', 2400, 0.4);
+    this.leafGain = l.g;
+    const s = mk('lowpass', 520, 0.2);
+    this.surfGain = s.g;
+    const surfLfo = ctx.createOscillator();
+    surfLfo.frequency.value = 0.09;
+    const sg = ctx.createGain();
+    sg.gain.value = 0.35;
+    surfLfo.connect(sg).connect(s.g.gain);
+    surfLfo.start();
+    this.srcs.push(surfLfo);
+    // crickets: a high tone chopped fast, and slowly gated
+    const cr = ctx.createOscillator();
+    cr.type = 'sine'; cr.frequency.value = 4300;
+    const chop = ctx.createGain();
+    chop.gain.value = 0;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'square'; lfo.frequency.value = 26;
+    const lg = ctx.createGain();
+    lg.gain.value = 0.5;
+    lfo.connect(lg).connect(chop.gain);
+    const lfo2 = ctx.createOscillator();
+    lfo2.frequency.value = 0.35;
+    const lg2 = ctx.createGain();
+    lg2.gain.value = 0.5;
+    const gate = ctx.createGain();
+    gate.gain.value = 0.5;
+    lfo2.connect(lg2).connect(gate.gain);
+    this.cricketGain = ctx.createGain();
+    this.cricketGain.gain.value = 0;
+    cr.connect(chop).connect(gate).connect(this.cricketGain).connect(dest);
+    cr.start(); lfo.start(); lfo2.start();
+    this.srcs.push(cr, lfo, lfo2);
+  }
+
+  update(o: { wind: number; forest: number; surf: number; night: number }): void {
+    const t = this.ctx.currentTime;
+    this.windGain.gain.setTargetAtTime(Math.min(1, o.wind) * 0.13, t, 1.2);
+    this.windFilter.frequency.setTargetAtTime(300 + o.wind * 420, t, 1.2);
+    this.leafGain.gain.setTargetAtTime(Math.min(1, o.forest) * (0.012 + o.wind * 0.02), t, 1.2);
+    this.surfGain.gain.setTargetAtTime(Math.min(1, o.surf) * 0.2, t, 1.5);
+    this.cricketGain.gain.setTargetAtTime(Math.min(1, o.night) * Math.min(1, 0.2 + o.forest) * 0.012, t, 2);
+  }
+
+  /** A short bird call. */
+  chirp(): void {
+    const ctx = this.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const f = 2600 + Math.random() * 1800;
+    o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f * (1.3 + Math.random() * 0.5), t + 0.07);
+    o.frequency.exponentialRampToValueAtTime(f * 0.9, t + 0.16);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.018, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(this.dest);
+    o.start(t); o.stop(t + 0.2);
+  }
+
+  dispose(): void {
+    for (const s of this.srcs) { try { s.stop(); } catch { /* done */ } }
   }
 }
 
