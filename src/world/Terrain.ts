@@ -1,75 +1,15 @@
 import * as THREE from 'three';
 import { NOISE_GLSL } from './skyGlsl';
+import { CITY, TERRAIN, HM_CELL, HILL, coastHeight, terrainHeight as analyticHeight } from './heightfield';
+import { TerrainData, groundY } from './TerrainData';
+import { HM_H, HM_W, SF_H, SF_W } from './terrainBake';
 
-/** The flat district where the placeholder city sits; streets in the terrain shader use the same numbers. */
-export const CITY = { x: 980, z: 0, flat: 760, blend: 260, height: 4.5, cell: 64 } as const;
-export const TERRAIN = { x0: -800, x1: 3000, z0: -1800, z1: 1800 } as const;
-/** Crestview Hill, north of the city: a gentle rise carrying the villa road. */
-export const HILL = { x: 1060, z: -1040, h: 64, s: 300 } as const;
+export { CITY, TERRAIN, HILL, coastHeight, HM_CELL };
+/** Ground height in metres at world (x, z): the baked grid once the world is ready, the analytic function before. */
+export const terrainHeight = groundY;
+export { analyticHeight };
 
-const smooth = (a: number, b: number, x: number): number => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-const hash = (x: number, y: number): number => {
-  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
-const vnoise = (x: number, y: number): number => {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const a = hash(xi, yi);
-  const b = hash(xi + 1, yi);
-  const c = hash(xi, yi + 1);
-  const d = hash(xi + 1, yi + 1);
-  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-};
-const fbm = (x: number, y: number, oct = 5): number => {
-  let a = 0.5;
-  let f = 0;
-  for (let i = 0; i < oct; i++) {
-    f += a * vnoise(x, y);
-    x = x * 2.03 + 5.2;
-    y = y * 2.03 + 1.3;
-    a *= 0.5;
-  }
-  return f;
-};
-
-/** Ocean-floor/beach profile along x (west = sea). Also mirrored in the ocean shader. */
-export const coastHeight = (x: number): number => -70 + 74 * smooth(-260, 40, x);
-
-/** Ground height in metres at world (x, z). Pure function so gameplay can query it without the mesh. */
-export function terrainHeight(x: number, z: number): number {
-  let h = coastHeight(x);
-  const dx = x - CITY.x;
-  const dz = z - CITY.z;
-  const d = Math.hypot(dx, dz);
-
-  // Mountain ring around the valley plus a high eastern wall.
-  const ring = smooth(1050, 1750, Math.hypot(dx * 0.7, dz * 1.0));
-  const ridge = Math.pow(fbm(x * 0.0017, z * 0.0017, 5), 1.7);
-  const wall = smooth(1500, 2600, x);
-  h += ring * (40 + 330 * ridge) + wall * 170 * (0.5 + ridge);
-
-  // Gentle rolling dunes/hills away from the flat district.
-  const roll = (fbm(x * 0.006, z * 0.006, 4) - 0.35) * 22 * smooth(CITY.flat * 0.6, CITY.flat + 300, d) * smooth(20, 260, x);
-  h += roll;
-
-  const hx = x - HILL.x;
-  const hz = z - HILL.z;
-  h += HILL.h * Math.exp(-(hx * hx + hz * hz) / (2 * HILL.s * HILL.s));
-
-  const flat = 1 - smooth(CITY.flat, CITY.flat + CITY.blend, d);
-  return h + (CITY.height - h) * flat * smooth(30, 170, x);
-}
-
-/** Procedural terrain: one mesh, material blends sand/grass/rock/snow by height + slope and draws the city's streets. */
+/** Procedural terrain: a geometry clipmap drawn in one instanced call. Heights, normals and biome weights come from the bake. */
 export interface CityTextures {
   /** 4096×2 half-float: row 0 = N–S road field along x, row 1 = E–W road field along z (R dist-to-edge, G offset, B half-width, A arterial). */
   road: THREE.Texture;
@@ -80,43 +20,153 @@ export interface CityTextures {
   radius: number;
 }
 
+const LEVELS = 6;
+const PATCH_N = 32;
+const MAX_PATCHES = 16 * LEVELS;
+
+function patchGeometry(): THREE.InstancedBufferGeometry {
+  const n = PATCH_N;
+  const pos: number[] = [];
+  const idx: number[] = [];
+  for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) pos.push(i / n, 0, j / n);
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const a = j * (n + 1) + i;
+      const b = a + 1;
+      const c = a + n + 1;
+      const d = c + 1;
+      // alternate the diagonal so slopes don't show a directional bias
+      if ((i + j) & 1) idx.push(a, c, b, b, c, d);
+      else idx.push(a, c, d, a, d, b);
+    }
+  }
+  // skirts: a copy of each border vertex pulled down by the shader (y = 1 marks it)
+  const ring: number[] = [];
+  const edge = (get: (k: number) => number): void => {
+    const start = pos.length / 3;
+    for (let k = 0; k <= n; k++) {
+      const v = get(k);
+      pos.push(pos[v * 3]!, 1, pos[v * 3 + 2]!);
+    }
+    for (let k = 0; k < n; k++) {
+      const v0 = get(k);
+      const v1 = get(k + 1);
+      ring.push(v0, start + k, v1, v1, start + k, start + k + 1);
+    }
+  };
+  edge((k) => k); // north edge (j = 0)
+  edge((k) => n * (n + 1) + k); // south
+  edge((k) => k * (n + 1)); // west
+  edge((k) => k * (n + 1) + n); // east
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex([...idx, ...ring, ...ring.slice().reverse()]);
+  g.instanceCount = 0;
+  return g;
+}
+
 export class Terrain {
   /** Set by the city before the terrain material compiles. */
   static cityData: CityTextures | null = null;
+  /** Shared uniform objects: textures are swapped in once the bake finishes. */
+  static readonly uniforms = {
+    uHeightTex: { value: null as THREE.Texture | null },
+    uNormTex: { value: null as THREE.Texture | null },
+    uSurfTex: { value: null as THREE.Texture | null },
+    uHM: { value: new THREE.Vector4(TERRAIN.x0, TERRAIN.z0, 1 / HM_CELL, 0) },
+    uHMSize: { value: new THREE.Vector4(HM_W, HM_H, SF_W, SF_H) },
+  };
+
   readonly mesh: THREE.Mesh;
   readonly material: THREE.MeshStandardMaterial;
-  private segments = 0;
+  private readonly geo = patchGeometry();
+  private readonly patches = new Float32Array(MAX_PATCHES * 4);
+  private readonly attr: THREE.InstancedBufferAttribute;
+  private readonly frustum = new THREE.Frustum();
+  private readonly pv = new THREE.Matrix4();
+  private readonly inv = new THREE.Matrix4();
+  private readonly box = new THREE.Box3();
+  /** Number of terrain patches drawn last frame. */
+  drawn = 0;
 
-  constructor(segments: number) {
+  constructor(_segments = 0) {
     this.material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0 });
-    this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.material);
+    this.attr = new THREE.InstancedBufferAttribute(this.patches, 4);
+    this.attr.setUsage(THREE.DynamicDrawUsage);
+    this.geo.setAttribute('aPatch', this.attr);
+    this.mesh = new THREE.Mesh(this.geo, this.material);
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
-    this.rebuild(segments);
   }
 
-  rebuild(segments: number): void {
-    if (segments === this.segments) return;
-    this.segments = segments;
-    const w = TERRAIN.x1 - TERRAIN.x0;
-    const d = TERRAIN.z1 - TERRAIN.z0;
-    const nx = segments;
-    const nz = Math.round(segments * (d / w));
-    const geo = new THREE.PlaneGeometry(w, d, nx, nz);
-    geo.rotateX(-Math.PI / 2);
-    const pos = geo.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i) + (TERRAIN.x0 + TERRAIN.x1) / 2;
-      const z = pos.getZ(i) + (TERRAIN.z0 + TERRAIN.z1) / 2;
-      pos.setXYZ(i, x, terrainHeight(x, z), z);
+  /** Quality changes do not alter the clipmap. */
+  rebuild(_segments: number): void {}
+
+  /** Upload the baked world to the GPU. */
+  attach(data: TerrainData): void {
+    const u = Terrain.uniforms;
+    const h = new THREE.DataTexture(data.heights, HM_W, HM_H, THREE.RedFormat, THREE.FloatType);
+    h.minFilter = h.magFilter = THREE.NearestFilter;
+    h.generateMipmaps = false;
+    h.needsUpdate = true;
+    const n = new THREE.DataTexture(data.normals, HM_W, HM_H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    n.minFilter = THREE.LinearMipmapLinearFilter;
+    n.magFilter = THREE.LinearFilter;
+    n.generateMipmaps = true;
+    n.anisotropy = 4;
+    n.needsUpdate = true;
+    const s = new THREE.DataTexture(data.surf, SF_W, SF_H, THREE.RGBAFormat, THREE.UnsignedByteType);
+    s.minFilter = THREE.LinearMipmapLinearFilter;
+    s.magFilter = THREE.LinearFilter;
+    s.generateMipmaps = true;
+    s.needsUpdate = true;
+    for (const t of [h, n, s]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    u.uHeightTex.value = h;
+    u.uNormTex.value = n;
+    u.uSurfTex.value = s;
+  }
+
+  /** Choose the visible patches around the camera (frustum-culled, nearest level wins). */
+  update(camera: THREE.Camera): void {
+    this.inv.copy(camera.matrixWorld).invert();
+    this.pv.multiplyMatrices((camera as THREE.PerspectiveCamera).projectionMatrix, this.inv);
+    this.frustum.setFromProjectionMatrix(this.pv);
+    const cx = camera.position.x;
+    const cz = camera.position.z;
+    let n = 0;
+    let prev = { x0: 0, x1: 0, z0: 0, z1: 0, on: false };
+    for (let l = 0; l < LEVELS; l++) {
+      const cell = HM_CELL * (1 << l);
+      const size = PATCH_N * cell;
+      const sx = Math.round(cx / size) * size;
+      const sz = Math.round(cz / size) * size;
+      const cur = { x0: sx - 2 * size, x1: sx + 2 * size, z0: sz - 2 * size, z1: sz + 2 * size, on: true };
+      for (let a = 0; a < 4; a++) {
+        for (let b = 0; b < 4; b++) {
+          const x0 = sx + (a - 2) * size;
+          const z0 = sz + (b - 2) * size;
+          if (x0 + size < TERRAIN.x0 - 64 || x0 > TERRAIN.x1 + 64 || z0 + size < TERRAIN.z0 - 64 || z0 > TERRAIN.z1 + 64) continue;
+          if (prev.on && x0 >= prev.x0 && x0 + size <= prev.x1 && z0 >= prev.z0 && z0 + size <= prev.z1) continue;
+          this.box.min.set(x0, -90, z0);
+          this.box.max.set(x0 + size, 1150, z0 + size);
+          if (!this.frustum.intersectsBox(this.box)) continue;
+          this.patches[n * 4] = x0;
+          this.patches[n * 4 + 1] = z0;
+          this.patches[n * 4 + 2] = size;
+          this.patches[n * 4 + 3] = l;
+          n++;
+        }
+      }
+      prev = cur;
     }
-    geo.computeVertexNormals();
-    this.mesh.geometry.dispose();
-    this.mesh.geometry = geo;
+    this.drawn = n;
+    this.geo.instanceCount = n;
+    this.attr.needsUpdate = true;
   }
 
   /** Shader patch (installed through LightRig.register so it chains with shadows and fog). */
   static patch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
+    Object.assign(shader.uniforms, Terrain.uniforms);
     shader.uniforms.uCity = { value: new THREE.Vector4(CITY.x, CITY.z, CITY.flat, CITY.blend) };
     const cd = Terrain.cityData;
     const dummy = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
@@ -127,34 +177,88 @@ export class Terrain {
     shader.uniforms.uZoneBox = { value: cd?.zoneBox ?? new THREE.Vector4(0, 0, 1, 1) };
     shader.uniforms.uCityR = { value: cd?.radius ?? CITY.flat };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = transformed;\nvWN = normal;');
+      .replace('#include <common>', `#include <common>
+attribute vec4 aPatch;
+uniform highp sampler2D uHeightTex;
+uniform vec4 uHM;
+uniform vec4 uHMSize;
+varying vec3 vWPos;
+varying vec2 vNuv;
+varying vec2 vSuv;`)
+      .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = vec3(0.0, 1.0, 0.0);')
+      .replace('#include <begin_vertex>', `
+vec2 wxz = aPatch.xy + position.xz * aPatch.z;
+vec2 hp = (wxz - uHM.xy) * uHM.z;
+ivec2 ic = clamp(ivec2(floor(hp + 0.5)), ivec2(0), ivec2(uHMSize.xy) - 1);
+float hh = texelFetch(uHeightTex, ic, 0).r;
+hh -= aPatch.w * 0.22 + position.y * aPatch.z * 0.3 + 0.04;
+vec3 transformed = vec3(wxz.x, hh, wxz.y);
+vWPos = transformed;
+vNuv = (hp + 0.5) / uHMSize.xy;
+vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWN;\nuniform vec4 uCity;\nuniform sampler2D uRoadTex;\nuniform sampler2D uZoneTex;\nuniform vec4 uRoadBox;\nuniform vec4 uZoneBox;\nuniform float uCityR;\n${NOISE_GLSL}`)
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nvarying vec2 vNuv;\nvarying vec2 vSuv;\nuniform sampler2D uNormTex;\nuniform sampler2D uSurfTex;\nuniform vec4 uCity;\nuniform sampler2D uRoadTex;\nuniform sampler2D uZoneTex;\nuniform vec4 uRoadBox;\nuniform vec4 uZoneBox;\nuniform float uCityR;\nvec3 tN = vec3(0.0, 1.0, 0.0);\n${NOISE_GLSL}`)
       .replace('#include <map_fragment>', `#include <map_fragment>
 {
-  vec3 n = normalize(vWN);
+  vec4 nt = texture2D(uNormTex, vNuv);
+  tN = vec3(nt.r * 2.0 - 1.0, 0.0, nt.g * 2.0 - 1.0);
+  tN.y = sqrt(max(0.0, 1.0 - dot(tN.xz, tN.xz)));
+  vec3 n = tN;
+  vec4 sf = texture2D(uSurfTex, vSuv);
   float h = vWPos.y;
   float slope = 1.0 - n.y;
   float nA = n_fbm(vWPos.xz * 0.012);
   float nB = n_fbm(vWPos.xz * 0.35);
   float nC = n_noise(vWPos.xz * 3.1);
 
+  // Base ground: dry-to-lush grass, then the biome layers painted over it.
   vec3 sand = mix(vec3(0.74, 0.64, 0.45), vec3(0.62, 0.53, 0.38), nB);
   vec3 dry = vec3(0.36, 0.32, 0.17);
   vec3 lush = vec3(0.13, 0.23, 0.08);
   vec3 grass = mix(dry, lush, smoothstep(0.35, 0.65, nA)) * (0.85 + 0.3 * nB);
   vec3 rock = mix(vec3(0.30, 0.27, 0.25), vec3(0.46, 0.41, 0.36), nB);
   vec3 snow = vec3(0.90, 0.93, 0.98);
+  // desert: warm sand over reddish dirt, wind ripples and patches of dark cinder gravel
+  vec3 desertCol = vec3(0.7, 0.5, 0.3);
+  vec3 desertRock = vec3(0.6, 0.35, 0.2);
+  if (sf.r > 0.02) {
+    float ripple = 0.5 + 0.5 * sin(dot(vWPos.xz, vec2(0.92, 0.38)) * 1.9 + nA * 14.0);
+    vec3 dSand = mix(vec3(0.80, 0.60, 0.38), vec3(0.66, 0.44, 0.26), smoothstep(0.3, 0.7, nA));
+    dSand *= 0.9 + 0.12 * ripple * smoothstep(0.55, 0.9, nB);
+    float nL = n_fbm(vWPos.xz * 0.0031 + 17.0);
+    float cinderW = smoothstep(0.56, 0.72, nL) * 0.85;
+    vec3 cinder = mix(vec3(0.17, 0.13, 0.12), vec3(0.28, 0.20, 0.17), nB);
+    desertCol = mix(dSand, cinder, cinderW) * (0.88 + 0.24 * nC);
+    desertRock = mix(vec3(0.50, 0.28, 0.17), vec3(0.72, 0.44, 0.26), smoothstep(0.2, 0.8, fract(h * 0.045 + nA * 0.6)));
+  }
+  // forest floor: needle litter and moss
+  vec3 forestCol = mix(vec3(0.19, 0.13, 0.07), vec3(0.08, 0.15, 0.06), smoothstep(0.3, 0.7, nA)) * (0.8 + 0.4 * nB);
+  vec3 dirtCol = mix(vec3(0.42, 0.31, 0.20), vec3(0.33, 0.24, 0.15), nB) * (0.9 + 0.2 * nC);
+  // dry salt pan: bright crust with polygonal cracks
+  vec3 saltCol = vec3(0.85, 0.83, 0.77);
+  if (sf.b > 0.02) {
+    vec2 cp = vWPos.xz * 0.45;
+    float crack = 1.0 - smoothstep(0.0, 0.07, abs(n_noise(cp) - 0.5)) * 0.9;
+    crack = max(crack, 1.0 - smoothstep(0.0, 0.05, abs(n_noise(cp * 2.3 + 7.0) - 0.5)));
+    saltCol = mix(vec3(0.88, 0.86, 0.80), vec3(0.74, 0.72, 0.66), nB) * (1.0 - 0.2 * crack);
+  }
 
   float sandW = 1.0 - smoothstep(2.2, 9.0, h + nA * 5.0);
   float rockW = smoothstep(0.16, 0.42, slope + (nB - 0.5) * 0.16);
-  float snowW = smoothstep(215.0, 255.0, h + nA * 40.0) * (1.0 - smoothstep(0.4, 0.7, slope));
-  vec3 col = mix(grass, sand, sandW);
+  float snowLine = 545.0 + nA * 70.0 - slope * 120.0;
+  float snowW = smoothstep(snowLine, snowLine + 55.0, h) * (1.0 - smoothstep(0.42, 0.7, slope));
+  vec3 col = grass;
+  col = mix(col, desertCol, sf.r);
+  col = mix(col, forestCol, sf.g);
+  col = mix(col, dirtCol, sf.a * 0.75 * (1.0 - sf.g * 0.6));
+  col = mix(col, saltCol, sf.b);
+  col = mix(col, sand, sandW);
+  rock = mix(rock, desertRock, sf.r);
   col = mix(col, rock, rockW);
   col = mix(col, snow, snowW);
   float rough = mix(0.96, 0.85, sandW);
   rough = mix(rough, 0.8, rockW);
+  rough = mix(rough, 0.9, sf.b);
   rough = mix(rough, 0.55, snowW);
 
   // City ground: roads, sidewalks, markings and lot surfaces come from the plan's road-field and zone textures.
@@ -258,9 +362,11 @@ export class Terrain {
   diffuseColor.rgb = col;
   tRough = rough;
   tDetail = 1.0 - max(cityMask, snowW) * 0.8;
-}`)
+}
+`)
       .replace('void main() {', 'float tRough = 0.95;\nfloat tDetail = 1.0;\nvoid main() {')
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = tRough;')
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\nnormal = normalize((viewMatrix * vec4(tN, 0.0)).xyz);')
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 {
   // Cheap bump from noise gradient, fading with distance to avoid shimmer.
@@ -280,7 +386,7 @@ export class Terrain {
   };
 
   dispose(): void {
-    this.mesh.geometry.dispose();
+    this.geo.dispose();
     this.material.dispose();
   }
 }

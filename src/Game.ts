@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { easeInOutCubic } from './core/math';
 import { GameLoop } from './core/GameLoop';
+import { TerrainData } from './world/TerrainData';
 import { GameRenderer } from './core/GameRenderer';
 import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPreset } from './core/Quality';
 import { Settings } from './core/Settings';
@@ -95,7 +96,7 @@ export class Game {
     this.gfx.userScale = this.settings.data.graphics.resolutionScale;
     this.gfx.resize(true);
 
-    this.camera = new THREE.PerspectiveCamera(TITLE_FOV, window.innerWidth / window.innerHeight, 0.25, 6000);
+    this.camera = new THREE.PerspectiveCamera(TITLE_FOV, window.innerWidth / window.innerHeight, 0.25, 9500);
     this.world = new World(this.gfx, this.camera, preset);
     this.applyUrlParams();
     this.input = new InputManager(this.settings, this.canvas);
@@ -151,7 +152,9 @@ export class Game {
   /** Compile shaders behind the loading screen, then reveal the title. */
   async init(): Promise<void> {
     this.ui.setProgress(0.1);
+    const bake = TerrainData.bake((f) => this.ui.setProgress(0.1 + 0.1 * f));
     this.physics = await Physics.create();
+    this.world.attachTerrain(await bake);
     this.world.attachPhysics(this.physics);
     this.player = new Player(this.physics, this.input, this.audio);
     this.player.teleport(100, 0, -Math.PI / 2);

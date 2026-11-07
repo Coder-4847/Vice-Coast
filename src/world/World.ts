@@ -13,6 +13,7 @@ import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
 import { Props } from './Props';
 import { Terrain, terrainHeight, CITY } from './Terrain';
+import type { TerrainData } from './TerrainData';
 import { TimeOfDay } from './TimeOfDay';
 import { Weather, type WeatherType } from './Weather';
 
@@ -88,6 +89,12 @@ export class World {
   }
 
   /** Called once Rapier has loaded: builds the static colliders and the shooting range. */
+  /** Hand the baked heightfield to the GPU. */
+  attachTerrain(data: TerrainData): void {
+    this.terrain.attach(data);
+    this.atmosphere.markEnvDirty();
+  }
+
   attachPhysics(physics: Physics): void {
     this.physics = physics;
     physics.buildTerrain();
@@ -192,6 +199,8 @@ export class World {
 
   render(dt: number): void {
     if (this.gfx.contextLost) return;
+    this.camera.updateMatrixWorld();
+    this.terrain.update(this.camera);
     this.pipeline.render(dt, this.post);
   }
 }

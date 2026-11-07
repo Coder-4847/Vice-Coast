@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { NOISE_GLSL } from './skyGlsl';
+import { Terrain } from './Terrain';
 
 /**
  * Ocean: a camera-following plane shaded as glossy PBR water. Reflections come from the live sky
@@ -29,20 +30,33 @@ export class Ocean {
 
   patch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
     shader.uniforms.uSea = this.sea;
+    shader.uniforms.uHeightTex = Terrain.uniforms.uHeightTex;
+    shader.uniforms.uHM = Terrain.uniforms.uHM;
+    shader.uniforms.uHMSize = Terrain.uniforms.uHMSize;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nuniform float uSea;\n${NOISE_GLSL}
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nuniform float uSea;\nuniform highp sampler2D uHeightTex;\nuniform vec4 uHM;\nuniform vec4 uHMSize;\n${NOISE_GLSL}
 float wave(vec2 p, float t) {
   return n_noise(p * 0.11 + vec2(t * 0.30, t * 0.12)) * 1.0
        + n_noise(p * 0.37 - vec2(t * 0.40, t * 0.25)) * 0.55
        + n_noise(p * 1.20 + vec2(t * 0.70, -t * 0.50)) * 0.22
        + n_noise(p * 3.10 - vec2(t * 0.90, t * 0.60)) * 0.08;
 }
+float seaFloor(vec2 xz) {
+  vec2 p = (xz - uHM.xy) * uHM.z;
+  ivec2 c = clamp(ivec2(floor(p)), ivec2(0), ivec2(uHMSize.xy) - 2);
+  vec2 f = clamp(p - vec2(c), 0.0, 1.0);
+  float a = texelFetch(uHeightTex, c, 0).r;
+  float b = texelFetch(uHeightTex, c + ivec2(1, 0), 0).r;
+  float d = texelFetch(uHeightTex, c + ivec2(0, 1), 0).r;
+  float e = texelFetch(uHeightTex, c + ivec2(1, 1), 0).r;
+  return mix(mix(a, b, f.x), mix(d, e, f.x), f.y);
+}
 float coastY(float x) { float t = clamp((x + 260.0) / 300.0, 0.0, 1.0); return -70.0 + 74.0 * t * t * (3.0 - 2.0 * t); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-float depth = clamp(-coastY(vWPos.x) / 80.0, 0.0, 1.0);
+float depth = clamp(-seaFloor(vWPos.xz) / 80.0, 0.0, 1.0);
 vec3 shallow = vec3(0.03, 0.30, 0.33);
 vec3 deep = vec3(0.005, 0.045, 0.09);
 diffuseColor.rgb = mix(shallow, deep, smoothstep(0.0, 0.55, depth));

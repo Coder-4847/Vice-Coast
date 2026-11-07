@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Collider, Ray, RigidBody, World as RapierWorld } from '@dimforge/rapier3d-compat';
 import { terrainHeight, TERRAIN, CITY } from '../world/Terrain';
+import { TerrainData } from '../world/TerrainData';
 
 type Rapier = typeof import('@dimforge/rapier3d-compat').default;
 
@@ -46,7 +47,6 @@ export interface BuildingBox {
   cyl?: boolean;
 }
 
-const HEIGHT_CELL = 8; // metres per heightfield cell
 /** Physics runs at 60 × SUBSTEPS Hz so stiff vehicle suspension stays stable. */
 export const SUBSTEPS = 2;
 
@@ -94,20 +94,19 @@ export class Physics {
   // -------------------------------------------------------------------- static world
 
   /** Heightfield collider sampled from the same function that shapes the visual terrain. */
-  buildTerrain(): void {
+  buildTerrain(data?: TerrainData): void {
     if (this.terrainCollider) return;
+    const td = data ?? TerrainData.current;
+    if (!td) throw new Error('terrain not baked');
     const w = TERRAIN.x1 - TERRAIN.x0;
     const d = TERRAIN.z1 - TERRAIN.z0;
-    const cols = Math.round(w / HEIGHT_CELL);
-    const rows = Math.round(d / HEIGHT_CELL);
+    const cols = td.cols - 1;
+    const rows = td.rows - 1;
     const heights = new Float32Array((rows + 1) * (cols + 1));
     // Rapier heightfields are column-major: heights[col * (rows + 1) + row], rows run along z.
-    for (let c = 0; c <= cols; c++) {
-      const x = TERRAIN.x0 + (c / cols) * w;
-      for (let r = 0; r <= rows; r++) {
-        const z = TERRAIN.z0 + (r / rows) * d;
-        heights[c * (rows + 1) + r] = terrainHeight(x, z);
-      }
+    for (let r = 0; r <= rows; r++) {
+      const o = r * (cols + 1);
+      for (let c = 0; c <= cols; c++) heights[c * (rows + 1) + r] = td.heights[o + c]!;
     }
     const desc = this.R.ColliderDesc.heightfield(rows, cols, heights, { x: w, y: 1, z: d })
       .setTranslation((TERRAIN.x0 + TERRAIN.x1) / 2, 0, (TERRAIN.z0 + TERRAIN.z1) / 2)
