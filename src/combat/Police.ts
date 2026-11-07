@@ -322,7 +322,7 @@ export class Police {
     const cx = this.lastSeen ? t.x : wanted.lastX, cz = this.lastSeen ? t.z : wanted.lastZ;
     for (const [unit, type, n] of want) {
       if (this.count(unit) >= n) continue;
-      const c = npcs.traffic.spawnUnit(TYPE[type]!, cx, cz, unit, unit === 'tank' || unit === 'apc' ? 160 : 130, 270);
+      const c = npcs.traffic.spawnUnit(TYPE[type]!, cx, cz, unit, unit === 'tank' || unit === 'apc' ? 160 : 130, 270) ?? npcs.traffic.spawnHighwayUnit(TYPE[type]!, cx, cz, unit, unit === 'tank' || unit === 'apc' ? 160 : 130, 300);
       if (c) {
         c.ram = wanted.stars >= 4 && unit !== 'tank' && unit !== 'apc';
         if (unit === 'tank') c.v0f = 0.7;
@@ -343,7 +343,7 @@ export class Police {
       const d = Math.hypot(c.x - t.x, c.z - t.z);
       c.fireT -= dt;
       // arrive and deploy
-      if (!c.deployed && c.unit !== 'tank' && c.unit !== 'apc' && c.state !== 'park' && (c.state === 'lane' || c.state === 'box')) {
+      if (!c.deployed && c.unit !== 'tank' && c.unit !== 'apc' && c.state !== 'park' && (c.state === 'lane' || c.state === 'box' || c.state === 'hwy')) {
         const slowPlayer = t.speed < 8;
         const stuck = c.v < 0.4 && c.blockedT > 2.5;
         if ((d < 34 && (slowPlayer || d < 16)) || (d < 60 && stuck) || (d < 22 && c.unit === 'swat')) this.deploy(c);
@@ -359,7 +359,7 @@ export class Police {
   private deploy(c: TrafficCar): void {
     const { npcs, wanted } = this.d;
     c.deployed = true;
-    c.state = 'park';
+    if (c.state !== 'hwy') c.state = 'park';
     c.parkT = 9999;
     c.v = 0;
     const role: Role = c.unit === 'swat' ? 'swat' : c.unit === 'fed' ? 'fed' : 'cop';
@@ -451,8 +451,7 @@ export class Police {
   private step(p: Ped, ang: number, speed: number, dt: number): void {
     p.x += Math.sin(ang) * speed * dt;
     p.z += Math.cos(ang) * speed * dt;
-    if (p.x < 215) p.y = terrainHeight(p.x, p.z);
-    else p.y = G;
+    p.y = terrainHeight(p.x, p.z);
   }
 
   private turn(cur: number, target: number, k: number): number {
@@ -836,7 +835,7 @@ export class Police {
       if (best) {
         const mesh = new THREE.Mesh(this.stripGeo, this.stripMat);
         mesh.scale.set(best.half * 2, 1, 1);
-        mesh.position.set(best.x, G + 0.02, best.z);
+        mesh.position.set(best.x, terrainHeight(best.x, best.z) + 0.02, best.z);
         mesh.rotation.y = best.yaw;
         mesh.frustumCulled = false;
         this.group.add(mesh);

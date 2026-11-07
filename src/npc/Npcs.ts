@@ -1,3 +1,4 @@
+import { CITY } from '../world/Terrain';
 import * as THREE from 'three';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { QualityPreset } from '../core/Quality';
@@ -96,6 +97,8 @@ export class Npcs {
     }
     t.playerBody = mover ? { collider: mover.collider, body: mover.body } : null;
     t.target = Math.round(this.preset.traffic * trafficDensity(this.world.tod.hour));
+    const outside = Math.hypot(t.focus.x - CITY.x, t.focus.z - CITY.z) > 900;
+    t.hwTarget = outside ? Math.round(Math.max(6, this.preset.traffic * 0.45) * (0.5 + 0.5 * trafficDensity(this.world.tod.hour))) : 0;
     t.night = this.world.tod.look.night;
     t.fixedUpdate(dt);
   }

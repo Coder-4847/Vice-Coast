@@ -155,6 +155,7 @@ export class Game {
     const bake = TerrainData.bake((f) => this.ui.setProgress(0.1 + 0.1 * f));
     this.physics = await Physics.create();
     this.world.attachTerrain(await bake);
+    this.map.bakeTerrain();
     this.world.attachPhysics(this.physics);
     this.player = new Player(this.physics, this.input, this.audio);
     this.player.teleport(100, 0, -Math.PI / 2);

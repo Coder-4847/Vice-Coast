@@ -333,7 +333,7 @@ export class Pedestrians {
     p.state = state;
     p.edge = -1;
     p.x = x; p.z = z; p.yaw = yaw;
-    p.y = x < 215 ? terrainHeight(x, z) : G;
+    p.y = terrainHeight(x, z);
     p.phase = this.rnd() * 6;
     p.onRoad = false;
     p.stateT = 0;

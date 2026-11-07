@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import type { Collider, RigidBody } from '@dimforge/rapier3d-compat';
 import { GROUP, groups, type Physics } from '../physics/Physics';
-import { CITY } from '../world/Terrain';
+import { CITY, terrainHeight } from '../world/Terrain';
+import { nearestRoad, roadPaths, type RoadPath } from '../world/roads';
 import { mulberry32 } from '../world/city/plan';
 import { HEAD_DX, HEAD_DZ, RoadNet, type Heading, type LaneDef, type TurnPath } from './RoadNet';
 import type { SignalClock } from './Signals';
 
 const G = CITY.height;
+const HW_SPEED: Record<string, number> = { highway: 24, road: 13, street: 9.5 };
 const WORLD_GRAVITY = 16;
 
 export type EmergencyKind = 'police' | 'ambulance';
@@ -47,7 +49,7 @@ export const CAR_TYPES: CarType[] = [
 ];
 const TYPE = Object.fromEntries(CAR_TYPES.map((t) => [t.id, t])) as Record<string, CarType>;
 
-export type CarState = 'lane' | 'box' | 'park' | 'wreck';
+export type CarState = 'lane' | 'box' | 'park' | 'wreck' | 'hwy';
 
 export class TrafficCar {
   id = 0;
@@ -96,6 +98,17 @@ export class TrafficCar {
   hp = 100;
   /** Seconds until a burning wreck explodes (−1 = not burning). */
   fuse = -1;
+  /** Ground height under the car (cars on the city grid sit at the city level; highway cars follow the road bed). */
+  gy: number = G;
+  pitch = 0;
+  /** Highway cars: the road path, distance along it, direction of travel and lateral lane offset. */
+  hw: RoadPath | null = null;
+  hs = 0;
+  hdir: 1 | -1 = 1;
+  hoff = 0;
+  /** A pursuit unit that leaves the road once it reaches the road point nearest its target. */
+  chase = false;
+  free = false;
 }
 
 export interface Obstacle { x: number; z: number; r: number; vx: number; vz: number; kind: 'player' | 'ped' | 'wreck' }
@@ -106,6 +119,7 @@ export interface TrafficHooks {
 }
 
 const _q = new THREE.Quaternion();
+const _e = new THREE.Euler();
 const _m = new THREE.Matrix4();
 const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
@@ -403,7 +417,7 @@ export class Traffic {
     const h = t.clear + t.bodyH + t.cabinH * 0.7;
     const q = _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.yaw);
     const body = this.physics.world.createRigidBody(
-      R.RigidBodyDesc.kinematicPositionBased().setTranslation(c.x, G + h / 2, c.z).setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }),
+      R.RigidBodyDesc.kinematicPositionBased().setTranslation(c.x, c.gy + h / 2, c.z).setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }),
     );
     c.body = body;
     c.collider = this.physics.world.createCollider(
@@ -459,7 +473,7 @@ export class Traffic {
       c.dist = Math.hypot(c.x - this.focus.x, c.z - this.focus.z);
       if (c.state === 'wreck') { this.updateWreck(c, dt); this.stats.wrecks++; continue; }
       if (c.blocker) { this.staticCar(c); continue; }
-      this.drive(c, dt);
+      if (c.state === 'hwy') this.driveHwy(c, dt); else this.drive(c, dt);
       if (c.v < 0.3) this.stats.stopped++;
       // physics body only for cars near the player
       if (c.dist < 60) this.ensureBody(c);
@@ -468,8 +482,8 @@ export class Traffic {
         this.stats.bodies++;
         const t = c.type;
         const h = t.clear + t.bodyH + t.cabinH * 0.7;
-        _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.yaw);
-        c.body.setNextKinematicTranslation({ x: c.x, y: G + h / 2, z: c.z });
+        if (c.pitch) _q.setFromEuler(_e.set(c.pitch, c.yaw, 0, 'YXZ')); else _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.yaw);
+        c.body.setNextKinematicTranslation({ x: c.x, y: c.gy + h / 2, z: c.z });
         c.body.setNextKinematicRotation({ x: _q.x, y: _q.y, z: _q.z, w: _q.w });
         // a hard hit from the player's vehicle wrecks the car
         const pb = this.playerBody;
@@ -489,10 +503,210 @@ export class Traffic {
     this.spawnT -= dt;
     if (this.spawnT <= 0) {
       this.spawnT = 0.35;
-      let ambient = 0;
-      for (const c of cars) if (c.active && !c.type.emergency && c.state !== 'wreck') ambient++;
+      let ambient = 0, hw = 0;
+      for (const c of cars) if (c.active && !c.type.emergency && c.state !== 'wreck') { if (c.state === 'hwy') hw++; else ambient++; }
       if (ambient < this.target) this.spawnAmbient();
+      if (hw < this.hwTarget) this.spawnHighway();
+      else if (hw > this.hwTarget + 4) { const far = cars.filter((c) => c.active && c.state === 'hwy' && !c.unit).sort((a, b) => b.dist - a.dist)[0]; if (far) this.remove(far); }
     }
+  }
+
+  // ------------------------------------------------------------------------------ highways and country roads
+
+  /** Target number of cars on the road network outside Port Valeria (set by the owner from where the player is). */
+  hwTarget = 0;
+  private hwList: { p: RoadPath; w: number }[] | null = null;
+  private hwTotal = 0;
+
+  private hwRoads(): { p: RoadPath; w: number }[] {
+    if (!this.hwList) {
+      this.hwList = [];
+      for (const p of roadPaths()) {
+        const k = p.def.kind;
+        if (k !== 'highway' && k !== 'road' && k !== 'street') continue;
+        const w = p.length * (k === 'highway' ? 3 : k === 'road' ? 0.8 : 0.45);
+        this.hwTotal += w;
+        this.hwList.push({ p, w });
+      }
+    }
+    return this.hwList;
+  }
+
+  private placeHwy(c: TrafficCar, type: CarType, p: RoadPath, s: number, dir: 1 | -1, speed: number): void {
+    c.active = true;
+    c.id = this.nextId++;
+    c.type = type;
+    c.color = type.colors[Math.floor(this.rnd() * type.colors.length)]!;
+    c.v0f = 0.85 + this.rnd() * 0.3;
+    c.route = null; c.routeIdx = 0;
+    c.state = 'hwy'; c.lane = null; c.next = null; c.path = null;
+    c.hw = p; c.hs = s; c.hdir = dir;
+    const lanes = p.def.kind === 'highway' ? [3.0, 7.6] : [p.def.kind === 'road' ? 2.6 : 2.4];
+    c.hoff = lanes[Math.floor(this.rnd() * lanes.length)]!;
+    c.v = speed;
+    c.siren = false; c.parkT = 0; c.life = 0;
+    c.hp = type.hp ?? 100; c.fuse = -1;
+    c.pursuit = false; c.unit = null; c.deployed = false; c.blocker = false; c.ram = false;
+    c.turretYaw = 0; c.fireT = 2;
+    c.hazard = false; c.brake = 0; c.angry = false; c.lat = 0;
+    c.chase = false; c.free = false;
+    this.poseHwy(c);
+    c.px = c.x; c.pz = c.z; c.pyaw = c.yaw;
+  }
+
+  private poseHwy(c: TrafficCar): void {
+    const p = c.hw!;
+    const t = Math.max(0, Math.min(p.length - 0.01, c.hs));
+    let lo = 0, hi = p.n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.s[mid]! <= t) lo = mid; else hi = mid; }
+    const f = (t - p.s[lo]!) / Math.max(1e-6, p.s[hi]! - p.s[lo]!);
+    const cx = p.xs[lo]! + (p.xs[hi]! - p.xs[lo]!) * f, cz = p.zs[lo]! + (p.zs[hi]! - p.zs[lo]!) * f;
+    const tx = p.tx[lo]!, tz = p.tz[lo]!;
+    c.fx = tx * c.hdir; c.fz = tz * c.hdir;
+    // right of travel is (−fz, fx)
+    c.x = cx - c.fz * c.hoff;
+    c.z = cz + c.fx * c.hoff;
+    c.gy = p.ys[lo]! + (p.ys[hi]! - p.ys[lo]!) * f + 0.04;
+    const slope = (p.ys[hi]! - p.ys[lo]!) / Math.max(1e-6, Math.hypot(p.xs[hi]! - p.xs[lo]!, p.zs[hi]! - p.zs[lo]!));
+    c.pitch = -Math.atan(slope * c.hdir);
+    c.yaw = Math.atan2(c.fx, c.fz);
+  }
+
+  /** Ambient traffic on the highways, county roads and town streets. */
+  spawnHighway(): boolean {
+    const c = this.free();
+    if (!c) return false;
+    const list = this.hwRoads();
+    for (let attempt = 0; attempt < 14; attempt++) {
+      let r = this.rnd() * this.hwTotal;
+      let pick = list[0]!;
+      for (const e of list) { if ((r -= e.w) <= 0) { pick = e; break; } }
+      const p = pick.p;
+      const s = 20 + this.rnd() * (p.length - 40);
+      const i = Math.min(p.n - 1, Math.round(s / 4));
+      const x = p.xs[i]!, z = p.zs[i]!;
+      const d = Math.hypot(x - this.focus.x, z - this.focus.z);
+      if (d < 140 || d > 470) continue;
+      if (Math.hypot(x - CITY.x, z - CITY.z) < 800) continue;
+      let clear = true;
+      for (const o of this.cars) if (o.active && Math.hypot(o.x - x, o.z - z) < 28) { clear = false; break; }
+      if (!clear) continue;
+      const dir: 1 | -1 = this.rnd() < 0.5 ? 1 : -1;
+      const sp = HW_SPEED[p.def.kind]! * (0.7 + this.rnd() * 0.3);
+      this.placeHwy(c, this.pickType(false), p, s, dir, sp);
+      return true;
+    }
+    return false;
+  }
+
+  /** A police / military unit that has to come by road because the player is outside the city grid. */
+  spawnHighwayUnit(type: CarType, fx: number, fz: number, unit: string, minD = 130, maxD = 280): TrafficCar | null {
+    const c = this.free();
+    if (!c) return null;
+    const list = this.hwRoads();
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const p = list[Math.floor(this.rnd() * list.length)]!.p;
+      const s = 10 + this.rnd() * (p.length - 20);
+      const i = Math.min(p.n - 1, Math.round(s / 4));
+      const x = p.xs[i]!, z = p.zs[i]!;
+      const d = Math.hypot(x - fx, z - fz);
+      if (d < minD || d > maxD) continue;
+      _p.set(x, p.ys[i]! + 1, z);
+      if (d < 220 && this.frustum.containsPoint(_p)) continue;
+      const near = nearestRoad(fx, fz, 400);
+      const dir: 1 | -1 = near && near.path === p ? (near.i * 4 > s ? 1 : -1) : this.rnd() < 0.5 ? 1 : -1;
+      this.placeHwy(c, type, p, s, dir, 14);
+      c.pursuit = true;
+      c.unit = unit;
+      c.siren = !!type.emergency;
+      c.chase = true;
+      c.v0f = 1.45;
+      c.hoff = p.def.kind === 'highway' ? 3.0 : 2.4;
+      return c;
+    }
+    return null;
+  }
+
+  private driveHwy(c: TrafficCar, dt: number): void {
+    c.px = c.x; c.pz = c.z; c.pyaw = c.yaw;
+    const p = c.hw!;
+    c.life += dt;
+    if (c.dist > (c.pursuit ? 700 : 520) && !c.pursuit) { this.remove(c); return; }
+    if (c.deployed) {
+      // a stopped police car: hold position (on its bed, or where it left the road)
+      c.v = Math.max(0, c.v - 12 * dt);
+      if (!c.free) { c.hs += c.hdir * c.v * dt; this.poseHwy(c); }
+      return;
+    }
+    let target = HW_SPEED[p.def.kind]! * c.v0f;
+    // brake for whatever is ahead in the lane: the player's vehicle, pedestrians, wrecks, other cars
+    let gap = 1e9;
+    const fx = c.fx, fz = c.fz;
+    const look = (ox: number, oz: number, r: number, vl: number): void => {
+      const dx = ox - c.x, dz = oz - c.z;
+      const ahead = dx * fx + dz * fz;
+      if (ahead < 0 || ahead > 60) return;
+      const side = Math.abs(dx * -fz + dz * fx);
+      if (side > 2.1 + r) return;
+      const g = ahead - r - c.type.L / 2;
+      if (g < gap) { gap = g; target = Math.min(target, Math.max(0, vl)); }
+    };
+    for (let i = 0; i < this.nObs; i++) {
+      const o = this.obs[i]!;
+      if (c.ram && o.kind === 'player') continue;
+      look(o.x, o.z, o.r, Math.hypot(o.vx, o.vz) * (o.vx * fx + o.vz * fz >= 0 ? 1 : 0));
+    }
+    for (const o of this.cars) {
+      if (o === c || !o.active || o.state === 'wreck') continue;
+      if (Math.abs(o.x - c.x) > 70 || Math.abs(o.z - c.z) > 70) continue;
+      look(o.x, o.z, o.type.L / 2, o.v * (o.fx * fx + o.fz * fz > 0 ? 1 : 0));
+    }
+    if (gap < 1e8) {
+      const safe = Math.sqrt(Math.max(0, 2 * 4.5 * Math.max(0, gap - 4)));
+      target = Math.min(target, safe);
+      c.brake = c.v > target + 1 ? 1 : 0;
+    } else c.brake = 0;
+
+    if (c.chase) {
+      const fxx = this.focus.x, fzz = this.focus.z;
+      const dToPlayer = Math.hypot(fxx - c.x, fzz - c.z);
+      if (!c.free) {
+        const near = nearestRoad(fxx, fzz, 600);
+        // keep heading towards the road point nearest the target; leave the road when this is the closest we get
+        if (near && near.path === p) {
+          const want = near.i * 4;
+          c.hdir = want > c.hs ? 1 : -1;
+          if (Math.abs(want - c.hs) < 14 && dToPlayer > 20) c.free = true;
+        } else if (c.hs < 6 || c.hs > p.length - 6) c.free = true;
+        else if (dToPlayer < 90) c.free = true;
+      }
+      if (c.free) {
+        // off the road: straight at the target over open ground, slower
+        const dx = fxx - c.x, dz = fzz - c.z;
+        const l = Math.hypot(dx, dz) || 1;
+        c.fx += (dx / l - c.fx) * Math.min(1, dt * 2.2); c.fz += (dz / l - c.fz) * Math.min(1, dt * 2.2);
+        const fl = Math.hypot(c.fx, c.fz) || 1;
+        c.fx /= fl; c.fz /= fl;
+        const free = c.unit === 'tank' || c.unit === 'apc' ? 8 : 19;
+        target = dToPlayer < 14 && !c.ram ? 0 : Math.min(target > 0 ? free : 0, free);
+        c.v += Math.max(-9 * dt, Math.min(3.4 * dt, target - c.v));
+        c.x += c.fx * c.v * dt; c.z += c.fz * c.v * dt;
+        const gy = terrainHeight(c.x, c.z);
+        c.gy = gy + 0.04;
+        const g2 = terrainHeight(c.x + c.fx * 3, c.z + c.fz * 3);
+        c.pitch = -Math.atan((g2 - gy) / 3);
+        c.yaw = Math.atan2(c.fx, c.fz);
+        return;
+      }
+      target = Math.max(target, gap < 1e8 ? target : HW_SPEED[p.def.kind]! * 1.5);
+    }
+    c.v += Math.max(-9 * dt, Math.min(2.6 * dt, target - c.v));
+    c.hs += c.hdir * c.v * dt;
+    if (c.hs < 1 || c.hs > p.length - 1) {
+      if (c.chase) { c.free = true; c.hs = Math.max(1, Math.min(p.length - 1, c.hs)); }
+      else { this.remove(c); return; }
+    }
+    this.poseHwy(c);
   }
 
   /** Roadblock cars: solid kinematic body near the player, wrecked on a hard ram. */
@@ -856,10 +1070,11 @@ export class TrafficRenderer {
         z = c.pz + (c.z - c.pz) * alpha;
         let dy = c.yaw - c.pyaw;
         dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        yawQ.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.pyaw + dy * alpha);
+        if (c.pitch) yawQ.setFromEuler(_e.set(c.pitch, c.pyaw + dy * alpha, 0, 'YXZ'));
+        else yawQ.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, c.pyaw + dy * alpha);
       }
       const wreck = c.state === 'wreck' && !!c.body;
-      const baseY = wreck ? c.body!.translation().y : G;
+      const baseY = wreck ? c.body!.translation().y : c.gy;
       this.ys = wreck ? -(t.clear + t.bodyH + t.cabinH * 0.7) / 2 : 0;
       const dim = c.state === 'wreck' ? 0.55 : 1;
       col.setHex(c.color).multiplyScalar(dim);
@@ -907,7 +1122,7 @@ export class TrafficRenderer {
       // headlight glow on the road ahead
       if (night > 0.12 && c.state !== 'wreck') {
         _p.set(0, 0.05, t.L / 2 + 6.5).applyQuaternion(yawQ);
-        _m.compose(_p.add(_v.set(x, G + 0.05, z)), yawQ, _s.set(7, 1, 13));
+        _m.compose(_p.add(_v.set(x, c.gy + 0.05, z)), yawQ, _s.set(7, 1, 13));
         this.pools.setMatrixAt(np++, _m);
       }
     }

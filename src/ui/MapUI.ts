@@ -1,11 +1,15 @@
 import type { CityPlan, Landmark } from '../world/city/plan';
 import { PLAN_RADIUS } from '../world/city/plan';
-import { Router, type Route } from '../world/city/route';
+import type { Route } from '../world/city/route';
+import { WorldRouter } from '../world/WorldRouter';
 import { CITY, terrainHeight } from '../world/Terrain';
+import { TerrainData } from '../world/TerrainData';
+import { nearestRoad } from '../world/roads';
+import { buildNetStrokes, MAP_LABELS, MARKERS, regionAt, type NetStroke } from './mapData';
 import { h as el } from './dom';
 
-const MB = { x0: -420, x1: 1900, z0: -1350, z1: 850 };
-const STEP = 6;
+const MB = { x0: -700, x1: 4800, z0: -3400, z1: 4400 };
+const STEP = 8;
 const ACCENT = '#ff7a59';
 
 const DISTRICT_FILL: Record<string, string> = {
@@ -29,7 +33,8 @@ interface View { cx: number; cz: number; scale: number; rot: number; w: number; 
  * over the road graph and shown on the minimap.
  */
 export class MapUI {
-  readonly router: Router;
+  readonly router: WorldRouter;
+  private net: NetStroke[] = [];
   waypoint: { x: number; z: number } | null = null;
   route: Route | null = null;
   onWaypoint: ((wp: { x: number; z: number } | null) => void) | null = null;
@@ -65,7 +70,8 @@ export class MapUI {
   private labelT = 0;
 
   constructor(root: HTMLElement, hud: HTMLElement, readonly plan: CityPlan, private readonly hooks: { toast(m: string): void; device(): string; close(): void }) {
-    this.router = new Router(plan);
+    this.router = new WorldRouter(plan);
+    this.net = buildNetStrokes();
 
     this.mini = el('canvas', 'minimap-canvas');
     this.miniCtx = this.mini.getContext('2d')!;
@@ -89,18 +95,21 @@ export class MapUI {
     this.full = el(
       'div', 'fullmap is-hidden',
       this.big,
-      el('div', 'fullmap-top panel-glass', el('div', 'fullmap-title', el('b', '', 'Port Valeria'), el('span', '', 'San Verano')), el('div', 'fullmap-actions', center, this.wpBtn, close)),
+      el('div', 'fullmap-top panel-glass', el('div', 'fullmap-title', el('b', '', 'San Verano'), el('span', '', 'State map')), el('div', 'fullmap-actions', center, this.wpBtn, close)),
       this.hint,
     );
     root.append(this.full);
     this.bindFull();
     window.addEventListener('resize', () => { if (this.open_) this.resizeBig(); });
-    this.bake();
   }
 
   // ------------------------------------------------------------------------------------- terrain bake
 
   /** Paint the relief + water into an offscreen canvas in a few time slices so start-up never stalls. */
+  bakeTerrain(): void {
+    this.bake();
+  }
+
   private bake(): void {
     const nx = Math.round((MB.x1 - MB.x0) / STEP), nz = Math.round((MB.z1 - MB.z0) / STEP);
     this.base.width = nx;
@@ -113,23 +122,33 @@ export class MapUI {
       const end = Math.min(nz, row + 24);
       for (; row < end; row++) for (let i = 0; i < nx; i++) hgt[row * nx + i] = terrainHeight(MB.x0 + (i + 0.5) * STEP, MB.z0 + (row + 0.5) * STEP);
       if (row < nz) { window.setTimeout(slice, 0); return; }
+      const td = TerrainData.current;
+      const sf = { desert: 0, forest: 0, salt: 0, dirt: 0 };
       for (let j = 0; j < nz; j++) {
         for (let i = 0; i < nx; i++) {
           const h = hgt[j * nx + i]!;
           const hl = hgt[j * nx + Math.max(0, i - 1)]!, hu = hgt[Math.max(0, j - 1) * nx + i]!;
-          const shade = Math.max(0.6, Math.min(1.35, 1 + ((hl - h) + (hu - h)) * 0.06));
+          const shade = Math.max(0.55, Math.min(1.4, 1 + ((hl - h) + (hu - h)) * 0.045));
+          const wx = MB.x0 + (i + 0.5) * STEP, wz = MB.z0 + (j + 0.5) * STEP;
           let r: number, gg: number, b: number;
           if (h < 0) {
             const d = Math.min(1, -h / 70);
             r = 34 - 22 * d; gg = 82 - 50 * d; b = 112 - 40 * d;
-          } else if (h < 5.2) {
-            if (MB.x0 + (i + 0.5) * STEP < 205) { r = 150; gg = 138; b = 108; } else { r = 92; gg = 98; b = 88; }
+          } else {
+            r = 84; gg = 98; b = 68;
+            if (td) {
+              td.surface(wx, wz, sf);
+              const mixc = (c: number[], t: number) => { r += (c[0]! - r) * t; gg += (c[1]! - gg) * t; b += (c[2]! - b) * t; };
+              mixc([172, 138, 92], sf.desert);
+              mixc([44, 76, 46], sf.forest);
+              mixc([222, 220, 208], sf.salt);
+            }
+            if (h < 5.2 && wx < 205) { r = 150; gg = 138; b = 108; }
+            else if (h < 5.2 && wx < 2200 && !(wx > 215 && wx < 1765 && wz > -745 && wz < 745)) { r = r * 0.8 + 18; gg = gg * 0.85 + 14; b = b * 0.8 + 8; }
+            const snow = Math.max(0, Math.min(1, (h - 520) / 90));
+            if (snow > 0) { r += (226 - r) * snow; gg += (232 - gg) * snow; b += (240 - b) * snow; }
+            r *= shade; gg *= shade; b *= shade;
           }
-          else if (h < 60) { r = 74; gg = 92; b = 62; }
-          else if (h < 160) { r = 86; gg = 88; b = 66; }
-          else if (h < 260) { r = 108; gg = 100; b = 90; }
-          else { r = 190; gg = 196; b = 204; }
-          if (h >= 0) { r *= shade; gg *= shade; b *= shade; }
           const o = (j * nx + i) * 4;
           img.data[o] = r; img.data[o + 1] = gg; img.data[o + 2] = b; img.data[o + 3] = 255;
         }
@@ -152,6 +171,21 @@ export class MapUI {
     ctx.translate(-v.cx, -v.cz);
     ctx.imageSmoothingEnabled = true;
     if (this.baseReady) ctx.drawImage(this.base, MB.x0, MB.z0, MB.x1 - MB.x0, MB.z1 - MB.z0);
+    {
+      const w0 = (m: number) => Math.max(m, 1.5 / v.scale);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'butt';
+      for (const st of this.net) {
+        ctx.setLineDash(st.dash ? st.dash.map((d) => d * w0(1) * 0.6) : []);
+        ctx.strokeStyle = st.casing;
+        ctx.lineWidth = w0(st.w) + 2.4 / v.scale;
+        if (!st.dash) ctx.stroke(st.path);
+        ctx.strokeStyle = st.color;
+        ctx.lineWidth = w0(st.w);
+        ctx.stroke(st.path);
+      }
+      ctx.setLineDash([]);
+    }
 
     const plan = this.plan;
     // everything below is clipped to the built-up area
@@ -247,7 +281,7 @@ export class MapUI {
     }
     if (full) {
       // district names, fading in as the map zooms out and out as it zooms in
-      const a = Math.max(0, Math.min(1, 1.3 - v.scale * 1.6));
+      const a = Math.max(0, Math.min(1, (v.scale - 0.34) * 6)) * Math.max(0, Math.min(1, (1.3 - v.scale) * 3));
       if (a > 0.02) {
         ctx.font = '500 15px system-ui, sans-serif';
         ctx.textAlign = 'center';
@@ -258,6 +292,48 @@ export class MapUI {
           ctx.translate(sx, sy);
           ctx.fillText(d.name.toUpperCase().split('').join(' '), 0, 0);
           ctx.restore();
+        }
+      }
+    }
+    if (full || v.scale > 0.5) {
+      ctx.font = `600 ${full ? 11 : 9}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const m of MARKERS) {
+        const [sx, sy] = toScreen(m.x, m.z);
+        if (sx < -20 || sy < -20 || sx > v.w + 20 || sy > v.h + 20) continue;
+        const r = full ? 9 : 6.5;
+        ctx.fillStyle = 'rgba(14,16,23,0.88)';
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = m.color ?? '#eceef3';
+        ctx.fillText(m.glyph, sx, sy + 0.5);
+        if (full && v.scale > 0.28) {
+          ctx.fillStyle = 'rgba(236,238,243,0.92)';
+          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+          ctx.lineWidth = 3;
+          ctx.strokeText(m.name, sx, sy + 18);
+          ctx.fillText(m.name, sx, sy + 18);
+        }
+      }
+    }
+    if (full) {
+      const ar = Math.max(0, Math.min(1, (0.36 - v.scale) * 8));
+      if (ar > 0.02) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const l of MAP_LABELS) {
+          const [sx, sy] = toScreen(l.x, l.z);
+          if (sx < -80 || sy < -30 || sx > v.w + 80 || sy > v.h + 30) continue;
+          ctx.font = `600 ${l.size}px system-ui, sans-serif`;
+          ctx.strokeStyle = `rgba(0,0,0,${0.75 * ar})`;
+          ctx.lineWidth = 4;
+          const text = l.name.toUpperCase().split('').join(' ');
+          ctx.strokeText(text, sx, sy);
+          ctx.fillStyle = `rgba(240,242,246,${0.92 * ar})`;
+          ctx.fillText(text, sx, sy);
         }
       }
     }
@@ -322,8 +398,9 @@ export class MapUI {
     this.labelT -= dt;
     if (this.labelT <= 0) {
       this.labelT = 0.4;
-      const dn = this.plan.districtName(ents.x, ents.z);
-      const st = this.plan.streetAt(ents.x, ents.z);
+      const inCity = Math.hypot(ents.x - CITY.x, ents.z - CITY.z) < PLAN_RADIUS + 20;
+      const dn = inCity ? this.plan.districtName(ents.x, ents.z) : regionAt(ents.x, ents.z) ?? (ents.x < 60 ? 'Pacific Ocean' : 'San Verano');
+      const st = inCity ? this.plan.streetAt(ents.x, ents.z) : nearestRoad(ents.x, ents.z, 16)?.path.def.name ?? '';
       const key = `${dn}|${st}`;
       if (key !== this.lastLabel) {
         this.lastLabel = key;
@@ -428,7 +505,7 @@ export class MapUI {
   private zoomAt(sx: number, sy: number, factor: number): void {
     const v = this.view;
     const before = this.screenToWorld(sx, sy);
-    v.scale = Math.max(0.12, Math.min(4, v.scale * factor));
+    v.scale = Math.max(0.07, Math.min(4, v.scale * factor));
     const after = this.screenToWorld(sx, sy);
     v.cx += before.x - after.x;
     v.cz += before.z - after.z;
