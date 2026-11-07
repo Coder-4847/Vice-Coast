@@ -11,9 +11,12 @@ import { City } from './City';
 import { FerrisWheel, HillRoad, WaypointBeacon } from './Landmarks';
 import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
+import { buildTowns } from './towns';
+import { Animated } from './Animated';
 import { Roads } from './RoadMeshes';
 import { Props } from './Props';
 import { Terrain, terrainHeight, CITY } from './Terrain';
+import { GEO, lakeLevel } from './heightfield';
 import type { TerrainData } from './TerrainData';
 import { TimeOfDay } from './TimeOfDay';
 import { Weather, type WeatherType } from './Weather';
@@ -36,10 +39,12 @@ export class World {
   readonly rig: LightRig;
   readonly terrain: Terrain;
   readonly ocean = new Ocean();
+  readonly lake = new Ocean({ level: lakeLevel(), size: 460, x: GEO.lake.x, z: GEO.lake.z, depthScale: 11 });
   readonly signals = new SignalClock();
   readonly city = new City(this.signals);
   readonly hillRoad: HillRoad;
   readonly roads = new Roads();
+  readonly animated: Animated;
   readonly wheel = new FerrisWheel();
   readonly beacon = new WaypointBeacon();
   readonly pipeline: RenderPipeline;
@@ -65,6 +70,7 @@ export class World {
 
     this.rig.register(this.terrain.material, Terrain.patch);
     this.rig.register(this.ocean.material, this.ocean.patch);
+    this.rig.register(this.lake.material, this.lake.patch);
     this.rig.register(this.city.buildingMaterial, City.patch);
     this.rig.register(this.city.poleMaterial);
     this.rig.register(this.city.headMaterial);
@@ -73,17 +79,20 @@ export class World {
     this.rig.register(this.city.leafMaterial);
     this.rig.register(this.city.vegMaterial);
 
+    for (const town of buildTowns()) this.city.addSource(town);
     this.city.configure(preset, camera.position.x, camera.position.z);
     this.hillRoad = new HillRoad(this.city.plan);
     this.rig.register(this.hillRoad.material);
+    this.animated = new Animated(this.city.buildingMaterial);
+    this.rig.register(this.animated.bladeMaterial);
     this.rig.register(this.roads.material, Roads.patch);
     this.rig.register(this.roads.dirtMaterial, Roads.patch);
     this.rig.register(this.wheel.frameMaterial);
     this.rig.register(this.wheel.cabinMaterial);
-    this.scene.add(this.roads.group, this.hillRoad.mesh, this.wheel.group, this.beacon.mesh, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
+    this.scene.add(this.animated.group, this.roads.group, this.hillRoad.mesh, this.wheel.group, this.beacon.mesh, this.atmosphere.group, this.ocean.mesh, this.lake.mesh, this.terrain.mesh, this.city.group, this.weather.group);
 
     this.pipeline = new RenderPipeline(gfx, this.scene, camera);
-    this.pipeline.hideForAO.push(this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group, this.beacon.mesh);
+    this.pipeline.hideForAO.push(this.terrain.mesh, this.lake.mesh, this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group, this.beacon.mesh);
     const size = this.drawingSize();
     this.pipeline.configure(preset, size.x, size.y);
     gfx.onResize = (w, h) => {
@@ -160,6 +169,8 @@ export class World {
     this.city.setNight(look.night, w.wetness);
     this.city.update(dt, cam.position.x, cam.position.z);
     this.wheel.update(running ? dt : 0, look.night);
+    this.animated.update(running ? dt : 0, cam, look.night, w.current.wind);
+    this.lake.sea.value = this.ocean.sea.value * 0.3;
     this.ocean.follow(cam);
     this.ocean.sea.value = clamp(0.3 + w.current.wind / 13, 0.3, 1.7);
     this.updateSunVisibility(dt);

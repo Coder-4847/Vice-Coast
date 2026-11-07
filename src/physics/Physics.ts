@@ -46,6 +46,9 @@ export interface BuildingBox {
   win?: number;
   /** Cylinder (radius = hx) instead of a cuboid. */
   cyl?: boolean;
+  /** Optional tilt (ramps): pitch about x, roll about z, applied with the yaw as 'YXZ'. */
+  rx?: number;
+  rz?: number;
 }
 
 /** Physics runs at 60 × SUBSTEPS Hz so stiff vehicle suspension stays stable. */
@@ -56,6 +59,8 @@ export const SUBSTEPS = 2;
  * (used for bullets, ledge detection and ground probing).
  */
 const SURF = { desert: 0, forest: 0, salt: 0, dirt: 0 };
+const _qe = new THREE.Euler();
+const _qq = new THREE.Quaternion();
 
 export class Physics {
   readonly world: RapierWorld;
@@ -126,7 +131,11 @@ export class Physics {
         ? this.R.ColliderDesc.cylinder(b.hy, b.hx)
         : this.R.ColliderDesc.cuboid(b.hx, b.hy, b.hz);
       desc.setTranslation(b.cx, b.cy, b.cz).setFriction(0.6).setCollisionGroups(groups(GROUP.WORLD, GROUP.PLAYER | GROUP.PROP));
-      if (b.ry) desc.setRotation({ x: 0, y: Math.sin(b.ry / 2), z: 0, w: Math.cos(b.ry / 2) });
+      if (b.rx || b.rz) {
+        _qe.set(b.rx ?? 0, b.ry ?? 0, b.rz ?? 0, 'YXZ');
+        _qq.setFromEuler(_qe);
+        desc.setRotation({ x: _qq.x, y: _qq.y, z: _qq.z, w: _qq.w });
+      } else if (b.ry) desc.setRotation({ x: 0, y: Math.sin(b.ry / 2), z: 0, w: Math.cos(b.ry / 2) });
       const col = this.world.createCollider(desc);
       this.buildingBoxes.set(col.handle, b);
       this.buildingBodies.set(col.handle, col);

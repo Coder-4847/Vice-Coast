@@ -438,7 +438,7 @@ export class City {
     const out: BuildingBox[] = [];
     for (const b of d.boxes) {
       if (!b.solid) continue;
-      out.push({ cx: b.x, cy: b.y, cz: b.z, hx: b.sx / 2, hy: b.sy / 2, hz: b.sz / 2, ry: b.ry || undefined, win: b.mode });
+      out.push({ cx: b.x, cy: b.y, cz: b.z, hx: b.sx / 2, hy: b.sy / 2, hz: b.sz / 2, ry: b.ry || undefined, win: b.mode, rx: b.rx, rz: b.rz });
     }
     for (const c of d.cyls) {
       if (!c.solid) continue;

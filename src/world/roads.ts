@@ -1,4 +1,5 @@
 import { GEO, groundHeight, setRoadCarve, smooth, TERRAIN } from './heightfield';
+import { townRoads } from './towns/layouts';
 
 /**
  * The road and rail network outside Port Valeria's own grid. Pure data + geometry (no rendering): centre-lines are smooth
@@ -21,6 +22,8 @@ export interface RoadDef {
   lift?: number;
   /** Lanes per direction (0 = unmarked). */
   lanes?: number;
+  /** The bed never dips below this height (bridges over canals). */
+  minY?: number;
 }
 
 export interface RoadPath {
@@ -85,7 +88,7 @@ export const BASE_ROADS: RoadDef[] = [
   },
   {
     id: 'coast-line', name: 'Coast Line', kind: 'rail', hw: 2.5, grade: 0.03, lift: 0.02,
-    pts: [[820, 690], [740, 900], [700, 1250], [690, 1700], [676, 2100], [650, 2500], [624, 2860], [606, 3040]],
+    pts: [[820, 690], [760, 900], [722, 1250], [704, 1560], [700, 1750], [698, 1960], [680, 2100], [650, 2500], [624, 2860], [606, 3040]],
   },
 ];
 
@@ -211,7 +214,7 @@ function buildPath(def: RoadDef, idx: number): RoadPath {
     for (let i = 1; i < n; i++) sm[i] = Math.min(sm[i - 1]! + g, Math.max(sm[i - 1]! - g, sm[i]!));
     for (let i = n - 2; i >= 0; i--) sm[i] = Math.min(sm[i + 1]! + g, Math.max(sm[i + 1]! - g, sm[i]!));
   }
-  for (let i = 0; i < n; i++) ys[i] = sm[i]!;
+  for (let i = 0; i < n; i++) ys[i] = Math.max(sm[i]!, def.minY ?? -1e9);
   let acc = 0;
   for (let i = 0; i < n; i++) {
     const a = pts[Math.max(0, i - 1)]!, b = pts[Math.min(n - 1, i + 1)]!;
@@ -228,7 +231,7 @@ function buildPath(def: RoadDef, idx: number): RoadPath {
 /** All road paths (building them needs the un-carved ground, so this runs before the carve is installed). */
 export function roadPaths(): RoadPath[] {
   if (!_paths) {
-    _paths = [...BASE_ROADS, ..._extra].map((d, i) => buildPath(d, i));
+    _paths = [...BASE_ROADS, ...townRoads(), ..._extra].map((d, i) => buildPath(d, i));
   }
   return _paths;
 }
@@ -333,6 +336,7 @@ function carve(x: number, z: number, h: number): number {
     if (w > wmax) wmax = w;
   }
   if (wsum <= 0) return h;
+  if (h < -0.4) return h; // canals, harbour and the sea stay water; bridges span them
   return h + (wy / wsum - h) * wmax;
 }
 

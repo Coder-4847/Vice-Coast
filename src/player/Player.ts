@@ -4,7 +4,7 @@ import type { AudioEngine } from '../audio/AudioEngine';
 import { clamp, damp, easeInOutCubic, Spring } from '../core/math';
 import type { InputManager } from '../input/InputManager';
 import { GROUP, type Physics, type RayHit, type Surface } from '../physics/Physics';
-import { terrainHeight } from '../world/Terrain';
+import { terrainHeight, waterLevelAt } from '../world/Terrain';
 
 const RADIUS = 0.3;
 const STAND_H = 1.8;
@@ -201,7 +201,8 @@ export class Player {
     this.probeLedge();
 
     // --- water -------------------------------------------------------------------------
-    const swimming = this.pos.y < SWIM_FEET_Y + 0.2 && terrainHeight(this.pos.x, this.pos.z) < -0.5 && this.pos.y < -0.85;
+    const wl = waterLevelAt(this.pos.x, this.pos.z);
+    const swimming = this.pos.y < wl + SWIM_FEET_Y + 0.2 && terrainHeight(this.pos.x, this.pos.z) < wl - 0.5 && this.pos.y < wl - 0.85;
     if (swimming !== this.wasInWater) {
       this.audio.splash(Math.abs(this.vel.y) > 4);
       this.wasInWater = swimming;
@@ -249,10 +250,10 @@ export class Player {
       const sz = hasInput ? (_tmp.z * my + _right.z * mx) * speed : 0;
       this.vel.x = damp(this.vel.x, sx, 3.2, dt);
       this.vel.z = damp(this.vel.z, sz, 3.2, dt);
-      let ty = SWIM_FEET_Y;
-      if (inp.active('crouch')) ty = SWIM_FEET_Y - 1.6; // dive
+      let ty = wl + SWIM_FEET_Y;
+      if (inp.active('crouch')) ty = wl + SWIM_FEET_Y - 1.6; // dive
       if (hasInput && my > 0.1) ty += -_tmp.y * 1.4;
-      if (inp.down('jump')) ty = SWIM_FEET_Y + 0.5;
+      if (inp.down('jump')) ty = wl + SWIM_FEET_Y + 0.5;
       this.vel.y = damp(this.vel.y, clamp((ty - this.pos.y) * 3, -2.6, 2.6), 9, dt);
       this.swimTimer -= dt;
       if (hasInput && this.swimTimer <= 0) {
@@ -344,7 +345,8 @@ export class Player {
   }
 
   private surfaceUnderfoot(): Surface {
-    if (this.pos.y < 0.15 && terrainHeight(this.pos.x, this.pos.z) < 0.2) return 'water';
+    const wlv = waterLevelAt(this.pos.x, this.pos.z);
+    if (this.pos.y < wlv + 0.15 && terrainHeight(this.pos.x, this.pos.z) < wlv + 0.2) return 'water';
     _tmp.set(this.pos.x, this.pos.y + 0.3, this.pos.z);
     const hit = this.physics.raycast(_tmp, _right.set(0, -1, 0), 1.2);
     return hit?.surface ?? 'concrete';

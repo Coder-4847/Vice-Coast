@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NOISE_GLSL } from './skyGlsl';
-import { CITY, TERRAIN, HM_CELL, HILL, coastHeight, terrainHeight as analyticHeight } from './heightfield';
+import { CITY, TERRAIN, HM_CELL, HILL, coastHeight, lakeLevel, waterLevelAt, terrainHeight as analyticHeight } from './heightfield';
 import { TerrainData, groundY } from './TerrainData';
 import { HM_H, HM_W, SF_H, SF_W } from './terrainBake';
 import { installRoads } from './roads';
@@ -8,7 +8,7 @@ import { installRoads } from './roads';
 // The road beds are part of the ground: install them before anything samples the terrain.
 installRoads();
 
-export { CITY, TERRAIN, HILL, coastHeight, HM_CELL };
+export { CITY, TERRAIN, HILL, coastHeight, HM_CELL, lakeLevel, waterLevelAt };
 /** Ground height in metres at world (x, z): the baked grid once the world is ready, the analytic function before. */
 export const terrainHeight = groundY;
 export { analyticHeight };
@@ -257,9 +257,17 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
   col = mix(col, dirtCol, sf.a * 0.75 * (1.0 - sf.g * 0.6));
   col = mix(col, saltCol, sf.b);
   col = mix(col, sand, sandW);
+  float paved = nt.b;
   rock = mix(rock, desertRock, sf.r);
   col = mix(col, rock, rockW);
   col = mix(col, snow, snowW);
+  if (paved > 0.01) {
+    float joint = smoothstep(0.485, 0.5, max(abs(fract(vWPos.x / 3.0) - 0.5), abs(fract(vWPos.z / 3.0) - 0.5)));
+    vec3 pv = vWPos.z > 2900.0 ? mix(vec3(0.46, 0.43, 0.38), vec3(0.54, 0.50, 0.44), nC) : mix(vec3(0.20, 0.20, 0.21), vec3(0.28, 0.28, 0.29), nC);
+    pv *= 1.0 - 0.16 * joint;
+    col = mix(col, pv, paved);
+    sandW = sandW * (1.0 - paved);
+  }
   float rough = mix(0.96, 0.85, sandW);
   rough = mix(rough, 0.8, rockW);
   rough = mix(rough, 0.9, sf.b);

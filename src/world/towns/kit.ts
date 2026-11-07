@@ -68,10 +68,13 @@ export class Kit {
     return p;
   }
 
-  /** Rotate local (u, v) offsets by yaw about (cx, cz). Local +u runs along the building's width. */
+  /**
+   * Offset local (u, v) by `yaw` about (cx, cz). Convention: `yaw` is the world heading (atan2(dz, dx)) of the building's
+   * width axis; +u runs along it and +v is a quarter-turn clockwise from it on the map (towards +z when yaw = 0).
+   */
   at(cx: number, cz: number, yaw: number, u: number, v: number): [number, number] {
     const c = Math.cos(yaw), s = Math.sin(yaw);
-    return [cx + u * c + v * s, cz - u * s + v * c];
+    return [cx + u * c - v * s, cz + u * s + v * c];
   }
 
   /**
@@ -104,17 +107,15 @@ export class Kit {
       // gable ends: stepped fill so the triangle reads from the side
       const steps = 4;
       for (let k = 0; k < steps; k++) {
-        const hh = (rise * (steps - k)) / steps;
         const ww = (d * (steps - k)) / steps;
-        this.box(x, z, w * 0.98, ww, hh * 0 + rise / steps + 0.02, wall, { y0: top + (rise / steps) * k, ry, solid: false });
-        void hh;
+        this.box(x, z, w * 0.98, ww, rise / steps + 0.02, wall, { y0: top + (rise / steps) * k, ry, solid: false });
       }
     } else if (roof === 'hip') {
       const pitch = o.pitch ?? 0.45;
       const half = Math.min(w, d) / 2 + ov;
       const slope = half / Math.cos(pitch);
       const rise = Math.tan(pitch) * half;
-      for (const [u, v, sx, sz, rxs, rzs] of [[0, -1, w + ov * 2, slope, 1, 0], [0, 1, w + ov * 2, slope, -1, 0], [-1, 0, slope, d + ov * 2, 0, 1], [1, 0, slope, d + ov * 2, 0, -1]] as const) {
+      for (const [u, v, sx, sz, rxs, rzs] of [[0, -1, w + ov * 2, slope, -1, 0], [0, 1, w + ov * 2, slope, 1, 0], [-1, 0, slope, d + ov * 2, 0, 1], [1, 0, slope, d + ov * 2, 0, -1]] as const) {
         const [px, pz] = this.at(x, z, yaw, (u * (w / 2 + ov)) / 2, (v * (d / 2 + ov)) / 2);
         const b = this.box(px, pz, sx, sz, 0.2, rc, { y0: top + rise / 2 - 0.1, ry, solid: false });
         b.rx = rxs * pitch; b.rz = rzs * pitch;

@@ -260,6 +260,12 @@ export function lakeLevel(): number {
   return _lake;
 }
 
+/** Height of the water surface at (x, z): the sea (0) everywhere except Mount Kestrel's lake. */
+export function waterLevelAt(x: number, z: number): number {
+  const l = GEO.lake;
+  return Math.hypot(x - l.x, z - l.z) < l.r + 14 ? lakeLevel() : 0;
+}
+
 /** Slot for the road network: lowers/raises the ground to lay a graded road bed. Installed by roads.ts. */
 let roadCarve: ((x: number, z: number, h: number) => number) | null = null;
 export function setRoadCarve(fn: ((x: number, z: number, h: number) => number) | null): void {
@@ -317,9 +323,18 @@ export function surfaceWeights(x: number, z: number, h: number, slope: number, o
   const sdz = (z - GEO.salt.z) / GEO.salt.rz;
   const salt = 1 - smooth(0.88, 1.06, Math.hypot(sdx, sdz));
   const dirt = smooth(0.58, 0.72, fbm(x * 0.0071 + 5, z * 0.0071 + 90, 3)) * (0.5 + 0.5 * desert);
-  out.desert = desert * (1 - town * 0.5);
+  out.desert = desert;
   out.forest = forest;
   out.salt = salt;
   out.dirt = dirt;
   return out;
+}
+
+/** Paved ground (harbour yard, Costa Merida's blocks): 0…1, painted by the terrain shader and used for tyre grip. */
+export function pavedWeight(x: number, z: number): number {
+  const rect = (x0: number, x1: number, z0: number, z1: number, soft: number): number =>
+    smooth(x0 - soft, x0 + soft, x) * (1 - smooth(x1 - soft, x1 + soft, x)) * smooth(z0 - soft, z0 + soft, z) * (1 - smooth(z1 - soft, z1 + soft, z));
+  let w = rect(396, 940, 1590, 1964, 4);
+  w = Math.max(w, rect(100, 850, 3052, 3648, 12));
+  return w;
 }

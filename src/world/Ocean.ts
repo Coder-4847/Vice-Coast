@@ -13,23 +13,35 @@ export class Ocean {
   /** Wave roughness 0 (glassy) … 1.6 (storm). Driven by the weather. */
   readonly sea = { value: 0.6 };
 
-  constructor() {
+  /** Water surface height and depth scale (m); the sea is level 0 with a long shelving shore, a lake is shallow. */
+  private readonly level: { value: number };
+  private readonly depthScale: { value: number };
+  private readonly fixed: boolean;
+
+  constructor(o: { level?: number; size?: number; x?: number; z?: number; depthScale?: number } = {}) {
+    this.fixed = o.size !== undefined;
+    this.level = { value: o.level ?? 0 };
+    this.depthScale = { value: o.depthScale ?? 80 };
     this.material = new THREE.MeshStandardMaterial({ color: 0x0b3340, roughness: 0.07, metalness: 0.0, envMapIntensity: 1.1 });
     const geo = new THREE.PlaneGeometry(1, 1, 1, 1);
     geo.rotateX(-Math.PI / 2);
     this.mesh = new THREE.Mesh(geo, this.material);
-    this.mesh.scale.setScalar(30000);
-    this.mesh.frustumCulled = false;
+    this.mesh.scale.setScalar(o.size ?? 30000);
+    this.mesh.position.set(o.x ?? 0, this.level.value, o.z ?? 0);
+    this.mesh.frustumCulled = !!o.size;
     this.mesh.renderOrder = -1;
   }
 
   follow(camera: THREE.Camera): void {
+    if (this.fixed) return;
     const step = 64;
     this.mesh.position.set(Math.round(camera.position.x / step) * step, 0, Math.round(camera.position.z / step) * step);
   }
 
   patch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
     shader.uniforms.uSea = this.sea;
+    shader.uniforms.uLevel = this.level;
+    shader.uniforms.uDepthScale = this.depthScale;
     shader.uniforms.uHeightTex = Terrain.uniforms.uHeightTex;
     shader.uniforms.uHM = Terrain.uniforms.uHM;
     shader.uniforms.uHMSize = Terrain.uniforms.uHMSize;
@@ -37,7 +49,7 @@ export class Ocean {
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nuniform float uSea;\nuniform highp sampler2D uHeightTex;\nuniform vec4 uHM;\nuniform vec4 uHMSize;\n${NOISE_GLSL}
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\nuniform float uSea;\nuniform float uLevel;\nuniform float uDepthScale;\nuniform highp sampler2D uHeightTex;\nuniform vec4 uHM;\nuniform vec4 uHMSize;\n${NOISE_GLSL}
 float wave(vec2 p, float t) {
   return n_noise(p * 0.11 + vec2(t * 0.30, t * 0.12)) * 1.0
        + n_noise(p * 0.37 - vec2(t * 0.40, t * 0.25)) * 0.55
@@ -56,7 +68,7 @@ float seaFloor(vec2 xz) {
 }
 float coastY(float x) { float t = clamp((x + 260.0) / 300.0, 0.0, 1.0); return -70.0 + 74.0 * t * t * (3.0 - 2.0 * t); }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-float depth = clamp(-seaFloor(vWPos.xz) / 80.0, 0.0, 1.0);
+float depth = clamp((uLevel - seaFloor(vWPos.xz)) / uDepthScale, 0.0, 1.0);
 vec3 shallow = vec3(0.03, 0.30, 0.33);
 vec3 deep = vec3(0.005, 0.045, 0.09);
 diffuseColor.rgb = mix(shallow, deep, smoothstep(0.0, 0.55, depth));

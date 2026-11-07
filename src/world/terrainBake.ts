@@ -1,4 +1,4 @@
-import { HM_CELL, HM_COLS, HM_ROWS, TERRAIN, surfaceWeights, terrainHeight, type Surface4 } from './heightfield';
+import { HM_CELL, HM_COLS, HM_ROWS, TERRAIN, pavedWeight, surfaceWeights, terrainHeight, type Surface4 } from './heightfield';
 import { installRoads } from './roads';
 
 /** Surface mask resolution: every 2nd height sample (8 m). */
@@ -48,7 +48,7 @@ export function bakeBand(r0: number, r1: number): BakeBand {
       const o = ((j - r0) * HM_W + i) * 4;
       normals[o] = Math.round((-dx * il * 0.5 + 0.5) * 255);
       normals[o + 1] = Math.round((-dz * il * 0.5 + 0.5) * 255);
-      normals[o + 2] = 0;
+      normals[o + 2] = h > 0.5 ? Math.round(pavedWeight(TERRAIN.x0 + i * HM_CELL, TERRAIN.z0 + j * HM_CELL) * 255) : 0;
       normals[o + 3] = 255;
     }
   }
