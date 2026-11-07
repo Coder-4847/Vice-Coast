@@ -3,6 +3,7 @@ import type { Collider, Ray, RigidBody, World as RapierWorld } from '@dimforge/r
 import { terrainHeight, TERRAIN, CITY } from '../world/Terrain';
 import { TerrainData } from '../world/TerrainData';
 import { nearestRoad } from '../world/roads';
+import { pavedWeight } from '../world/heightfield';
 
 type Rapier = typeof import('@dimforge/rapier3d-compat').default;
 
@@ -176,6 +177,7 @@ export class Physics {
     if (inCity) return this.groundHook ? this.groundHook(x, y) : 'asphalt';
     const rd = nearestRoad(x, y, 14);
     if (rd && rd.d < rd.path.def.hw + 0.5) return rd.path.def.kind === 'dirt' ? 'dirt' : rd.path.def.kind === 'rail' ? 'concrete' : 'asphalt';
+    if (pavedWeight(x, y) > 0.5) return 'concrete';
     const h = terrainHeight(x, y);
     if (x < 220 && h < 3.6) return 'sand';
     const td = TerrainData.current;

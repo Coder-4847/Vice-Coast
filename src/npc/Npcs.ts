@@ -1,4 +1,5 @@
 import { CITY } from '../world/Terrain';
+import { Townsfolk } from './Townsfolk';
 import * as THREE from 'three';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { QualityPreset } from '../core/Quality';
@@ -33,6 +34,7 @@ export class Npcs {
   readonly peds: Pedestrians;
   readonly pedView: PedRenderer;
   readonly ambient: Ambient;
+  readonly townsfolk = new Townsfolk();
   private readonly hits: VehicleHit[] = [];
   private preset: QualityPreset;
   private readonly pv = new THREE.Matrix4();
@@ -130,6 +132,7 @@ export class Npcs {
       this.hits.push({ player: true, x: v.position.x, z: v.position.z, vx: lv.x, vz: lv.z, fx: lv.x / sp, fz: lv.z / sp, hl: v.spec.size.length / 2, hw: v.spec.size.width / 2 });
     }
     p.update(Math.min(dt, 0.1), this.hits, ctx.pos);
+    this.townsfolk.update(dt, p, p.focus.x, p.focus.z, hour);
     this.pedView.sync(p.peds);
     this.ambient.update(Math.min(dt, 0.1), { x: p.focus.x, z: p.focus.z, hour, frustum: this.traffic.frustum });
   }

@@ -5,10 +5,11 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 7 — Combat and police.** Health and armour, four weapons (VC-9 pistol, WASP-9 SMG, HAMMER-12 shotgun,
-> FALCON AR-7 rifle) on a weapon wheel, explosions and burning cars, Wasted and Busted respawns, and a six-star wanted
-> system whose response escalates from patrol cars to tanks, APCs, attack helicopters and jet strikes. Built on the living
-> city (Phase 6), the streamed Port Valeria (Phase 5) and the driving model (Phase 4). See the [roadmap](#roadmap).
+> Status: **Phase 8 — the rest of the land.** The state of San Verano is now a 6 × 8 km world: Port Valeria plus **Cinder Flats**
+> (desert strip town, trailer park, biker bar, scrap yard, salt pan, airstrip, wind turbines), **Dusk Harbor** (container port),
+> **Pinecrest Bay** (logging town, marina, lighthouse), **Mount Kestrel** (switchback road, cable car, summit tower, lake, cave) and
+> **Costa Merida** (canal resort city with a casino), joined by highways, a coast railway and a state map. Built on combat and
+> police (Phase 7), the living city (Phase 6) and the driving model (Phase 4). See the [roadmap](#roadmap) and [docs/WORLD.md](docs/WORLD.md).
 
 ## Run locally
 
@@ -64,12 +65,29 @@ Break line of sight and the stars flash while the search timer runs down (water 
 still arrest you (up to 3 stars) — **Busted** costs most of your spare ammo and drops you at police HQ; dying is **Wasted** and sends
 you to St. Aurelia Medical Center. The beach shooting range is a safe place to practise.
 
+### The world
+
+| Place | What is there |
+| --- | --- |
+| **Port Valeria** (centre) | The big city: downtown, boardwalk and pier, luxury hills, industrial district, stadium, hospital, police HQ |
+| **Dusk Harbor** (south) | A working port: basin with finger piers, five quay cranes, a block-stacked container yard with a rail spur, a moored container ship, tank farm, warehouses |
+| **Costa Merida** (far south) | A pastel resort town a quarter of Port Valeria's size: canals with a bridge at every crossing, seafront promenade and beach clubs, market square, cathedral, the Gran Casino |
+| **Pinecrest Bay** (north-west) | A quiet logging and fishing town on a bay: bank, general store, diner, sheriff's station, church, town square, marina, sawmill, a lighthouse on the headland |
+| **Mount Kestrel** (north-east) | A 950 m peak with snow above ~550 m: a switchback road to the summit, a cable car, a radio tower and observation deck, a lake with a camp, a boulder cave with a hidden shrine, a downhill / skydive launch ramp |
+| **Cinder Flats** (east) | Desert plateau with mesas and cacti: a strip town (diner, motel, saloon, gas station, biker bar), a trailer park, a "moonshine and scrap" yard, an abandoned airstrip with hangar and derelict plane, a dried salt pan with a stranded hull, wind turbines, dirt-bike trails with jumps |
+
+Roads: the **Coastway** (Port Valeria → Dusk Harbor → Costa Merida), the **Pinecrest Highway**, the **Cinder Highway** (through the
+Valeria Range pass), county roads and dirt tracks. The **Coast Line** railway runs beside the Coastway with a train shuttling
+between Port Valeria and Costa Merida (scenery for now — not rideable). Weather follows the land: snow high on Kestrel, dust gusts
+on the desert plateau (until you pick a weather in **Esc → Environment**).
+
 ### Map and navigation
 
-The minimap (top right) rotates with your heading and zooms out as you speed up; it shows the district, the street
-you are on, and the road distance to your waypoint. Press `M` for the full map: click (or `A` on a pad, tap on touch)
-to set a waypoint, drag / left stick to pan, scroll / triggers / pinch to zoom, right-click or `X` to clear, `C` / `Y`
-to centre. The route follows the road grid and a light beam marks the waypoint in the world.
+The minimap (top right) rotates with your heading and zooms out as you speed up; it shows the district or region, the street
+you are on, and the road distance to your waypoint. Press `M` for the full map of the whole state (roads, rail, biomes, landmarks
+and region names): click (or `A` on a pad, tap on touch) to set a waypoint, drag / left stick to pan, scroll / triggers / pinch to
+zoom, right-click or `X` to clear, `C` / `Y` to centre. The route follows highways and streets across the whole state (dirt
+tracks only when nothing else connects), and a light beam marks the waypoint in the world.
 
 ### Vehicles
 
@@ -94,7 +112,10 @@ src/
   core/    game loop (fixed timestep + interpolation), renderer + HDR post pipeline, quality presets, settings
   input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
-  world/   atmosphere (sky, time of day, weather), lighting rig, terrain, ocean, props, effects, landmarks
+  world/   atmosphere (sky, time of day, weather), lighting rig, ocean, props, effects, landmarks
+  world/heightfield.ts, TerrainData, terrainBake, bake.worker, Terrain   the state's shape → baked 4 m heightmap → clipmap renderer
+  world/roads.ts, RoadMeshes, towns/   highways, rail and town streets (carved into the terrain), authored settlements
+  world/Wilderness, vegGeometry, Animated   forests / desert plants, turbines / cable car / train / beacons
   world/city/  Port Valeria: plan (roads, blocks, districts, buildings), road/zone textures, routing
   combat/  vitals, explosions, wanted level, police director, aircraft
   npc/     signal clock, lane network + traffic AI, pedestrians (sidewalk graph, archetypes, reactions), ambient events
@@ -118,9 +139,9 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 4. **Vehicles** ✅ — 5 cars + 1 bike, chase camera, enter/exit
 5. **World streaming and Port Valeria** ✅ — city, chunk streaming, minimap and map (airport, studio lot, metro and the full amusement park are still to come)
 6. **NPCs and traffic** ✅ — traffic AI and signals, crowds, reactions, ambient events
-7. **Combat and police** ✅ (this build) — weapons, health and armour, 1–6 star wanted levels
-8. Remaining biomes
-9. Aircraft, boats, military vehicles
+7. **Combat and police** ✅ — weapons, health and armour, 1–6 star wanted levels
+8. **Remaining land biomes** ✅ (this build) — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
+9. Aircraft, boats, military vehicles — plus Fort Halloran and the open-ocean islands
 10. Economy, properties, garage, phone
 11. Mission framework and story
 12. Robberies and crew

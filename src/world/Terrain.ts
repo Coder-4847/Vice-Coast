@@ -263,7 +263,7 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
   col = mix(col, snow, snowW);
   if (paved > 0.01) {
     float joint = smoothstep(0.485, 0.5, max(abs(fract(vWPos.x / 3.0) - 0.5), abs(fract(vWPos.z / 3.0) - 0.5)));
-    vec3 pv = vWPos.z > 2900.0 ? mix(vec3(0.46, 0.43, 0.38), vec3(0.54, 0.50, 0.44), nC) : mix(vec3(0.20, 0.20, 0.21), vec3(0.28, 0.28, 0.29), nC);
+    vec3 pv = vWPos.z > 2900.0 ? mix(vec3(0.30, 0.28, 0.25), vec3(0.37, 0.34, 0.30), nC) : mix(vec3(0.17, 0.17, 0.18), vec3(0.24, 0.24, 0.25), nC);
     pv *= 1.0 - 0.16 * joint;
     col = mix(col, pv, paved);
     sandW = sandW * (1.0 - paved);

@@ -109,6 +109,7 @@ export class World {
   attachTerrain(data: TerrainData): void {
     this.terrainData = data;
     this.terrain.attach(data);
+    this.city.reload(this.camera.position.x, this.camera.position.z);
     this.atmosphere.markEnvDirty();
   }
 

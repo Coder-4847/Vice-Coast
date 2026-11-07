@@ -191,3 +191,27 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Escalation matches the table in the README: 1★ patrol cars and pistol officers; 2★ roadblocks, spike strips (tyres burst: much less grip), shotguns; 3★ SWAT van + police helicopter with a searchlight; 4★ armoured truck, snipers with red laser, ramming; 5★ federal agents + strafing gunship; 6★ tanks (shells explode near you), APCs, attack helicopters with missiles, jet strikes, 4 helicopters at once.
 - [ ] Standing still next to officers (≤ 3 stars) arrests you; at 4★+ they shoot to kill. Cars on the road ahead stop for officers; helicopters can be shot down (big wanted jump).
 - [ ] Dispatch lines appear as subtitles (and are spoken where the browser supports speech synthesis) with a radio squelch.
+
+
+## Phase 8 — The rest of the land
+
+### Terrain, roads and the map
+- [ ] Start-up shows the loading bar for a few seconds longer (the world is baked); the title screen and spawn on the beach look as before.
+- [ ] Walking and driving never fall through the ground anywhere on the map; cars grip on asphalt, slide on the desert, dirt and snow.
+- [ ] The Coastway, Pinecrest Highway and Cinder Highway link Port Valeria with the other places; roads cut through hillsides, markings are crisp, the Kestrel road climbs the mountain in switchbacks to a car park by the summit tower.
+- [ ] `M` shows the whole state: biome colours, roads, rail, region names (zoomed out) and landmark markers (zoomed in). A waypoint anywhere gets a road route (check Costa Merida, Cinder Flats, Pinecrest, the Kestrel summit).
+- [ ] The minimap label shows the region or district and the road you are on.
+
+### Places
+- [ ] **Cinder Flats**: strip town with diner, motel, saloon, gas station, biker bar; trailer park; scrap yard with copper stills; wind turbines turning; the airstrip with hangar, tower and derelict plane; the salt pan with cracks and the stranded hull; dirt-bike trails with jumps.
+- [ ] **Dusk Harbor**: the basin and finger piers, cranes, stacked containers, the container ship at its berth, boats, tank farm, warehouses, the Harbor Authority tower; a rail spur passes the yard.
+- [ ] **Pinecrest Bay**: grid of streets with bank, store, diner, sheriff's station, church, square, houses; the marina with boats; the sawmill with log decks; the lighthouse (its beam sweeps at night).
+- [ ] **Mount Kestrel**: forest to the tree line, snow above ~550 m, the lake (swimmable), camp, cable car running between its stations with two cabins, summit radio tower with blinking light, observation deck, launch ramp, the boulder cave with the glowing shrine.
+- [ ] **Costa Merida**: canals with bridges that cars cross, yachts, promenade and beach umbrellas, the market, cathedral, the casino tower with neon at night, palms and street lamps.
+- [ ] Vegetation: dense pine forests in the north, saguaros/joshua/scrub in the desert; trees are solid near you (walk into one, drive into one).
+
+### Life and weather
+- [ ] Cars drive the highways and town streets (none inside the city grid beyond what Phase 6 spawns); the Coast Line train shuttles beside the Coastway.
+- [ ] People loiter in Costa Merida's market and seafront, Pinecrest's square and marina, the bar patio in Cinder Flats; they flee when shot at.
+- [ ] Wanted level outside Port Valeria: police come along the roads and then cross open ground to you (3★ and up bring the same escalation); the shooting still ends with Busted / Wasted respawns.
+- [ ] Weather: up on Kestrel it snows (unless you chose a weather in the menu); gusts of dust blow over the desert in the afternoon. Wind, forest rustle, birds by day, crickets by night and surf at the coast fade in with the place.

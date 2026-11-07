@@ -144,14 +144,39 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - **Explosions** are ≈ 100 particles in the shared particle system; burning cars emit two puffs per 0.13 s.
 - Weapons add three small procedural meshes (≈ 12 meshes each, hidden when not held) to the viewmodel pass.
 
+## Phase 8 cost notes
+
+- **Terrain** is now one instanced draw of at most ~60 visible 32×32-cell patches (frustum-culled each frame, six LOD rings),
+  displaced in the vertex shader from a baked 1551 × 1951 R32F height texture (12 MB) with a mip-mapped normal texture (12 MB) and an
+  8 m biome texture (3 MB). Triangle count is ≈ 0.12 M for the terrain at any camera position — comparable to the old 224-segment
+  mesh but with 4 m detail near you and 8 km reach. The fragment shader gained a few noise taps; the desert, salt and cinder
+  branches only run where those biomes are.
+- **Bake**: ≈ 3 M height samples (+ normals, biomes) are computed by up to 4 workers during loading (a few seconds); the baked
+  arrays are also the Rapier heightfield (12 MB) and the ground-query grid, so nothing is evaluated analytically at run time.
+- **Streaming**: the same 256 m chunk pools as Port Valeria; towns add boxes/cylinders (Costa Merida ≈ 3 500 instances when fully
+  loaded, Dusk Harbor ≈ 1 400), wilderness adds one merged-mesh pool per plant kind (pines 42 k, scrub 14 k, … ≈ 82 k capacity;
+  about 8 draw calls). Dense pine forest at Medium (760 m streaming radius) is ≈ 25–35 k trees ≈ 0.8–1.0 M triangles; Low (520 m)
+  roughly halves it. Trees only get colliders within 46 m of the player (≤ 28 created per update).
+- **Draw calls** on Medium are ≈ 1.6 k in open country (the figure includes shadow cascades) versus ≈ 1.46 k in Port Valeria in
+  Phase 7: +8 vegetation, +≈ 6 visible road meshes (the road network is split into ≈ 380 m sections and culled), +3 for animated
+  things (blades, cabins, train, beacons share a few instanced meshes). The queued Phase 14 pass (merging static props, GPU culling of
+  pools) is more important now.
+- **Roads** are ribbon meshes (≈ 80 sections, ≈ 1.1 M vertices in total, culled), one material, no textures.
+- **Traffic outside the city**: ≤ 16 highway cars at Medium using the same six instanced meshes as city traffic (cars carry their
+  own ground height and pitch); police units that cannot reach the player over the city lanes come by road and then cross open
+  ground, so there is a little extra AI cost only when wanted.
+- **Audio**: one more noise bed (wind, rustle, surf) and a 4-oscillator cricket patch, only while outside the city.
+- **Known risks**: no real-GPU measurements yet (all numbers are from headless SwiftShader runs); AO (High/Ultra) skips the terrain
+  because its depth is displaced in the shader; very dense forests on Ultra (1 000 m radius) are the most likely frame-time spike.
+
 ## Deferred from the master prompt (not silently dropped)
 
 - **Temporal anti-aliasing** and **motion blur** need a velocity buffer; both are still pending — vehicles now exist, so they move to Phase 14
   polish (a velocity buffer is the prerequisite). MSAA ×4 (High/Ultra) and SMAA (Medium/Ultra) cover AA until then.
 - **Screen-space reflections** on wet roads / car paint: wet roads currently reflect the live sky via image-based lighting.
   SSR waits for Phase 4–5, when there are cars and neon to reflect.
-- **Depth of field** belongs to cutscenes and photo mode (Phases 11 and 14). **God rays** and **heat haze** come with the
-  mountain and desert biomes (Phase 8). **Windshield rain and wipers** come with vehicles (Phase 4).
+- **Depth of field** belongs to cutscenes and photo mode (Phases 11 and 14). **God rays** and **heat haze** were planned for the
+  mountain and desert biomes but are not in Phase 8 either; they join the Phase 14 post-processing pass. **Windshield rain and wipers** come with vehicles (Phase 4).
 
 ## Rules for new content
 

@@ -263,7 +263,17 @@ export class City {
   }
 
   /** (Re)build pools for a quality preset and load everything around `centre`. */
+  /** Throw away every streamed chunk and load again (the terrain bake finishing changes what the wilderness generates). */
+  reload(cx: number, cz: number): void {
+    if (!this.lastPreset) return;
+    this.builtKey = '';
+    this.configure(this.lastPreset, cx, cz);
+  }
+
+  private lastPreset: QualityPreset | null = null;
+
   configure(preset: QualityPreset, cx: number, cz: number): void {
+    this.lastPreset = preset;
     const key = `${preset.streamRadius}|${preset.lamps}`;
     if (key === this.builtKey) return;
     this.builtKey = key;

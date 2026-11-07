@@ -145,7 +145,7 @@ function landform(x: number, z: number): number {
   h += HILL.h * Math.exp(-(((x - HILL.x) ** 2 + (z - HILL.z) ** 2) / (2 * HILL.s * HILL.s)));
 
   // Dry land never dips below the high-tide line.
-  h = Math.max(h, 1.9 * smooth(40, 120, x));
+  if (x > 30) h = Math.max(h, 1.9 * smooth(40, 120, x));
 
   // Coastal swells either side of the bay and harbour.
   const hl = GEO.pinecrest.lighthouse;
