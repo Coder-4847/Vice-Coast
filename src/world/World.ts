@@ -11,6 +11,7 @@ import { City } from './City';
 import { FerrisWheel, HillRoad, WaypointBeacon } from './Landmarks';
 import { LightRig } from './LightRig';
 import { Ocean } from './Ocean';
+import { Roads } from './RoadMeshes';
 import { Props } from './Props';
 import { Terrain, terrainHeight, CITY } from './Terrain';
 import type { TerrainData } from './TerrainData';
@@ -38,6 +39,7 @@ export class World {
   readonly signals = new SignalClock();
   readonly city = new City(this.signals);
   readonly hillRoad: HillRoad;
+  readonly roads = new Roads();
   readonly wheel = new FerrisWheel();
   readonly beacon = new WaypointBeacon();
   readonly pipeline: RenderPipeline;
@@ -73,9 +75,11 @@ export class World {
     this.city.configure(preset, camera.position.x, camera.position.z);
     this.hillRoad = new HillRoad(this.city.plan);
     this.rig.register(this.hillRoad.material);
+    this.rig.register(this.roads.material, Roads.patch);
+    this.rig.register(this.roads.dirtMaterial, Roads.patch);
     this.rig.register(this.wheel.frameMaterial);
     this.rig.register(this.wheel.cabinMaterial);
-    this.scene.add(this.hillRoad.mesh, this.wheel.group, this.beacon.mesh, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
+    this.scene.add(this.roads.group, this.hillRoad.mesh, this.wheel.group, this.beacon.mesh, this.atmosphere.group, this.ocean.mesh, this.terrain.mesh, this.city.group, this.weather.group);
 
     this.pipeline = new RenderPipeline(gfx, this.scene, camera);
     this.pipeline.hideForAO.push(this.atmosphere.group, this.ocean.mesh, this.city.pools, this.weather.group, this.beacon.mesh);
@@ -90,7 +94,10 @@ export class World {
 
   /** Called once Rapier has loaded: builds the static colliders and the shooting range. */
   /** Hand the baked heightfield to the GPU. */
+  terrainData: TerrainData | null = null;
+
   attachTerrain(data: TerrainData): void {
+    this.terrainData = data;
     this.terrain.attach(data);
     this.atmosphere.markEnvDirty();
   }

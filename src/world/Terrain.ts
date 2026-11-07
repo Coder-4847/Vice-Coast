@@ -3,6 +3,10 @@ import { NOISE_GLSL } from './skyGlsl';
 import { CITY, TERRAIN, HM_CELL, HILL, coastHeight, terrainHeight as analyticHeight } from './heightfield';
 import { TerrainData, groundY } from './TerrainData';
 import { HM_H, HM_W, SF_H, SF_W } from './terrainBake';
+import { installRoads } from './roads';
+
+// The road beds are part of the ground: install them before anything samples the terrain.
+installRoads();
 
 export { CITY, TERRAIN, HILL, coastHeight, HM_CELL };
 /** Ground height in metres at world (x, z): the baked grid once the world is ready, the analytic function before. */
@@ -217,34 +221,34 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
   vec3 lush = vec3(0.13, 0.23, 0.08);
   vec3 grass = mix(dry, lush, smoothstep(0.35, 0.65, nA)) * (0.85 + 0.3 * nB);
   vec3 rock = mix(vec3(0.30, 0.27, 0.25), vec3(0.46, 0.41, 0.36), nB);
-  vec3 snow = vec3(0.90, 0.93, 0.98);
+  vec3 snow = vec3(0.72, 0.75, 0.80);
   // desert: warm sand over reddish dirt, wind ripples and patches of dark cinder gravel
-  vec3 desertCol = vec3(0.7, 0.5, 0.3);
-  vec3 desertRock = vec3(0.6, 0.35, 0.2);
+  vec3 desertCol = vec3(0.45, 0.31, 0.18);
+  vec3 desertRock = vec3(0.38, 0.2, 0.12);
   if (sf.r > 0.02) {
     float ripple = 0.5 + 0.5 * sin(dot(vWPos.xz, vec2(0.92, 0.38)) * 1.9 + nA * 14.0);
-    vec3 dSand = mix(vec3(0.80, 0.60, 0.38), vec3(0.66, 0.44, 0.26), smoothstep(0.3, 0.7, nA));
+    vec3 dSand = mix(vec3(0.58, 0.36, 0.17), vec3(0.45, 0.26, 0.12), smoothstep(0.3, 0.7, nA));
     dSand *= 0.9 + 0.12 * ripple * smoothstep(0.55, 0.9, nB);
     float nL = n_fbm(vWPos.xz * 0.0031 + 17.0);
     float cinderW = smoothstep(0.56, 0.72, nL) * 0.85;
-    vec3 cinder = mix(vec3(0.17, 0.13, 0.12), vec3(0.28, 0.20, 0.17), nB);
+    vec3 cinder = mix(vec3(0.085, 0.065, 0.06), vec3(0.14, 0.10, 0.085), nB);
     desertCol = mix(dSand, cinder, cinderW) * (0.88 + 0.24 * nC);
-    desertRock = mix(vec3(0.50, 0.28, 0.17), vec3(0.72, 0.44, 0.26), smoothstep(0.2, 0.8, fract(h * 0.045 + nA * 0.6)));
+    desertRock = mix(vec3(0.30, 0.15, 0.09), vec3(0.50, 0.28, 0.16), smoothstep(0.2, 0.8, fract(h * 0.045 + nA * 0.6)));
   }
   // forest floor: needle litter and moss
   vec3 forestCol = mix(vec3(0.19, 0.13, 0.07), vec3(0.08, 0.15, 0.06), smoothstep(0.3, 0.7, nA)) * (0.8 + 0.4 * nB);
-  vec3 dirtCol = mix(vec3(0.42, 0.31, 0.20), vec3(0.33, 0.24, 0.15), nB) * (0.9 + 0.2 * nC);
+  vec3 dirtCol = mix(vec3(0.27, 0.19, 0.12), vec3(0.20, 0.14, 0.09), nB) * (0.9 + 0.2 * nC);
   // dry salt pan: bright crust with polygonal cracks
-  vec3 saltCol = vec3(0.85, 0.83, 0.77);
+  vec3 saltCol = vec3(0.62, 0.60, 0.55);
   if (sf.b > 0.02) {
     vec2 cp = vWPos.xz * 0.45;
     float crack = 1.0 - smoothstep(0.0, 0.07, abs(n_noise(cp) - 0.5)) * 0.9;
     crack = max(crack, 1.0 - smoothstep(0.0, 0.05, abs(n_noise(cp * 2.3 + 7.0) - 0.5)));
-    saltCol = mix(vec3(0.88, 0.86, 0.80), vec3(0.74, 0.72, 0.66), nB) * (1.0 - 0.2 * crack);
+    saltCol = mix(vec3(0.66, 0.64, 0.59), vec3(0.55, 0.53, 0.48), nB) * (1.0 - 0.2 * crack);
   }
 
-  float sandW = 1.0 - smoothstep(2.2, 9.0, h + nA * 5.0);
-  float rockW = smoothstep(0.16, 0.42, slope + (nB - 0.5) * 0.16);
+  float sandW = max((1.0 - smoothstep(2.2, 9.0, h + nA * 5.0)) * (1.0 - smoothstep(200.0, 240.0, vWPos.x)), 1.0 - smoothstep(1.2, 3.4, h + nA * 1.5));
+  float rockW = smoothstep(0.18, 0.46, slope + (nB - 0.5) * 0.07);
   float snowLine = 545.0 + nA * 70.0 - slope * 120.0;
   float snowW = smoothstep(snowLine, snowLine + 55.0, h) * (1.0 - smoothstep(0.42, 0.7, slope));
   vec3 col = grass;

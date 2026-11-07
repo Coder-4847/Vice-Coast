@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Collider, Ray, RigidBody, World as RapierWorld } from '@dimforge/rapier3d-compat';
 import { terrainHeight, TERRAIN, CITY } from '../world/Terrain';
 import { TerrainData } from '../world/TerrainData';
+import { nearestRoad } from '../world/roads';
 
 type Rapier = typeof import('@dimforge/rapier3d-compat').default;
 
@@ -54,6 +55,8 @@ export const SUBSTEPS = 2;
  * Rapier world + the static colliders of the Phase 3 test world, with material-aware ray queries
  * (used for bullets, ledge detection and ground probing).
  */
+const SURF = { desert: 0, forest: 0, salt: 0, dirt: 0 };
+
 export class Physics {
   readonly world: RapierWorld;
   private readonly surfaces = new Map<number, Surface>();
@@ -162,7 +165,15 @@ export class Physics {
   groundSurface(x: number, y: number): Surface {
     const inCity = Math.hypot(x - CITY.x, y - CITY.z) < CITY.flat - 20 && x > 200;
     if (inCity) return this.groundHook ? this.groundHook(x, y) : 'asphalt';
-    if (x < 220 && terrainHeight(x, y) < 3.6) return 'sand';
+    const rd = nearestRoad(x, y, 14);
+    if (rd && rd.d < rd.path.def.hw + 0.5) return rd.path.def.kind === 'dirt' ? 'dirt' : rd.path.def.kind === 'rail' ? 'concrete' : 'asphalt';
+    const h = terrainHeight(x, y);
+    if (x < 220 && h < 3.6) return 'sand';
+    const td = TerrainData.current;
+    if (td) {
+      const s = td.surface(x, y, SURF);
+      if (s.salt > 0.6 || s.desert > 0.55) return 'sand';
+    } else if (h < 3.0) return 'sand';
     return 'dirt';
   }
 

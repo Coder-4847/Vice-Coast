@@ -111,25 +111,26 @@ function landform(x: number, z: number): number {
   const taper = 1 - 0.62 * smooth(1700, 3000, z);
   const range = Math.exp(-across * across) * pass * taper;
   h += land * range * (100 + 220 * ridged(x * 0.0021, z * 0.0021, 5));
+  const hillClear = 1 - 0.88 * Math.exp(-(((x - HILL.x) ** 2 + (z - HILL.z) ** 2) / (2 * 420 * 420)));
   // Foothills on the valley side so the rim reads as a wall, not a fence.
   const rim = smooth(1000, 1700, Math.hypot((x - CITY.x) * 0.7, z - CITY.z)) * (1 - smooth(1900, 2400, x)) * pass;
-  h += land * rim * (30 + 90 * Math.pow(fbm(x * 0.0018, z * 0.0018, 4), 1.6)) * smooth(-1400, -200, -Math.abs(z + 200) + 1100);
+  h += hillClear * land * rim * (30 + 90 * Math.pow(fbm(x * 0.0018, z * 0.0018, 4), 1.6)) * smooth(-1400, -200, -Math.abs(z + 200) + 1100);
 
   // Mount Kestrel: a big massif with a ridged crown.
   const kx = x - GEO.kestrel.x;
   const kz = z - GEO.kestrel.z;
   const dk = Math.hypot(kx * 0.92, kz);
-  const shoulder = Math.exp(-Math.pow(dk / 1450, 1.7));
+  const shoulder = Math.exp(-Math.pow(dk / 1050, 1.7)) * (1 - smooth(1250, 1900, dk));
   const core = Math.exp(-Math.pow(dk / 640, 2));
   const kr = ridged(x * 0.0034 + 11, z * 0.0034 + 4, 6);
-  h += land * (shoulder * (300 + 130 * (fbm(x * 0.004, z * 0.004, 4) - 0.35)) + core * (370 + 130 * kr));
+  h += land * (shoulder * (170 + 90 * (fbm(x * 0.004, z * 0.004, 4) - 0.35)) + core * (500 + 170 * kr));
 
   // Rolling country: wooded hills in the north, gentle swells elsewhere.
   const north = smooth(-450, -1700, z);
-  const roll = (fbm(x * 0.0042, z * 0.0042, 5) - 0.38) * (20 + 105 * north) * smooth(30, 360, x);
+  const roll = (fbm(x * 0.0036, z * 0.0036, 5) - 0.38) * (20 + 62 * north) * smooth(30, 360, x);
   const nearCity = smooth(CITY.flat * 0.6, CITY.flat + 300, Math.hypot(x - CITY.x, z - CITY.z));
-  h += roll * mix(1, nearCity, 1 - north);
-  h += north * land * 26 * (fbm(x * 0.012 + 40, z * 0.012, 3) - 0.4);
+  h += roll * mix(1, nearCity, 1 - north) * hillClear;
+  h += north * land * 26 * (fbm(x * 0.012 + 40, z * 0.012, 3) - 0.4) * hillClear;
 
   // The desert plateau: a broad shelf with buttes and mesas.
   const plat = smooth(2300, 3150, x) * (1 - smooth(4150, 4700, x));
@@ -139,6 +140,12 @@ function landform(x: number, z: number): number {
   const mesa = smooth(0.625, 0.65, mn) * plat * smooth(2750, 3250, x);
   h += mesa * (46 + 34 * vnoise(x * 0.01, z * 0.01)) + smooth(0.58, 0.625, mn) * plat * 14;
   h += plat * (fbm(x * 0.02, z * 0.02, 3) - 0.4) * 6;
+
+  // Crestview Hill, carrying the villa road.
+  h += HILL.h * Math.exp(-(((x - HILL.x) ** 2 + (z - HILL.z) ** 2) / (2 * HILL.s * HILL.s)));
+
+  // Dry land never dips below the high-tide line.
+  h = Math.max(h, 1.9 * smooth(40, 120, x));
 
   // Coastal swells either side of the bay and harbour.
   const hl = GEO.pinecrest.lighthouse;
@@ -156,7 +163,7 @@ function flatZones(): FlatZone[] {
   zones = [
     { x: GEO.costa.x, z: GEO.costa.z, r: GEO.costa.r, blend: 190, h: GEO.costa.height },
     { x: GEO.harbor.x + 120, z: GEO.harbor.z, r: 330, blend: 220, h: 4.8 },
-    { x: GEO.pinecrest.x, z: GEO.pinecrest.z, r: 190, blend: 130, h: avg(GEO.pinecrest.x, GEO.pinecrest.z) },
+    { x: GEO.pinecrest.x, z: GEO.pinecrest.z, r: 230, blend: 420, h: 11 },
     { x: GEO.cinder.x, z: GEO.cinder.z, r: 300, blend: 140, h: avg(GEO.cinder.x, GEO.cinder.z, 100) },
     { x: GEO.salt.x, z: GEO.salt.z, r: 1, blend: 90, h: 76, ex: 1 },
     { x: GEO.airstrip.x, z: GEO.airstrip.z, r: 1, blend: 70, h: avg(GEO.airstrip.x, GEO.airstrip.z, 120), len: GEO.airstrip.len, w: GEO.airstrip.w, yaw: GEO.airstrip.yaw },
