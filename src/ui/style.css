@@ -325,3 +325,35 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .wslot span { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .wslot.on { transform: translate(-50%, -50%) scale(1.12); border-color: var(--accent); background: rgba(255, 122, 89, 0.16); }
 .wslot.locked { opacity: 0.4; }
+
+/* ---- Phase 9: boats and aircraft ---------------------------------------------------------------------------------- */
+.craft-hud { position: absolute; right: 28px; bottom: 28px; min-width: 190px; padding: 12px 16px; border-radius: 14px; background: rgba(12,15,22,0.62); backdrop-filter: blur(8px); color: #eceef3; font: 500 12px/1.3 system-ui, sans-serif; letter-spacing: 0.04em; pointer-events: none; }
+.craft-hud.is-hidden { display: none; }
+.craft-hud .ch-name { font-weight: 600; font-size: 13px; margin-bottom: 8px; opacity: 0.92; }
+.craft-hud .ch-row { display: flex; align-items: baseline; gap: 8px; margin: 2px 0; }
+.craft-hud .ch-row span { width: 32px; opacity: 0.6; font-size: 10px; }
+.craft-hud .ch-row b { font-size: 20px; font-variant-numeric: tabular-nums; min-width: 56px; text-align: right; }
+.craft-hud .ch-row em { font-style: normal; opacity: 0.55; font-size: 10px; }
+.craft-hud[data-kind="boat"] .ch-air { display: none; }
+.craft-hud .ch-bar { height: 5px; margin-top: 8px; border-radius: 3px; background: rgba(255,255,255,0.14); overflow: hidden; }
+.craft-hud .ch-bar i { display: block; height: 100%; background: #ff7a59; transform-origin: left; transform: scaleX(0); transition: transform 0.12s; }
+.craft-hud .ch-flags { margin-top: 6px; font-size: 10px; opacity: 0.7; }
+.craft-hud .ch-hint { margin-top: 6px; font-size: 10px; opacity: 0.5; max-width: 220px; }
+.craft-hud .ch-warn { margin-top: 6px; font-weight: 700; color: #ff5a4a; letter-spacing: 0.18em; }
+.craft-hud .ch-warn.is-hidden { display: none; }
+.craft-hud .ch-horizon { position: absolute; left: -110px; bottom: 0; width: 92px; height: 92px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.5); background: rgba(12,15,22,0.5); display: none; }
+.craft-hud[data-kind="plane"] .ch-horizon, .craft-hud[data-kind="heli"] .ch-horizon { display: block; }
+.craft-hud .ch-ball { position: absolute; left: -50%; top: -50%; width: 200%; height: 200%; background: linear-gradient(#4a86c8 49%, #fff 49%, #fff 51%, #7a5a3a 51%); }
+
+/* ---- skydive ---- */
+.dive-hud { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); display: flex; gap: 18px; align-items: baseline; padding: 10px 20px; border-radius: 12px; background: rgba(12,15,22,0.55); backdrop-filter: blur(8px); color: #eceef3; font: 500 12px/1.2 system-ui, sans-serif; letter-spacing: 0.06em; pointer-events: none; }
+.dive-hud.is-hidden { display: none; }
+.dive-hud b { font-size: 20px; font-weight: 600; letter-spacing: 0; margin-right: 3px; font-variant-numeric: tabular-nums; }
+.dive-hud .dv-key { padding: 3px 9px; border-radius: 6px; background: rgba(255,255,255,0.14); animation: dvPulse 0.9s ease-in-out infinite alternate; }
+@keyframes dvPulse { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* ---- armour reticle ---- */
+.ch-reticle { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 2px solid rgba(255,255,255,0.75); border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.35); }
+.ch-reticle.is-hidden { display: none; }
+.ch-reticle i { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #ff7a59; }
+.craft-hud[data-kind="ground"] .ch-air { display: none; }

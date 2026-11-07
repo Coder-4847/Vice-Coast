@@ -52,5 +52,24 @@ export function townRoads(): RoadDef[] {
   out.push({ id: 'yard-s', name: 'Quay Road South', kind: 'street', hw: 7, lanes: 1, minY: 4.8, lift: 0.01, pts: [[y.x0 - 20, 1870], [(y.x0 + y.x1) / 2, 1870], [y.x1, 1870]] });
   out.push({ id: 'yard-m', name: 'Container Row', kind: 'street', hw: 7, lanes: 1, minY: 4.8, lift: 0.02, pts: [[655, y.z0 + 10], [655, 1760], [655, y.z1 - 10]] });
   out.push({ id: 'yard-link', name: 'Harbor Link', kind: 'street', hw: 7, lanes: 1, minY: 4.8, lift: 0.03, pts: [[548, 1590], [548, 1640]] });
+
+  // Valeria International: runway 09/27, taxiways, apron and the access road from the city
+  const A = GEO.airport;
+  out.push({ id: 'via-runway', name: 'Valeria Intl runway', kind: 'runway', hw: 22, lanes: 1, pts: [[A.x - A.len / 2, A.z], [A.x, A.z], [A.x + A.len / 2, A.z]] });
+  for (const dx of [-300, 300]) out.push({ id: `via-taxi-${dx}`, name: 'Taxiway', kind: 'street', hw: 8, lanes: 0, minY: A.height, lift: 0.02, pts: [[A.x + dx, A.z - 26], [A.x + dx, A.z - 60], [A.x + dx, A.apronZ + 50]] });
+  out.push({ id: 'via-apron', name: 'Apron', kind: 'street', hw: 14, lanes: 0, minY: A.height, lift: 0.03, pts: [[A.x - 280, A.apronZ + 40], [A.x, A.apronZ + 40], [A.x + 280, A.apronZ + 40]] });
+  out.push({ id: 'via-access', name: 'Airport Road', kind: 'road', hw: 7, lanes: 1, minY: A.height, pts: [[1120, 700], [1120, 760], [1120, 812]] });
+
+  // Isla Rojo
+  const I = GEO.island;
+  out.push({ id: 'island-strip', name: 'Isla Rojo airstrip', kind: 'runway', hw: 13, lanes: 1, pts: [[I.x - 250, I.z], [I.x, I.z], [I.x + 250, I.z]] });
+  out.push({ id: 'island-road', name: 'Villa Drive', kind: 'street', hw: 4, lanes: 0, minY: I.height, pts: [[I.x + 290, I.z + 28], [I.x + 120, I.z + 44], [I.x - 60, I.z + 70], [I.x - 160, I.z + 60]] });
+
+  // Fort Halloran
+  const F = GEO.fort;
+  out.push({ id: 'fort-road', name: 'Halloran Road', kind: 'road', hw: 6.5, lanes: 1, grade: 0.09, pts: [[3350, 650], [3320, 1000], [3300, 1500], [3250, 1900], [3300, 2300], [3500, 2600], [F.x, F.z - 230]] });
+  out.push({ id: 'fort-main', name: 'Parade Road', kind: 'street', hw: 6, lanes: 0, minY: 0, pts: [[F.x, F.z - 230], [F.x, F.z - 100], [F.x, F.z + 60], [F.x, F.z + 200]] });
+  out.push({ id: 'fort-cross', name: 'Barracks Row', kind: 'street', hw: 5, lanes: 0, minY: 0, pts: [[F.x - 230, F.z - 60], [F.x, F.z - 60], [F.x + 230, F.z - 60]] });
+  out.push({ id: 'fort-strip', name: 'Halloran airstrip', kind: 'runway', hw: 16, lanes: 1, pts: [[F.x - 400, F.z + 400], [F.x, F.z + 400], [F.x + 400, F.z + 400]] });
   return out;
 }

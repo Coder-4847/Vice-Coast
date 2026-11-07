@@ -112,6 +112,9 @@ export class AudioEngine {
   createSiren(): SirenVoice | null {
     return this.ctx ? new SirenVoice(this.ctx, this.master) : null;
   }
+  createCraftEngine(kind: 'boat' | 'prop' | 'jet' | 'heli' | 'wind'): CraftEngine | null {
+    return this.ctx ? new CraftEngine(this.ctx, this.master, this.noise, kind) : null;
+  }
   createNature(): NatureBed | null {
     return this.ctx ? new NatureBed(this.ctx, this.master, this.noise) : null;
   }
@@ -1008,5 +1011,120 @@ export class AirVoice {
   dispose(): void {
     for (const n of [this.src, this.lfo, this.sub]) { try { n.stop(); } catch { /* done */ } }
     this.panner.disconnect();
+  }
+}
+
+
+/**
+ * What the pilot hears: an outboard (boats), a piston engine (prop planes), a turbine (jets) or a rotor (helicopters),
+ * plus rushing air or water that rises with speed. Levels are smoothed so throttle changes sweep rather than step.
+ */
+export class CraftEngine {
+  private readonly osc: OscillatorNode;
+  private readonly osc2: OscillatorNode;
+  private readonly oscGain: GainNode;
+  private readonly noiseGain: GainNode;
+  private readonly noiseFilter: BiquadFilterNode;
+  private readonly rushGain: GainNode;
+  private readonly rushFilter: BiquadFilterNode;
+  private readonly lfo: OscillatorNode;
+  private readonly lfoGain: GainNode;
+  private readonly master: GainNode;
+  private readonly srcs: (AudioBufferSourceNode | OscillatorNode)[] = [];
+
+  constructor(private readonly ctx: AudioContext, dest: AudioNode, noise: AudioBuffer, private readonly kind: 'boat' | 'prop' | 'jet' | 'heli' | 'wind') {
+    this.master = ctx.createGain();
+    this.master.gain.value = 0;
+    this.master.connect(dest);
+    const mkNoise = (type: BiquadFilterType, freq: number, q: number) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      src.connect(f).connect(g).connect(this.master);
+      src.start(0, Math.random() * 1.5);
+      this.srcs.push(src);
+      return { f, g };
+    };
+    const n = mkNoise(kind === 'jet' ? 'bandpass' : 'lowpass', kind === 'jet' ? 1600 : 500, kind === 'jet' ? 0.5 : 0.7);
+    this.noiseGain = n.g; this.noiseFilter = n.f;
+    const r = mkNoise('highpass', kind === 'boat' ? 600 : 1500, 0.4);
+    this.rushGain = r.g; this.rushFilter = r.f;
+    this.osc = ctx.createOscillator();
+    this.osc.type = kind === 'jet' ? 'sine' : 'sawtooth';
+    this.osc2 = ctx.createOscillator();
+    this.osc2.type = 'square';
+    this.oscGain = ctx.createGain();
+    this.oscGain.gain.value = 0;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = kind === 'jet' ? 2600 : 700;
+    this.osc.connect(lp);
+    this.osc2.connect(lp);
+    lp.connect(this.oscGain).connect(this.master);
+    this.osc.start(); this.osc2.start();
+    // blade-pass / cylinder firing pulse
+    this.lfo = ctx.createOscillator();
+    this.lfo.type = 'square';
+    this.lfoGain = ctx.createGain();
+    this.lfoGain.gain.value = kind === 'heli' ? 0.4 : kind === 'boat' ? 0.15 : 0;
+    this.lfo.connect(this.lfoGain).connect(this.oscGain.gain);
+    this.lfo.start();
+    this.srcs.push(this.osc, this.osc2, this.lfo);
+  }
+
+  /** rpm 0–1 (engine/rotor speed), load 0–1, speed 0–1 (of the craft's top speed). */
+  update(rpm: number, load: number, speed: number): void {
+    const t = this.ctx.currentTime;
+    const k = this.kind;
+    const on = rpm > 0.02 ? 1 : 0;
+    this.master.gain.setTargetAtTime(on * 0.9, t, 0.3);
+    if (k === 'wind') {
+      // free-fall / parachute: nothing but air rushing past
+      this.oscGain.gain.setTargetAtTime(0, t, 0.1);
+      this.noiseGain.gain.setTargetAtTime(0.04 + speed * 0.22, t, 0.25);
+      this.noiseFilter.frequency.setTargetAtTime(350 + speed * 900, t, 0.3);
+      this.rushGain.gain.setTargetAtTime(0.04 + speed * 0.26, t, 0.25);
+    } else if (k === 'boat') {
+      const f = 38 + rpm * 70 + load * 70;
+      this.osc.frequency.setTargetAtTime(f, t, 0.12);
+      this.osc2.frequency.setTargetAtTime(f * 1.5, t, 0.12);
+      this.oscGain.gain.setTargetAtTime(0.1 + load * 0.12, t, 0.1);
+      this.noiseGain.gain.setTargetAtTime(0.03 + load * 0.08, t, 0.15);
+      this.lfo.frequency.setTargetAtTime(9 + rpm * 8 + load * 14, t, 0.15);
+      this.rushGain.gain.setTargetAtTime(Math.min(1, speed) * 0.1, t, 0.3);
+    } else if (k === 'prop') {
+      const f = 55 + rpm * 60 + load * 95;
+      this.osc.frequency.setTargetAtTime(f, t, 0.15);
+      this.osc2.frequency.setTargetAtTime(f * 2.01, t, 0.15);
+      this.oscGain.gain.setTargetAtTime(0.08 + load * 0.1, t, 0.15);
+      this.noiseGain.gain.setTargetAtTime(0.02 + load * 0.05, t, 0.2);
+      this.noiseFilter.frequency.setTargetAtTime(400 + load * 500, t, 0.2);
+      this.rushGain.gain.setTargetAtTime(Math.min(1, speed) * 0.12, t, 0.3);
+    } else if (k === 'jet') {
+      this.osc.frequency.setTargetAtTime(280 + rpm * 900 + load * 500, t, 0.25);
+      this.osc2.frequency.setTargetAtTime(140 + rpm * 200, t, 0.25);
+      this.oscGain.gain.setTargetAtTime(0.012 + load * 0.04, t, 0.25);
+      this.noiseGain.gain.setTargetAtTime(0.06 + load * 0.28, t, 0.25);
+      this.noiseFilter.frequency.setTargetAtTime(900 + load * 1500, t, 0.3);
+      this.rushGain.gain.setTargetAtTime(Math.min(1, speed) * 0.16, t, 0.3);
+    } else {
+      this.osc.frequency.setTargetAtTime(46 + rpm * 8, t, 0.2);
+      this.osc2.frequency.setTargetAtTime(23 + rpm * 4, t, 0.2);
+      this.oscGain.gain.setTargetAtTime(0.18 * rpm, t, 0.2);
+      this.lfo.frequency.setTargetAtTime(6 + rpm * 8.5, t, 0.3);
+      this.noiseGain.gain.setTargetAtTime(0.05 + load * 0.09, t, 0.2);
+      this.noiseFilter.frequency.setTargetAtTime(300 + rpm * 300, t, 0.3);
+      this.rushGain.gain.setTargetAtTime(Math.min(1, speed) * 0.08, t, 0.3);
+    }
+    this.rushFilter.frequency.setTargetAtTime(500 + speed * 2200, t, 0.3);
+  }
+
+  dispose(): void {
+    for (const s of this.srcs) { try { s.stop(); } catch { /* done */ } }
+    this.master.disconnect();
   }
 }

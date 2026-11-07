@@ -78,6 +78,8 @@ export class Player {
   noclip = false;
   /** While true the controller doesn't move or read look input (vehicle enter/exit sequences). */
   frozen = false;
+  /** True while a controller (skydive / parachute) owns the player's air velocity: no steering or gravity is applied here. */
+  externalFlight = false;
 
   mantle: MantleState | null = null;
   /** Ledge in front of the player this frame (for the on-screen prompt), if any. */
@@ -270,14 +272,16 @@ export class Player {
       const dz = wishZ - vz;
       const dl = Math.hypot(dx, dz);
       const maxStep = accel * dt;
-      if (dl <= maxStep || dl < 1e-5) {
+      if (this.externalFlight && !onGround) {
+        // velocity is driven by the skydive controller
+      } else if (dl <= maxStep || dl < 1e-5) {
         this.vel.x = wishX;
         this.vel.z = wishZ;
       } else {
         this.vel.x += (dx / dl) * maxStep;
         this.vel.z += (dz / dl) * maxStep;
       }
-      this.vel.y -= GRAVITY * dt;
+      if (!(this.externalFlight && !onGround)) this.vel.y -= GRAVITY * dt;
       this.coyote = onGround ? 0.1 : Math.max(0, this.coyote - dt);
 
       if (this.jumpBuffer > 0 && this.coyote > 0 && !this.ledgeHint) {

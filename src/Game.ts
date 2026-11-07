@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { easeInOutCubic } from './core/math';
 import { GameLoop } from './core/GameLoop';
 import { TerrainData } from './world/TerrainData';
+import { CraftManager } from './craft/CraftManager';
+import { Piloting } from './craft/Piloting';
+import { Skydive } from './craft/Skydive';
+import { craftMaterials } from './craft/models';
+import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
 import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPreset } from './core/Quality';
 import { Settings } from './core/Settings';
@@ -17,6 +22,7 @@ import { WeaponSystem } from './player/WeaponSystem';
 import { Effects } from './world/Effects';
 import { VehicleManager } from './vehicles/VehicleManager';
 import { Vehicle } from './vehicles/Vehicle';
+import { spawnCrafts } from './craft/spawns';
 import { Driving } from './vehicles/Driving';
 import { Npcs } from './npc/Npcs';
 import { Combat } from './combat/Combat';
@@ -57,6 +63,9 @@ export class Game {
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
+  crafts: CraftManager | null = null;
+  piloting: Piloting | null = null;
+  skydive: Skydive | null = null;
   npcs: Npcs | null = null;
   combat: Combat | null = null;
   wanted: Wanted | null = null;
@@ -171,6 +180,8 @@ export class Game {
         canvas: this.canvas, camera: this.camera, toast: (m) => this.ui.toast(m),
       });
       this.weapon.onColliderHit = (h, d) => this.combat!.hitCollider(h, d);
+      this.combat.crafts = this.crafts;
+      this.combat.piloting = this.piloting;
       this.wanted = new Wanted();
       this.police = new Police({
         world: this.world, physics: this.physics, audio: this.audio, effects: this.effects, player: this.player,
@@ -260,6 +271,35 @@ export class Game {
       weapon: this.weapon!, viewmodel: this.viewmodel!, camera: this.camera,
       baseFov: () => this.baseFov, night: () => this.world.tod.look.night, toast: (m) => this.ui.toast(m),
     });
+    this.setupCrafts();
+  }
+
+  /** Boats, helicopters and planes: manager, spawns, the piloting controller and instruments. */
+  private setupCrafts(): void {
+    const crafts = new CraftManager(this.physics!);
+    this.crafts = crafts;
+    this.world.scene.add(crafts.group);
+    for (const m of [craftMaterials.body, craftMaterials.glass, craftMaterials.burnt]) this.world.rig.register(m);
+    const hud = new CraftHud(this.ui.hudRoot);
+    this.piloting = new Piloting({
+      input: this.input, player: this.player!, crafts, driving: this.driving!, audio: this.audio,
+      weapon: this.weapon!, viewmodel: this.viewmodel!, camera: this.camera, hud,
+      baseFov: () => this.baseFov, toast: (m) => this.ui.toast(m),
+      physics: this.physics!, effects: this.effects!, combat: () => this.combat, npcs: () => this.npcs,
+      bail: (vx, vy, vz) => this.onBail(vx, vy, vz),
+    });
+    const canopy = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
+    this.world.rig.register(canopy);
+    this.skydive = new Skydive({ input: this.input, player: this.player!, driving: this.driving!, piloting: this.piloting, audio: this.audio, hudRoot: this.ui.hudRoot, material: canopy, toast: (m) => this.ui.toast(m) });
+    this.world.scene.add(this.skydive.group);
+    spawnCrafts(crafts);
+  }
+
+  /** The player jumped out of an aircraft: free-fall (the parachute arrives with the skydive step). */
+  private onBail(vx: number, vy: number, vz: number): void {
+    const p = this.player;
+    if (!p) return;
+    p.vel.set(vx * 0.8, Math.min(vy, 0) - 2, vz * 0.8);
   }
 
   private setupWeapon(): void {
@@ -304,7 +344,7 @@ export class Game {
     const p = this.player;
     if (!wheel || !p) return;
     const dead = !!this.combat?.flow;
-    if (this.pickups) this.pickups.update(dt, p.pos.x, p.pos.y, p.pos.z, !dead && this.driving?.mode === 'foot');
+    if (this.pickups) this.pickups.update(dt, p.pos.x, p.pos.y, p.pos.z, !dead && this.driving?.mode === 'foot' && !this.piloting?.busy);
     if (dead) { wheel.finish(); return; }
     if (input.activeDevice === 'touch') {
       // touch: the Arms button cycles through the weapons you own
@@ -356,7 +396,10 @@ export class Game {
     if (this.state !== 'playing' || !this.physics || !this.player) return;
     Vehicle.wetness = this.world.weather.wetness;
     this.driving?.fixedUpdate(dt);
+    this.piloting?.fixedUpdate();
+    this.skydive?.fixedUpdate(dt);
     this.vehicles?.fixedUpdate(dt);
+    if (this.crafts) this.crafts.fixedUpdate(dt, this.player.pos.x, this.player.pos.z, 0.4 + this.world.weather.current.wind / 13);
     this.player.fixedUpdate(dt);
     this.syncNpcs();
     this.npcs?.fixedUpdate(dt);
@@ -442,8 +485,10 @@ export class Game {
     const player = this.player;
     if (!player) return;
     const driving = this.driving;
-    const inCar = driving?.mode === 'driving';
+    const piloting = this.piloting;
+    const inCar = driving?.mode === 'driving' || !!piloting?.active;
     if (!inCar) player.update(dt, alpha, this.camera);
+    if (this.crafts) { this.crafts.night = this.world.tod.look.night; this.crafts.update(alpha, this.camera); }
     this.world.props?.update(alpha);
     if (this.vehicles) {
       this.vehicles.night = this.world.tod.look.night;
@@ -464,10 +509,12 @@ export class Game {
     }
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
+    piloting?.update(dt);
+    this.skydive?.update(dt, this.camera);
     this.npcs?.update(dt, alpha);
     this.updateCombat(dt);
     this.updateVehicleAudio(driving);
-    this.touch.setMode(driving && driving.mode !== 'foot' ? 'vehicle' : 'foot');
+    this.touch.setMode((driving && driving.mode !== 'foot') || piloting?.busy ? 'vehicle' : 'foot');
     if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
     if (this.intro < 1) {
       // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.
@@ -487,7 +534,7 @@ export class Game {
         reserve: weapon.reserve,
         spread: weapon.spread,
         ads: weapon.ads,
-        drawn: weapon.isDrawn && !inCar && driving?.mode !== 'entering',
+        drawn: weapon.isDrawn && !inCar && driving?.mode !== 'entering' && !piloting?.busy,
         reloading: weapon.state === 'reloading',
         lowAmmo: weapon.ammo <= 3,
         hitMarker: weapon.hitMarker,
@@ -496,7 +543,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: driving?.hint ? `Enter ${driving.hint.spec.name}` : null,
+        enter: driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }

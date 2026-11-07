@@ -118,7 +118,6 @@ export function buildDuskHarbor(): Kit {
     k.box(wx, wz, len * 0.28, len * 0.2, 2.6, 0xf0ede6, { y0: 1.4, ry: -yaw, mode: MODE.PUNCHED, solid: false });
     k.box(wx, wz, 0.2, 0.2, 7, 0x444444, { y0: 4, solid: false });
   };
-  for (let i = 0; i < 5; i++) boat(120 + i * 52, 1655, 15 + r() * 6, 0, pick(r, [0x2a5a7a, 0x8a2a2a, 0x3a6a4a, 0xc9a227]));
   for (let i = 0; i < 4; i++) boat(190 + i * 38, 1850, 12 + r() * 5, 0, pick(r, [0x2a5a7a, 0x8a2a2a, 0xcfcfc8]));
   // crates and pallets on the piers
   for (let i = 0; i < 40; i++) { const x = 140 + r() * 190, z = pick(r, [1682, 1800, 1888]) + (r() - 0.5) * 4; k.box(x, z, 1.4, 1.4, 1.2, pick(r, PAL.wood), { y0: H, ry: r() }); }

@@ -153,6 +153,25 @@ export class Kit {
     this.box((x0 + x1) / 2, (z0 + z1) / 2, len, thick, h, color, { ry: -yaw, mode });
   }
 
+  /** An arched hangar (nine roof facets) with open ends: width = 2·rad, length along `yaw`. */
+  hangar(x: number, z: number, len: number, rad: number, yaw: number, wall: number, roof: number): void {
+    const y0 = this.ground(x, z);
+    const ry = -yaw;
+    for (const sgn of [-1, 1]) {
+      const [sx, sz] = this.at(x, z, yaw, 0, sgn * rad);
+      this.box(sx, sz, len, 0.5, 5.5, wall, { y0, ry, mode: MODE.METAL });
+    }
+    const [bx, bz] = this.at(x, z, yaw, -len / 2 + 0.25, 0);
+    this.box(bx, bz, 0.5, rad * 2, 9, wall, { y0, ry, mode: MODE.METAL, solid: true });
+    const facets = 9;
+    for (let i = 0; i < facets; i++) {
+      const phi = ((i + 0.5) / facets - 0.5) * Math.PI * 0.92;
+      const [fx, fz] = this.at(x, z, yaw, 0, Math.sin(phi) * rad);
+      const fw = 2 * rad * Math.tan((Math.PI * 0.46) / facets) * 1.05;
+      this.box(fx, fz, len, fw, 0.25, roof, { y0: y0 + 5.5 + Math.cos(phi) * (rad - 5.5), ry, rx: phi, solid: false });
+    }
+  }
+
   lamp(x: number, z: number, yaw: number): void {
     this.lamps.push({ x, z, yaw, y: this.ground(x, z) });
   }

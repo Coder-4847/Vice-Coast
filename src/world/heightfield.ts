@@ -27,6 +27,12 @@ export const GEO = {
   airstrip: { x: 3000, z: 1420, yaw: -0.12, len: 1250, w: 46 },
   harbor: { x: 470, z: 1760, basin: { x0: 36, x1: 395, z0: 1585, z1: 1975 } },
   costa: { x: 520, z: 3350, r: 400, height: 3.2 },
+  /** Valeria International: one runway (east–west) on the plain south of the city, terminal and apron to its north. */
+  airport: { x: 1160, z: 985, len: 840, w: 70, apronZ: 880, height: 5.3 },
+  /** Isla Rojo: a private island in the Pacific with a villa, a dock and an airstrip. */
+  island: { x: -900, z: 1150, rx: 470, rz: 210, height: 6 },
+  /** Fort Halloran: a fenced army base on the desert plateau. Entering it is a crime. */
+  fort: { x: 3720, z: 2900, r: 470, restricted: 560 },
 } as const;
 
 /** Canals of Costa Merida (water is the sea plane at y = 0, so a cut below zero floods automatically). */
@@ -141,6 +147,13 @@ function landform(x: number, z: number): number {
   h += mesa * (46 + 34 * vnoise(x * 0.01, z * 0.01)) + smooth(0.58, 0.625, mn) * plat * 14;
   h += plat * (fbm(x * 0.02, z * 0.02, 3) - 0.4) * 6;
 
+  // Isla Rojo, rising out of the deep water in the west.
+  {
+    const I = GEO.island;
+    const de = Math.hypot((x - I.x) / I.rx, (z - I.z) / I.rz);
+    if (de < 1.2) h = Math.max(h, -70 + 96 * smooth(1.15, 0.42, de) + 3 * (fbm(x * 0.02, z * 0.02, 3) - 0.4) * smooth(1.0, 0.6, de));
+  }
+
   // Crestview Hill, carrying the villa road.
   h += HILL.h * Math.exp(-(((x - HILL.x) ** 2 + (z - HILL.z) ** 2) / (2 * HILL.s * HILL.s)));
 
@@ -168,6 +181,10 @@ function flatZones(): FlatZone[] {
     { x: GEO.salt.x, z: GEO.salt.z, r: 1, blend: 90, h: 76, ex: 1 },
     { x: GEO.airstrip.x, z: GEO.airstrip.z, r: 1, blend: 70, h: avg(GEO.airstrip.x, GEO.airstrip.z, 120), len: GEO.airstrip.len, w: GEO.airstrip.w, yaw: GEO.airstrip.yaw },
     { x: k.summit.x, z: k.summit.z, r: 34, blend: 60, h: at(k.summit.x, k.summit.z) + 3 },
+    { x: GEO.airport.x, z: GEO.airport.z, r: 1, blend: 90, h: GEO.airport.height, len: GEO.airport.len + 80, w: GEO.airport.w, yaw: 0 },
+    { x: GEO.airport.x, z: GEO.airport.apronZ, r: 1, blend: 70, h: GEO.airport.height, len: 560, w: 120, yaw: 0 },
+    { x: GEO.island.x, z: GEO.island.z, r: 1, blend: 60, h: GEO.island.height, len: 600, w: 52, yaw: 0 },
+    { x: GEO.fort.x, z: GEO.fort.z, r: GEO.fort.r, blend: 160, h: avg(GEO.fort.x, GEO.fort.z, 150) },
   ];
   return zones;
 }
@@ -291,6 +308,9 @@ const TOWNS: readonly [number, number, number][] = [
   [GEO.harbor.x + 120, GEO.harbor.z, 360],
   [GEO.pinecrest.x, GEO.pinecrest.z, 230],
   [GEO.cinder.x, GEO.cinder.z, 320],
+  [GEO.fort.x, GEO.fort.z, GEO.fort.r + 120],
+  [GEO.airport.x, GEO.airport.z, 520],
+  [GEO.island.x, GEO.island.z, 330],
 ];
 
 /** 1 inside a settlement, fading to 0 outside (wild vegetation keeps clear). */

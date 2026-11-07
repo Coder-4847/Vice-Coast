@@ -39,6 +39,7 @@ export class Roads {
       const rows = b - a + 1;
       const pos = new Float32Array(rows * 4 * 3);
       const info = new Float32Array(rows * 4 * 4);
+      const endD = new Float32Array(rows * 4);
       const idx: number[] = [];
       for (let i = a; i <= b; i++) {
         // right-hand normal of travel direction (x right, z down): n = (−tz, tx) points to the right of travel
@@ -53,6 +54,7 @@ export class Roads {
           info[o * 4 + 1] = p.s[i]!;
           info[o * 4 + 2] = def.hw;
           info[o * 4 + 3] = kind + lanes * 0.1;
+          endD[o] = Math.min(p.s[i]!, p.length - p.s[i]!);
         }
         if (i < b) {
           const r0 = (i - a) * 4, r1 = r0 + 4;
@@ -62,6 +64,7 @@ export class Roads {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       g.setAttribute('aInfo', new THREE.BufferAttribute(info, 4));
+      g.setAttribute('aEnd', new THREE.BufferAttribute(endD, 1));
       g.setIndex(idx);
       g.computeVertexNormals();
       const nrm = g.getAttribute('normal') as THREE.BufferAttribute;
@@ -77,10 +80,10 @@ export class Roads {
   /** Wetness comes from the weather through the shared terrain uniform. */
   static patch = (shader: THREE.WebGLProgramParametersWithUniforms): void => {
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 aInfo;\nvarying vec4 vInfo;\nvarying vec3 vRW;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInfo = aInfo;\nvRW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      .replace('#include <common>', '#include <common>\nattribute vec4 aInfo;\nattribute float aEnd;\nvarying vec4 vInfo;\nvarying float vEnd;\nvarying vec3 vRW;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInfo = aInfo;\nvEnd = aEnd;\nvRW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec4 vInfo;\nvarying vec3 vRW;\n${NOISE_GLSL}`)
+      .replace('#include <common>', `#include <common>\nvarying vec4 vInfo;\nvarying float vEnd;\nvarying vec3 vRW;\n${NOISE_GLSL}`)
       .replace('void main() {', 'float rPaint = 0.0;\nfloat rRough = 0.9;\nfloat rAlpha = 1.0;\nvoid main() {')
       .replace('#include <map_fragment>', `#include <map_fragment>
 {
@@ -150,19 +153,25 @@ export class Roads {
     rRough = mix(0.95, 0.35, rail);
     rAlpha = 1.0;
   } else {
-    // abandoned runway: sun-bleached asphalt, cracks, drifted sand, faded markings
-    vec3 asph = mix(vec3(0.20, 0.19, 0.185), vec3(0.30, 0.285, 0.27), nB) * (0.85 + 0.3 * nA);
+    // runway: abandoned ones are bleached and cracked with drifted sand; maintained ones (lanes > 0) are fresh asphalt with
+    // white centre dashes, edge lines, threshold bars, an aiming-point block and rubber at the touchdown zones
+    float clean = step(0.5, lanes);
     float onRw = 1.0 - smoothstep(hw - 0.1, hw + 0.2, al);
     vec3 sandc = mix(vec3(0.48, 0.34, 0.2), vec3(0.40, 0.28, 0.16), nB);
-    float crack = 1.0 - smoothstep(0.0, 0.05, abs(n_noise(vRW.xz * 0.9) - 0.5));
-    asph *= 1.0 - 0.35 * crack * onRw;
-    float drift = smoothstep(0.45, 0.8, n_noise(vRW.xz * 0.05 + 3.0) + (al / hw) * 0.35);
+    vec3 worn = mix(vec3(0.20, 0.19, 0.185), vec3(0.30, 0.285, 0.27), nB) * (0.85 + 0.3 * nA);
+    vec3 fresh = mix(vec3(0.055, 0.055, 0.06), vec3(0.09, 0.09, 0.095), nB) * (0.92 + 0.16 * nA);
+    float crack = (1.0 - smoothstep(0.0, 0.05, abs(n_noise(vRW.xz * 0.9) - 0.5))) * (1.0 - clean);
+    float drift = smoothstep(0.45, 0.8, n_noise(vRW.xz * 0.05 + 3.0) + (al / hw) * 0.35) * (1.0 - clean);
+    float rubber = clean * smoothstep(0.5, 0.75, n_noise(vRW.xz * 0.5)) * smoothstep(80.0, 140.0, vEnd) * (1.0 - smoothstep(260.0, 380.0, vEnd)) * smoothstep(1.5, 4.5, al) * (1.0 - smoothstep(7.0, 9.0, al));
+    vec3 asph = mix(worn, fresh, clean) * (1.0 - 0.35 * crack) * (1.0 - 0.4 * rubber);
     col = mix(sandc, asph, onRw);
     col = mix(col, sandc, drift * 0.8);
     float dash = step(0.35, fract(along / 36.0));
     float centre = (1.0 - smoothstep(0.35, 0.5, al)) * dash;
     float edge = 1.0 - smoothstep(0.12, 0.2, abs(al - (hw - 1.3)));
-    float paint = max(centre, edge) * onRw * (1.0 - drift) * 0.7 * mfade;
+    float bars = clean * step(8.0, vEnd) * (1.0 - step(34.0, vEnd)) * step(2.0, al) * (1.0 - step(hw - 2.5, al)) * step(0.5, fract(lat / 2.4));
+    float aim = clean * step(280.0, vEnd) * (1.0 - step(330.0, vEnd)) * step(hw * 0.3, al) * (1.0 - step(hw * 0.55, al));
+    float paint = max(max(centre, edge), max(bars, aim)) * onRw * (1.0 - drift) * mix(0.7, 0.95, clean) * mfade;
     col = mix(col, vec3(0.7, 0.7, 0.66), paint);
     rPaint = paint;
     rRough = 0.93;

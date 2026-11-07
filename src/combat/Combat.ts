@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { Physics } from '../physics/Physics';
+import type { Craft } from '../craft/Craft';
+import type { CraftManager } from '../craft/CraftManager';
+import type { Piloting } from '../craft/Piloting';
 import type { Npcs } from '../npc/Npcs';
 import type { Player } from '../player/Player';
 import type { WeaponSystem } from '../player/WeaponSystem';
@@ -49,6 +52,10 @@ export class Combat {
   /** Called when the respawn happens (clear wanted, police units, etc.). */
   onRespawn: ((kind: FlowKind) => void) | null = null;
   stats = { explosions: 0, burning: 0 };
+  /** Boats, aircraft and armour (set once the craft layer exists). */
+  crafts: CraftManager | null = null;
+  piloting: Piloting | null = null;
+  private readonly craftFuse = new Map<Craft, number>();
 
   private readonly fuse = new Map<Vehicle, number>();
   private smokeT = 0;
@@ -66,6 +73,12 @@ export class Combat {
   hurtPlayer(amount: number, fromX?: number, fromZ?: number): void {
     const { player, driving } = this.d;
     if (this.flow) return;
+    const pc = this.piloting?.active ? this.piloting.craft : null;
+    if (pc) {
+      // the airframe / hull soaks most of it, but a hit on a pilot still hurts
+      pc.hurt(amount * (pc.spec.kind === 'ground' ? 1.2 : 3));
+      amount *= pc.spec.kind === 'ground' ? 0.12 : 0.3;
+    }
     const inCar = driving.mode === 'driving' && driving.vehicle;
     if (inCar) {
       driving.vehicle!.health = Math.max(0, driving.vehicle!.health - amount * 3);
@@ -92,7 +105,10 @@ export class Combat {
     const fall = (d: number): number => Math.pow(Math.max(0, 1 - d / radius), 1.2);
     // the player
     const dp = Math.hypot(player.pos.x - x, player.pos.y - y, player.pos.z - z);
-    if (dp < radius) this.hurtPlayer(damage * fall(dp) * (driving.mode === 'driving' ? 0.7 : 1), x, z);
+    // shells fired from inside armour don't hurt its own crew unless they land right on top of it
+    const own = byPlayer && this.piloting?.active ? this.piloting.craft : null;
+    const ownSafe = !!own && own.spec.kind === 'ground' && dp > 6;
+    if (dp < radius && !ownSafe) this.hurtPlayer(damage * fall(dp) * (driving.mode === 'driving' ? 0.7 : 1), x, z);
     // vehicles
     for (const v of vehicles.vehicles) {
       const d = Math.hypot(v.position.x - x, v.position.y - y, v.position.z - z);
@@ -102,6 +118,19 @@ export class Combat {
       const dx = v.position.x - x, dz = v.position.z - z, l = Math.hypot(dx, dz) || 1;
       const imp = 1600 * Math.min(1, damage / 60) * k;
       v.body.applyImpulse({ x: (dx / l) * imp, y: 900 * k, z: (dz / l) * imp }, true);
+    }
+    // boats, aircraft and armour
+    for (const c of this.crafts?.crafts ?? []) {
+      if (c.exploded) continue;
+      const d = Math.hypot(c.position.x - x, c.position.y - y, c.position.z - z);
+      if (d > radius * 1.3) continue;
+      if (c === own && d > 6) continue;
+      const k = fall(d / 1.3);
+      c.hurt(damage * (c.spec.kind === 'ground' ? 3 : 7) * k);
+      if (!c.active && !c.occupied) continue;
+      const dx = c.position.x - x, dz = c.position.z - z, l = Math.hypot(dx, dz) || 1;
+      const imp = Math.min(c.spec.mass * 2.2, 2600) * Math.min(1, damage / 60) * k;
+      c.body.applyImpulse({ x: (dx / l) * imp, y: imp * 0.5, z: (dz / l) * imp }, true);
     }
     // pedestrians, police on foot
     for (const p of npcs.peds.peds) {
@@ -132,6 +161,11 @@ export class Combat {
     const { vehicles, npcs } = this.d;
     for (const v of vehicles.vehicles) {
       if (v.collider.handle === handle) { v.health = Math.max(0, v.health - damage * 2.2); return true; }
+    }
+    const cr = this.crafts?.byCollider(handle);
+    if (cr) {
+      cr.hurt(damage * (cr.spec.kind === 'ground' ? 0.5 : cr.spec.kind === 'boat' ? 1.5 : 2.4));
+      return true;
     }
     for (const c of npcs.traffic.cars) {
       if (c.active && c.collider && c.collider.handle === handle) {
@@ -191,6 +225,21 @@ export class Combat {
         }
       }
     }
+    // damaged boats, aircraft and tanks smoke, burn and finally blow up
+    for (const c of this.crafts?.crafts ?? []) {
+      if (c.exploded) {
+        if (puff && Math.random() < 0.3) { _v.copy(c.position); _v.y += 0.8; effects.smoke(_v, false); }
+        continue;
+      }
+      if (c.health >= 300) { if (this.craftFuse.has(c)) this.craftFuse.delete(c); continue; }
+      burning++;
+      if (puff) { _v.copy(c.position); _v.y += 0.6; effects.smoke(_v, c.health <= 0); }
+      if (c.health <= 0) {
+        const f = (this.craftFuse.get(c) ?? (c.spec.kind === 'plane' || c.spec.kind === 'heli' ? 1.4 : 3.2)) - dt;
+        this.craftFuse.set(c, f);
+        if (f <= 0) this.explodeCraft(c);
+      }
+    }
     this.stats.burning = burning;
     void player;
 
@@ -199,6 +248,17 @@ export class Combat {
       this.flow.t += dt;
       if (this.flow.t > (this.flow.kind === 'wasted' ? 4.8 : 4.2)) this.respawn(this.flow.kind);
     }
+  }
+
+  private explodeCraft(c: Craft): void {
+    this.craftFuse.delete(c);
+    c.exploded = true;
+    const big = c.spec.mass > 8000 ? 1.5 : 1;
+    const mine = this.piloting?.craft === c;
+    this.boom(c.position.x, c.position.y + 0.6, c.position.z, 11 * big, 140, mine || this.byPlayerRecently);
+    if (mine) this.piloting?.abort();
+    c.occupied = false;
+    c.body.applyImpulse({ x: (Math.random() - 0.5) * c.spec.mass * 0.6, y: c.spec.mass * 1.4, z: (Math.random() - 0.5) * c.spec.mass * 0.6 }, true);
   }
 
   private explodeVehicle(v: Vehicle): void {
@@ -244,6 +304,7 @@ export class Combat {
     const { hud, canvas, driving, player, weapon } = this.d;
     this.flow = { kind, t: 0 };
     if (driving.mode !== 'foot') driving.abort();
+    this.piloting?.abort();
     player.frozen = true;
     if (weapon.isDrawn) weapon.toggleHolster();
     canvas.style.filter = kind === 'wasted' ? 'grayscale(1) contrast(1.08) brightness(0.9)' : 'grayscale(0.85) contrast(1.05) hue-rotate(185deg)';
@@ -268,6 +329,8 @@ export class Combat {
     // arrests cost you most of your spare ammunition; hospital bills a little
     weapon.reserve = Math.floor(weapon.reserve * (kind === 'busted' ? 0.35 : 0.7));
     vehicles.resetAll();
+    this.crafts?.resetAll();
+    this.craftFuse.clear();
     this.flow = null;
     this.fuse.clear();
     canvas.style.filter = '';
