@@ -287,6 +287,13 @@ const TOWNS: readonly [number, number, number][] = [
   [GEO.cinder.x, GEO.cinder.z, 320],
 ];
 
+/** 1 inside a settlement, fading to 0 outside (wild vegetation keeps clear). */
+export function townInfluence(x: number, z: number): number {
+  let town = 0;
+  for (const [tx, tz, tr] of TOWNS) town = Math.max(town, 1 - smooth(tr * 0.8, tr, Math.hypot(x - tx, z - tz)));
+  return town;
+}
+
 export interface Surface4 { desert: number; forest: number; salt: number; dirt: number }
 
 /** Biome blend weights (0…1) used by the terrain shader and by vegetation placement. `slope` = 1 − normal.y. */
@@ -295,8 +302,7 @@ export function surfaceWeights(x: number, z: number, h: number, slope: number, o
   let desert = smooth(2250, 2700, ex) * (1 - smooth(4300, 4600, x)) * (1 - Math.exp(-Math.pow(Math.hypot((x - GEO.kestrel.x) * 0.92, z - GEO.kestrel.z) / 900, 2)) * 0.9);
   // dry scrub bleeding into the south-east hills
   desert = Math.max(desert, smooth(1700, 2600, x) * smooth(1500, 2600, z) * 0.55);
-  let town = 0;
-  for (const [tx, tz, tr] of TOWNS) town = Math.max(town, 1 - smooth(tr * 0.8, tr, Math.hypot(x - tx, z - tz)));
+  const town = townInfluence(x, z);
   const north = smooth(-500, -1500, z);
   const k = Math.exp(-Math.pow(Math.hypot((x - GEO.kestrel.x) * 0.92, z - GEO.kestrel.z) / 1500, 2));
   const n = fbm(x * 0.0026 + 13, z * 0.0026 - 7, 4);

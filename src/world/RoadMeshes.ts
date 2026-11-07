@@ -5,7 +5,7 @@ import { terrainHeight } from './Terrain';
 
 const SECTION = 96; // cross-sections per mesh (≈ 384 m) so distant stretches can be frustum-culled
 
-const STYLE: Record<RoadKind, number> = { highway: 0, road: 1, street: 2, dirt: 3, rail: 4 };
+const STYLE: Record<RoadKind, number> = { highway: 0, road: 1, street: 2, dirt: 3, rail: 4, runway: 5 };
 
 /**
  * Highways, mountain and county roads, town streets, dirt trails and rail, as ribbon meshes draped over the carved
@@ -31,7 +31,7 @@ export class Roads {
   private build(p: RoadPath): void {
     const def = p.def;
     const kind = STYLE[def.kind];
-    const sh = def.kind === 'dirt' ? 1.6 : def.kind === 'rail' ? 2.2 : def.kind === 'street' ? 1.6 : 2.4;
+    const sh = def.kind === 'dirt' ? 1.6 : def.kind === 'rail' ? 2.2 : def.kind === 'street' ? 3.2 : def.kind === 'runway' ? 4 : 2.4;
     const lat = [-(def.hw + sh), -def.hw, def.hw, def.hw + sh];
     const lanes = def.lanes ?? 0;
     for (let a = 0; a < p.n - 1; a += SECTION) {
@@ -99,12 +99,13 @@ export class Roads {
   #endif
   float mfade = 1.0 - smoothstep(90.0, 320.0, cdist);
   vec3 col;
-  if (style < 3.5) {
+  if (style < 2.5) {
     // asphalt with wear in the wheel paths, gravel verge outside the edge line
     vec3 asph = mix(vec3(0.07, 0.07, 0.075), vec3(0.12, 0.12, 0.125), nB) * (0.9 + 0.2 * nA);
     float wear = smoothstep(0.9, 0.0, abs(al - hw * 0.45)) * 0.35;
     asph *= 1.0 + wear * 0.6;
     vec3 verge = mix(vec3(0.20, 0.17, 0.13), vec3(0.28, 0.24, 0.18), nB);
+    if (style > 1.5) verge = mix(vec3(0.42, 0.41, 0.39), vec3(0.52, 0.51, 0.49), nB) * (1.0 - 0.14 * smoothstep(0.485, 0.5, max(abs(fract(vRW.x / 2.0) - 0.5), abs(fract(vRW.z / 2.0) - 0.5))));
     float onRoad = 1.0 - smoothstep(hw - 0.05, hw + 0.15, al);
     col = mix(verge, asph, onRoad);
     // lane paint
@@ -127,7 +128,7 @@ export class Roads {
     rPaint = paint;
     rRough = mix(0.92, 0.82, onRoad);
     rAlpha = 1.0;
-  } else if (style < 4.5) {
+  } else if (style < 3.5) {
     // dirt trail: twin ruts, soft edges that melt into the ground
     vec3 dirt = mix(vec3(0.30, 0.22, 0.14), vec3(0.22, 0.16, 0.10), nA) * (0.9 + 0.2 * nB);
     float rut = smoothstep(0.5, 0.0, abs(al - hw * 0.42));
@@ -136,7 +137,7 @@ export class Roads {
     float edge = 1.0 - smoothstep(hw * 0.7, hw + 1.4, al + (nB - 0.5) * 0.9);
     rAlpha = edge;
     rRough = 0.97;
-  } else {
+  } else if (style < 4.5) {
     // railway: ballast, sleepers and two steel rails
     vec3 bal = mix(vec3(0.22, 0.21, 0.20), vec3(0.34, 0.32, 0.30), nB);
     float inBed = 1.0 - smoothstep(hw - 0.2, hw + 0.4, al);
@@ -147,6 +148,24 @@ export class Roads {
     float rail = 1.0 - smoothstep(0.04, 0.09, abs(al - 0.72));
     col = mix(col, vec3(0.42, 0.40, 0.39), rail);
     rRough = mix(0.95, 0.35, rail);
+    rAlpha = 1.0;
+  } else {
+    // abandoned runway: sun-bleached asphalt, cracks, drifted sand, faded markings
+    vec3 asph = mix(vec3(0.20, 0.19, 0.185), vec3(0.30, 0.285, 0.27), nB) * (0.85 + 0.3 * nA);
+    float onRw = 1.0 - smoothstep(hw - 0.1, hw + 0.2, al);
+    vec3 sandc = mix(vec3(0.48, 0.34, 0.2), vec3(0.40, 0.28, 0.16), nB);
+    float crack = 1.0 - smoothstep(0.0, 0.05, abs(n_noise(vRW.xz * 0.9) - 0.5));
+    asph *= 1.0 - 0.35 * crack * onRw;
+    float drift = smoothstep(0.45, 0.8, n_noise(vRW.xz * 0.05 + 3.0) + (al / hw) * 0.35);
+    col = mix(sandc, asph, onRw);
+    col = mix(col, sandc, drift * 0.8);
+    float dash = step(0.35, fract(along / 36.0));
+    float centre = (1.0 - smoothstep(0.35, 0.5, al)) * dash;
+    float edge = 1.0 - smoothstep(0.12, 0.2, abs(al - (hw - 1.3)));
+    float paint = max(centre, edge) * onRw * (1.0 - drift) * 0.7 * mfade;
+    col = mix(col, vec3(0.7, 0.7, 0.66), paint);
+    rPaint = paint;
+    rRough = 0.93;
     rAlpha = 1.0;
   }
   diffuseColor.rgb = col;

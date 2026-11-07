@@ -44,6 +44,9 @@ export interface Prim {
   color: number;
   mode: number;
   solid: boolean;
+  /** Optional tilt (radians) applied before the yaw: pitch about x, roll about z. */
+  rx?: number;
+  rz?: number;
 }
 export interface Lamp { x: number; z: number; yaw: number; y: number }
 export interface Tree { x: number; y: number; z: number; kind: 0 | 1 | 2; s: number; tint: number }
@@ -57,6 +60,8 @@ export interface ChunkData {
   lamps: Lamp[];
   trees: Tree[];
   signals: Signal[];
+  /** Wild vegetation and rocks (see source.ts). */
+  veg?: import('./source').Veg[];
 }
 
 export interface Landmark {
@@ -117,6 +122,7 @@ const STREET_NAMES_NS = ['Ocean Boulevard', 'Palmetto Avenue', 'Meridian Avenue'
 const STREET_NAMES_EW = ['Valeria Avenue', 'Grand Street', 'Marlow Street', 'Costa Boulevard', 'Orchard Street', 'Kestrel Avenue', 'Bayview Boulevard', 'Foundry Road'];
 
 export class CityPlan {
+  readonly id = 'port-valeria';
   readonly X: Road[] = [];
   readonly Z: Road[] = [];
   readonly blocks: Block[] = [];

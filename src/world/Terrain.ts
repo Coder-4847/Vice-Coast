@@ -217,10 +217,10 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
 
   // Base ground: dry-to-lush grass, then the biome layers painted over it.
   vec3 sand = mix(vec3(0.74, 0.64, 0.45), vec3(0.62, 0.53, 0.38), nB);
-  vec3 dry = vec3(0.36, 0.32, 0.17);
-  vec3 lush = vec3(0.13, 0.23, 0.08);
+  vec3 dry = vec3(0.27, 0.24, 0.12);
+  vec3 lush = vec3(0.09, 0.18, 0.055);
   vec3 grass = mix(dry, lush, smoothstep(0.35, 0.65, nA)) * (0.85 + 0.3 * nB);
-  vec3 rock = mix(vec3(0.30, 0.27, 0.25), vec3(0.46, 0.41, 0.36), nB);
+  vec3 rock = mix(vec3(0.22, 0.20, 0.19), vec3(0.34, 0.30, 0.27), nB);
   vec3 snow = vec3(0.72, 0.75, 0.80);
   // desert: warm sand over reddish dirt, wind ripples and patches of dark cinder gravel
   vec3 desertCol = vec3(0.45, 0.31, 0.18);

@@ -5,7 +5,7 @@ import { GEO, groundHeight, setRoadCarve, smooth, TERRAIN } from './heightfield'
  * splines, each with a graded bed height; the heightfield cuts a road bed into the ground along them (see `setRoadCarve`),
  * the renderer drapes ribbon meshes on them, and traffic follows them.
  */
-export type RoadKind = 'highway' | 'road' | 'street' | 'dirt' | 'rail';
+export type RoadKind = 'highway' | 'road' | 'street' | 'dirt' | 'rail' | 'runway';
 
 export interface RoadDef {
   id: string;
@@ -239,9 +239,9 @@ const CELL = 64;
 let _grid: Map<number, number[]> | null = null;
 
 function blendOf(def: RoadDef): number {
-  return def.kind === 'rail' ? 7 : def.kind === 'dirt' ? 6 : def.kind === 'street' ? 5 : 11;
+  return def.kind === 'rail' ? 7 : def.kind === 'dirt' ? 6 : def.kind === 'street' ? 5 : def.kind === 'runway' ? 16 : 11;
 }
-const shoulderOf = (def: RoadDef): number => (def.kind === 'dirt' ? 0.8 : def.kind === 'rail' ? 2.2 : def.kind === 'street' ? 1.6 : 2.4);
+const shoulderOf = (def: RoadDef): number => (def.kind === 'dirt' ? 0.8 : def.kind === 'rail' ? 2.2 : def.kind === 'street' ? 3.2 : def.kind === 'runway' ? 4 : 2.4);
 
 function grid(): Map<number, number[]> {
   if (_grid) return _grid;

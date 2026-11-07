@@ -5,6 +5,9 @@ import { CITY, Terrain } from './Terrain';
 import { NOISE_GLSL } from './skyGlsl';
 import { buildCityFields, type CityFields } from './city/fields';
 import { CHUNK, CityPlan, MODE, type ChunkData, type Prim } from './city/plan';
+import { mergeChunks, VEG, type ChunkSource, type Veg } from './city/source';
+import { Wilderness } from './Wilderness';
+import { broadGeometry, cactusGeometry, deadTreeGeometry, joshuaGeometry, pineGeometry, rockGeometry, saguaroGeometry, scrubGeometry } from './vegGeometry';
 import type { SignalClock } from '../npc/Signals';
 
 const G = CITY.height;
@@ -156,6 +159,8 @@ function palmCrownGeometry(): THREE.BufferGeometry {
  */
 export class City {
   readonly plan = new CityPlan();
+  /** Everything that streams in chunks: the city plan, the wilderness, and the other towns. */
+  readonly sources: ChunkSource[] = [this.plan, new Wilderness()];
   readonly group = new THREE.Group();
   readonly pools = new THREE.Group();
   readonly fields: CityFields;
@@ -166,6 +171,7 @@ export class City {
   readonly signalMaterial = new THREE.MeshStandardMaterial({ color: 0x050505, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 1.2, roughness: 0.5 });
   readonly trunkMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
   readonly leafMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, side: THREE.DoubleSide });
+  readonly vegMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
   readonly poolMaterial: THREE.MeshBasicMaterial;
   private readonly poolTex = radialTexture();
 
@@ -180,9 +186,13 @@ export class City {
   private pPalm!: InstancePool;
   private pSigPole!: InstancePool;
   private pSigHead!: InstancePool;
+  private pVeg: InstancePool[] = [];
   private all: InstancePool[] = [];
 
-  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[] }>();
+  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[]; veg: Veg[] }>();
+  /** Colliders for wild vegetation, created only near the player. */
+  private readonly vegCol = new Map<string, number[]>();
+  private vegTick = 0;
   private readonly farBoxes = new Map<string, Prim[]>();
   private physics: Physics | null = null;
   private readonly removeQueue: number[] = [];
@@ -215,6 +225,31 @@ export class City {
         if (far.length) this.farBoxes.set(`${cx},${cz}`, far);
       }
     }
+  }
+
+  /** Chunk bounds covered by any source. */
+  private range(): { cx0: number; cx1: number; cz0: number; cz1: number } {
+    const r = { cx0: Infinity, cx1: -Infinity, cz0: Infinity, cz1: -Infinity };
+    for (const s of this.sources) {
+      const q = s.chunkRange();
+      r.cx0 = Math.min(r.cx0, q.cx0); r.cx1 = Math.max(r.cx1, q.cx1);
+      r.cz0 = Math.min(r.cz0, q.cz0); r.cz1 = Math.max(r.cz1, q.cz1);
+    }
+    return r;
+  }
+
+  /** Add a town (or any other chunk source) to the streamed world. */
+  addSource(src: ChunkSource): void {
+    this.sources.push(src);
+  }
+
+  private generate(cx: number, cz: number): ChunkData {
+    const parts: ChunkData[] = [];
+    for (const s of this.sources) {
+      const q = s.chunkRange();
+      if (cx >= q.cx0 && cx <= q.cx1 && cz >= q.cz0 && cz <= q.cz1) parts.push(s.generateChunk(cx, cz));
+    }
+    return parts.length ? mergeChunks(parts) : { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [] };
   }
 
   get instanceCount(): number {
@@ -275,6 +310,23 @@ export class City {
     this.pBlob = mk(new THREE.IcosahedronGeometry(1, 1), this.leafMaterial, 8000);
     this.pPalm = mk(palmCrownGeometry(), this.leafMaterial, 4000);
     this.group.add(this.pPole.mesh, this.pHead.mesh, this.pSigPole.mesh, this.pSigHead.mesh, this.pTrunk.mesh, this.pBlob.mesh, this.pPalm.mesh);
+    // wild vegetation: one merged mesh per kind, indexed by VEG.*
+    const vg: [THREE.BufferGeometry, number][] = [];
+    vg[VEG.PINE] = [pineGeometry(), 42000];
+    vg[VEG.BROAD] = [broadGeometry(), 7000];
+    vg[VEG.SAGUARO] = [saguaroGeometry(), 3000];
+    vg[VEG.DEAD] = [deadTreeGeometry(), 2000];
+    vg[VEG.SCRUB] = [scrubGeometry(), 14000];
+    vg[VEG.ROCK] = [rockGeometry(), 7000];
+    vg[VEG.CACTUS] = [cactusGeometry(), 6000];
+    vg[VEG.JOSHUA] = [joshuaGeometry(), 3000];
+    this.pVeg = vg.map(([g, cap]) => {
+      const p = mk(g, this.vegMaterial, cap);
+      p.mesh.castShadow = false;
+      p.mesh.receiveShadow = true;
+      this.group.add(p.mesh);
+      return p;
+    });
     this.pools.add(this.pPool.mesh);
 
     // far skyline starts fully populated
@@ -313,7 +365,7 @@ export class City {
 
   private wanted(px: number, pz: number, margin = 0): { cx: number; cz: number; d: number }[] {
     const R = this.radius + margin;
-    const rg = this.plan.chunkRange();
+    const rg = this.range();
     const out: { cx: number; cz: number; d: number }[] = [];
     for (let cx = Math.max(rg.cx0, Math.floor((px - R) / CHUNK)); cx <= Math.min(rg.cx1, Math.floor((px + R) / CHUNK)); cx++) {
       for (let cz = Math.max(rg.cz0, Math.floor((pz - R) / CHUNK)); cz <= Math.min(rg.cz1, Math.floor((pz + R) / CHUNK)); cz++) {
@@ -353,6 +405,7 @@ export class City {
       }
     }
     this.drainColliders(heavy ? 40 : 120);
+    this.updateVegColliders(px, pz);
     this.updateSignals();
   }
 
@@ -377,7 +430,7 @@ export class City {
   }
 
   private collidersFor(cx: number, cz: number): BuildingBox[] {
-    const d = this.plan.generateChunk(cx, cz);
+    const d = this.generate(cx, cz);
     return this.toColliders(d);
   }
 
@@ -401,8 +454,52 @@ export class City {
     return out;
   }
 
+  /** Trees, cacti and boulders only get physics when the player (or a car) is close enough to touch them. */
+  private updateVegColliders(px: number, pz: number): void {
+    if (!this.physics || ++this.vegTick % 6 !== 0) return;
+    const R = 46;
+    const keep = new Set<string>();
+    let add = 28;
+    for (const [key, r] of this.rec) {
+      if (!r.veg.length) continue;
+      const nx = Math.max(r.cx * CHUNK, Math.min(px, (r.cx + 1) * CHUNK));
+      const nz = Math.max(r.cz * CHUNK, Math.min(pz, (r.cz + 1) * CHUNK));
+      if (Math.hypot(px - nx, pz - nz) > R) continue;
+      for (let i = 0; i < r.veg.length; i++) {
+        const v = r.veg[i]!;
+        const dx = v.x - px, dz = v.z - pz;
+        if (dx * dx + dz * dz > R * R) continue;
+        const id = `${key}:${i}`;
+        keep.add(id);
+        if (this.vegCol.has(id) || add <= 0) continue;
+        let b: BuildingBox | null = null;
+        switch (v.kind) {
+          case VEG.PINE: case VEG.BROAD: b = { cx: v.x, cy: v.y + 2.6 * v.s, cz: v.z, hx: 0.32 * v.s, hy: 2.6 * v.s, hz: 0.32 * v.s, cyl: true, win: 0 }; break;
+          case VEG.SAGUARO: b = { cx: v.x, cy: v.y + 2.7 * v.s, cz: v.z, hx: 0.45 * v.s, hy: 2.7 * v.s, hz: 0.45 * v.s, cyl: true, win: 0 }; break;
+          case VEG.DEAD: case VEG.JOSHUA: b = { cx: v.x, cy: v.y + 1.6 * v.s, cz: v.z, hx: 0.3 * v.s, hy: 1.6 * v.s, hz: 0.3 * v.s, cyl: true, win: 0 }; break;
+          case VEG.CACTUS: b = { cx: v.x, cy: v.y + 0.5 * v.s, cz: v.z, hx: 0.55 * v.s, hy: 0.5 * v.s, hz: 0.55 * v.s, cyl: true, win: 0 }; break;
+          case VEG.ROCK: b = { cx: v.x, cy: v.y + 0.35 * v.s, cz: v.z, hx: 0.85 * v.s, hy: 0.45 * v.s, hz: 0.85 * v.s, cyl: true, win: 0 }; break;
+          default: break;
+        }
+        if (!b) continue;
+        this.vegCol.set(id, this.physics.addBuildings([b]));
+        add--;
+      }
+    }
+    let drop = 40;
+    for (const [id, hs] of this.vegCol) {
+      if (keep.has(id)) continue;
+      this.physics.removeBuildings(hs);
+      this.vegCol.delete(id);
+      if (--drop <= 0) break;
+    }
+    this.stats.colliders = this.physics.buildingCount;
+  }
+
   private releaseColliders(): void {
     if (!this.physics) return;
+    for (const hs of this.vegCol.values()) this.physics.removeBuildings(hs);
+    this.vegCol.clear();
     for (const r of this.rec.values()) this.physics.removeBuildings(r.handles);
     this.physics.removeBuildings(this.removeQueue.splice(0));
     this.stats.colliders = this.physics.buildingCount;
@@ -412,8 +509,8 @@ export class City {
     const t0 = performance.now();
     const key = `${cx},${cz}`;
     if (this.rec.has(key)) return;
-    const d = this.plan.generateChunk(cx, cz);
-    const rec = { cx, cz, handles: [] as number[], pending: [] as BuildingBox[] };
+    const d = this.generate(cx, cz);
+    const rec = { cx, cz, handles: [] as number[], pending: [] as BuildingBox[], veg: d.veg ?? [] };
     this.rec.set(key, rec);
     this.pFar.remove(key);
 
@@ -423,7 +520,7 @@ export class City {
     const sc = new THREE.Vector3();
     const prim = (list: Prim[]) => (i: number, m: THREE.Matrix4, c: THREE.Color, p: [number, number]) => {
       const b = list[i]!;
-      q.setFromEuler(e.set(0, b.ry, 0));
+      q.setFromEuler(e.set(b.rx ?? 0, b.ry, b.rz ?? 0, 'YXZ'));
       m.compose(pos.set(b.x, b.y, b.z), q, sc.set(b.sx, b.sy, b.sz));
       c.setHex(b.color);
       p[0] = b.mode;
@@ -491,6 +588,28 @@ export class City {
       c.setHex(0x2f6a2c).lerp(green.setHex(0x4d7a30), t.tint);
     });
 
+    if (d.veg && d.veg.length) {
+      const byKind: Veg[][] = this.pVeg.map(() => []);
+      for (const v of d.veg) byKind[v.kind]!.push(v);
+      const tmp = new THREE.Color();
+      byKind.forEach((list, kind) => {
+        if (!list.length) return;
+        this.pVeg[kind]!.add(key, list.length, (i, m, c) => {
+          const v = list[i]!;
+          q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, v.yaw);
+          if (kind === VEG.ROCK) {
+            m.compose(pos.set(v.x, v.y - 0.15 * v.s, v.z), q, sc.set(v.s * (1.1 + v.tint * 0.3), v.s * (0.7 + ((v.tint * 7) % 1) * 0.5), v.s * (0.9 + ((v.tint * 13) % 1) * 0.4)));
+            c.setHex(v.tint < 0.5 ? 0x9a978f : 0xb9754b).multiplyScalar(0.75 + ((v.tint * 11) % 1) * 0.4);
+          } else {
+            m.compose(pos.set(v.x, v.y - 0.1, v.z), q, sc.set(v.s, v.s * (0.9 + v.tint * 0.25), v.s));
+            const k = 0.82 + v.tint * 0.36;
+            if (kind === VEG.SCRUB) c.setRGB(k, k * (0.9 + v.tint * 0.15), k * (0.75 + v.tint * 0.3));
+            else c.setRGB(k, k, k * (0.9 + 0.1 * v.tint));
+            void tmp;
+          }
+        });
+      });
+    }
     if (this.physics) rec.pending = this.toColliders(d);
     const ms = performance.now() - t0;
     this.stats.loadMs = ms;

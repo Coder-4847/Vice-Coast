@@ -71,6 +71,7 @@ export class World {
     this.rig.register(this.city.signalMaterial, City.signalPatch);
     this.rig.register(this.city.trunkMaterial);
     this.rig.register(this.city.leafMaterial);
+    this.rig.register(this.city.vegMaterial);
 
     this.city.configure(preset, camera.position.x, camera.position.z);
     this.hillRoad = new HillRoad(this.city.plan);
