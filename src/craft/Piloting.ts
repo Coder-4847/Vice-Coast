@@ -196,7 +196,6 @@ export class Piloting {
 
   private startEngine(c: Craft): void {
     this.engine?.dispose();
-    if ((window as unknown as { __noEngine?: boolean }).__noEngine) return;
     const k = c.spec.kind;
     this.engine = this.d.audio.createCraftEngine(k === 'boat' || k === 'ground' ? 'boat' : k === 'heli' ? 'heli' : c.spec.plane!.jet ? 'jet' : 'prop');
   }
