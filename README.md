@@ -105,6 +105,26 @@ Walk to a car in the lot (east of the range, ~170 m along the beach) and press t
 
 Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
+### Boats, aircraft and armour
+
+Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
+**Valeria International** (about a kilometre south of the city), the Cinder Airstrip, the Mount Kestrel summit and **Isla Rojo**
+(the private island out in the Pacific, with its own airstrip and dock). **Fort Halloran** (the fenced army base on the desert
+plateau) keeps tanks, APCs and army helicopters in its motor pool — but it is **restricted**: cross the boundary and a countdown
+starts, the compound itself (or stealing armour) brings the heavy response straight away.
+
+| Craft | Controls |
+| --- | --- |
+| Boats (Zephyr jet ski, Marlin speedboat, Gull fishing boat, Aurelia yacht) | `W` `S` throttle / reverse · `A` `D` steer · `E` leave (anywhere on the water) |
+| Helicopters (Sparrow, Newsbird) | `W` `S` fly forward / back · `A` `D` turn · `Space` climb · `C` descend · `E` land and exit — or bail out above ~30 m |
+| Planes (Skylark prop, Rook stunt, Meridian jet) | `Space` / `C` throttle up / down · `W` `S` nose down / up · `A` `D` bank (the Rook rolls) · `G` landing gear · `RMB` brake · `E` exit (bail out above ~30 m) |
+| Tank (Bulwark) and APC (Warden) | `W` `S` drive · `A` `D` turn (pivots in place) · mouse aims the turret · `LMB` cannon (APC: autocannon) · `RMB` machine gun · `Space` brake · `E` exit |
+
+`V` switches between chase and cockpit cameras. Planes need a run-up (the airport runway is 840 m; the Skylark leaves the ground
+at ~90 km/h) and the stick is forgiving: release it and the wings level and the nose settles. **Skydiving:** bail out of an
+aircraft (or jump off Mount Kestrel) and you fall at ~190 km/h — steer with `WASD`, press `Space` to open the parachute (it opens
+by itself ~40 m above the ground), steer it, and land on your feet.
+
 ## Project layout
 
 ```
@@ -121,6 +141,7 @@ src/
   npc/     signal clock, lane network + traffic AI, pedestrians (sidewalk graph, archetypes, reactions), ambient events
   physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
+  craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
   audio/   procedural Web Audio engine (no sample files)
 docs/      PERFORMANCE.md, QA.md
@@ -140,8 +161,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 5. **World streaming and Port Valeria** ✅ — city, chunk streaming, minimap and map (airport, studio lot, metro and the full amusement park are still to come)
 6. **NPCs and traffic** ✅ — traffic AI and signals, crowds, reactions, ambient events
 7. **Combat and police** ✅ — weapons, health and armour, 1–6 star wanted levels
-8. **Remaining land biomes** ✅ (this build) — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
-9. Aircraft, boats, military vehicles — plus Fort Halloran and the open-ocean islands
+8. **Remaining land biomes** ✅ — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
+9. **Aircraft, boats and military vehicles** ✅ (this build) — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
 10. Economy, properties, garage, phone
 11. Mission framework and story
 12. Robberies and crew

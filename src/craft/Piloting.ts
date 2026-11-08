@@ -112,8 +112,9 @@ export class Piloting {
     const { input, player, crafts, driving } = this.d;
     if (this.mode === 'foot') {
       this.hint = null;
-      if (driving.mode === 'foot' && !driving.hint && !player.mantle && !player.noclip && (player.state === 'ground' || player.state === 'air') && player.pos.y < 4000) {
+      if (driving.mode === 'foot' && !driving.hint && !player.mantle && !player.noclip && (player.state === 'ground' || player.state === 'air' || player.state === 'swim') && player.pos.y < 4000) {
         this.hint = crafts.nearestEnterable(player.pos);
+        if (this.hint && player.state === 'swim' && this.hint.spec.kind !== 'boat') this.hint = null;
         if (this.hint && input.pressed('interact')) this.begin(this.hint);
       }
       this.d.hud.update(null, '');

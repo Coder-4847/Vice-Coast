@@ -15,6 +15,14 @@ export const REGIONS: Region[] = [
   { name: 'Mount Kestrel', x: GEO.kestrel.x, z: GEO.kestrel.z, r: 1300 },
   { name: 'Kestrel Lake', x: GEO.lake.x, z: GEO.lake.z, r: 260 },
   { name: 'Crestview Hills', x: 1060, z: -1040, r: 420 },
+  { name: 'Valeria International', x: GEO.airport.x, z: GEO.airport.z - 20, r: 620 },
+  { name: 'Isla Rojo', x: GEO.island.x, z: GEO.island.z, r: 520 },
+  { name: 'Fort Halloran (Restricted)', x: GEO.fort.x, z: GEO.fort.z, r: GEO.fort.restricted },
+];
+
+/** Areas the military will defend. Drawn on the map as a red zone. */
+export const RESTRICTED_ZONES: { name: string; x: number; z: number; r: number }[] = [
+  { name: 'Fort Halloran', x: GEO.fort.x, z: GEO.fort.z, r: GEO.fort.restricted },
 ];
 
 /** Looser, larger labels shown on the zoomed-out map. */
@@ -30,6 +38,9 @@ export const MAP_LABELS: { name: string; x: number; z: number; size: number }[] 
   { name: 'Pinecrest Forest', x: 1100, z: -1700, size: 15 },
   { name: 'Cinder Desert', x: 3300, z: -400, size: 17 },
   { name: 'Valeria Range', x: 1900, z: 700, size: 15 },
+  { name: 'Isla Rojo', x: GEO.island.x, z: GEO.island.z - 250, size: 17 },
+  { name: 'Valeria International', x: GEO.airport.x, z: GEO.airport.z - 170, size: 15 },
+  { name: 'Fort Halloran', x: GEO.fort.x, z: GEO.fort.z - 120, size: 16 },
 ];
 
 export interface Marker { name: string; x: number; z: number; glyph: string; color?: string }
@@ -47,6 +58,15 @@ export const MARKERS: Marker[] = [
   { name: 'Container Port', x: 760, z: 1760, glyph: '▣' },
   { name: 'Gran Casino', x: 640, z: 3305, glyph: '♠' },
   { name: 'Coast Rail Station', x: 606, z: 3042, glyph: '🚆' },
+  { name: 'Valeria International', x: GEO.airport.x, z: GEO.airport.apronZ + 70, glyph: '✈' },
+  { name: 'Isla Rojo Airstrip', x: GEO.island.x + 40, z: GEO.island.z + 20, glyph: '✈' },
+  { name: 'Isla Rojo Dock', x: GEO.island.x + 380, z: GEO.island.z + 30, glyph: '⚓' },
+  { name: 'Fort Halloran', x: GEO.fort.x, z: GEO.fort.z, glyph: '★', color: '#ff7a59' },
+  { name: 'Valeria Pier Marina', x: -214, z: -290, glyph: '⚓' },
+  { name: 'Dusk Harbor Marina', x: 230, z: 1650, glyph: '⚓' },
+  { name: 'Costa Merida Marina', x: -10, z: 3360, glyph: '⚓' },
+  { name: 'Pinecrest Marina', x: 440, z: -2300, glyph: '⚓' },
+  { name: 'Kestrel Helipad', x: GEO.kestrel.summit.x + 30, z: GEO.kestrel.summit.z + 20, glyph: 'H' },
 ];
 
 export function regionAt(x: number, z: number): string | null {

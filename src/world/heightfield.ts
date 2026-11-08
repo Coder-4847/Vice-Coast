@@ -356,5 +356,7 @@ export function pavedWeight(x: number, z: number): number {
     smooth(x0 - soft, x0 + soft, x) * (1 - smooth(x1 - soft, x1 + soft, x)) * smooth(z0 - soft, z0 + soft, z) * (1 - smooth(z1 - soft, z1 + soft, z));
   let w = rect(396, 940, 1590, 1964, 4);
   w = Math.max(w, rect(100, 850, 3052, 3648, 12));
+  const A = GEO.airport;
+  w = Math.max(w, rect(A.x - 280, A.x + 280, A.apronZ - 60, A.apronZ + 60, 8)); // airport apron
   return w;
 }

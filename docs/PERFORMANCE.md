@@ -184,3 +184,15 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
 - No allocation in per-frame code (pool vectors, bullets, particles, pedestrians, cars).
 - Compile shaders during loading (`renderer.compileAsync`), never on first use.
 - Texture memory: KTX2/Basis; geometry: Meshopt/Draco; initial download target ≲ 60 MB.
+
+## Phase 9 notes
+
+- Each craft is two merged meshes (body + glass, plus a lights mesh where needed) and a handful of small animated meshes (rotor,
+  tail rotor, propeller, gear, turret + gun). ~50 craft are spawned; only those within ~1.8 km are visible and only those within
+  300 m of the player (or occupied) have an enabled physics body, so the cost is a few force models per frame.
+- The airport, island and fort add three more streamed chunk sources and ~50 m² of runway/taxiway ribbon geometry; the fort and
+  island are far from the other biomes so their chunks are only loaded when the player is nearby.
+- The parachute is one 240-triangle mesh; free-fall has no extra geometry. The map's base texture is a little larger now that it
+  covers the island (6300 × 7800 m at 8 m per pixel).
+- Headless SwiftShader captures of large viewports (≥ 960 × 540) used for QA can run out of memory when thousands of updates are
+  stepped in one task; the game itself is stable in a normal frame loop (checked for a minute outside the city).

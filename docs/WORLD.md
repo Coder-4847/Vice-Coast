@@ -56,3 +56,24 @@ the Coast Line train, blinking aviation lights on towers, cranes and turbines, a
 1. Pick a spot and add a flat zone (and any water cuts) in `heightfield.ts`; add its streets to `towns/layouts.ts`.
 2. Write `towns/<name>.ts` returning a `Kit`; register it in `towns/index.ts`.
 3. Add its markers to `ui/mapData.ts`, loiter spots to `npc/Townsfolk.ts`.
+
+
+## Craft, airports and the fort (Phase 9)
+
+`src/craft/` holds every boat, helicopter, plane and tank. One `Craft` = one dynamic Rapier body with its own arcade force model,
+applied in `physics.substepHooks` (120 Hz): boats use six buoyancy points, thrust, a keel and a rudder; helicopters trade collective
+for climb rate and hold an attitude set by the stick; planes compute lift / drag / thrust from airspeed and angle of attack, with
+rate-commanded elevator, bank-angle ailerons for the touring planes, stall protection, spring-damper landing gear; tanks and APCs
+have spring-damper track contacts, a velocity-controlled drive and a skid-steer yaw controller, plus a slewing turret.
+`CraftManager` spawns them (`spawns.ts`), parks the ones further than 300 m from the player and interpolates the rest.
+`Piloting` is the controller (enter / exit flow, chase and cockpit cameras, input mapping, HUD, engine sound, turret weapons).
+`Skydive` handles free-fall and the parachute. Models are built procedurally (`models.ts`, `builder.ts`): merged vertex-coloured
+meshes (two draw calls per craft) plus animated rotors, propellers, gear and turrets.
+
+| Place | Files |
+| --- | --- |
+| Valeria International (runway 840 m, taxiway, apron, terminal, tower, hangars) | `towns/airport.ts`, `GEO.airport` |
+| Isla Rojo (island landform, villa, dock, airstrip) | `towns/island.ts`, `GEO.island` |
+| Fort Halloran (fence, barracks, HQ, motor pool, hangar, radar) | `towns/fort.ts`, `GEO.fort`; restricted-area logic in `combat/Restricted.ts` |
+
+Runways are road paths of kind `runway` (`lanes: 1` = maintained: clean markings and threshold bars).

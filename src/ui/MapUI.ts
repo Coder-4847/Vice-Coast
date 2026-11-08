@@ -5,10 +5,10 @@ import { WorldRouter } from '../world/WorldRouter';
 import { CITY, terrainHeight } from '../world/Terrain';
 import { TerrainData } from '../world/TerrainData';
 import { nearestRoad } from '../world/roads';
-import { buildNetStrokes, MAP_LABELS, MARKERS, regionAt, type NetStroke } from './mapData';
+import { buildNetStrokes, MAP_LABELS, MARKERS, regionAt, RESTRICTED_ZONES, type NetStroke } from './mapData';
 import { h as el } from './dom';
 
-const MB = { x0: -700, x1: 4800, z0: -3400, z1: 4400 };
+const MB = { x0: -1500, x1: 4800, z0: -3400, z1: 4400 };
 const STEP = 8;
 const ACCENT = '#ff7a59';
 
@@ -294,6 +294,19 @@ export class MapUI {
           ctx.restore();
         }
       }
+    }
+    // restricted military ground
+    for (const zn of RESTRICTED_ZONES) {
+      const [sx, sy] = toScreen(zn.x, zn.z);
+      const pr = zn.r * v.scale;
+      if (sx + pr < 0 || sy + pr < 0 || sx - pr > v.w || sy - pr > v.h) continue;
+      ctx.save();
+      ctx.fillStyle = 'rgba(214,60,48,0.16)';
+      ctx.strokeStyle = 'rgba(236,90,76,0.9)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 7]);
+      ctx.beginPath(); ctx.arc(sx, sy, pr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
     if (full || v.scale > 0.5) {
       ctx.font = `600 ${full ? 11 : 9}px system-ui, sans-serif`;

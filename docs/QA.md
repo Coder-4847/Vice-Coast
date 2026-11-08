@@ -215,3 +215,28 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] People loiter in Costa Merida's market and seafront, Pinecrest's square and marina, the bar patio in Cinder Flats; they flee when shot at.
 - [ ] Wanted level outside Port Valeria: police come along the roads and then cross open ground to you (3★ and up bring the same escalation); the shooting still ends with Busted / Wasted respawns.
 - [ ] Weather: up on Kestrel it snows (unless you chose a weather in the menu); gusts of dust blow over the desert in the afternoon. Wind, forest rustle, birds by day, crickets by night and surf at the coast fade in with the place.
+
+
+## Phase 9 — Boats, aircraft, armour
+
+### Getting in and out
+- [ ] Walk up to a craft and the prompt shows `Enter …` (`Board …` for boats; boats can also be boarded from the water). The door opens, you slide in, the camera blends to the chase camera. `E` gets you out beside the door (boats: anywhere; helicopters / planes / tanks: when slow enough).
+- [ ] Above ~30 m, `E` in a helicopter or plane bails out: you fall, the free-fall HUD appears (`Space · PARACHUTE`), `Space` opens the chute (it also opens by itself ~40 m up), you land on your feet without damage. Jumping off the Kestrel cliff does the same.
+- [ ] Being killed, busted or blown up in a craft puts you back on foot; unattended craft return to their berths after a respawn.
+
+### Boats
+- [ ] Zephyr jet ski, Marlin, Gull and Aurelia float at the pier / marinas / Dusk Harbor basin / Costa Merida marina / Pinecrest / Kestrel lake / Isla Rojo dock. Throttle accelerates (jet ski ~100 km/h, yacht slow and heavy); steering leans the hull; waves rock them (bigger in storms).
+
+### Helicopters
+- [ ] The rotor spools up for ~3 s; `Space` lifts off, `W` tilts forward and flies, releasing everything hovers; `E` near the ground lands and exits. Sparrow and Newsbird at the airport apron, Kestrel summit pad, Isla Rojo pad and Fort Halloran.
+
+### Planes
+- [ ] Skylark / Rook / Meridian at Valeria International, the Cinder Airstrip and Isla Rojo. Full throttle (`Space`) rolls down the runway, a little back-stick at ~90 km/h lifts off, `G` retracts the gear. Releasing the stick levels the wings and holds altitude; full back-stick never stalls the Skylark (the Rook can). Banking holds altitude in turns. Landing with the gear down on the runway rolls out; the HUD shows speed / altitude / climb rate / heading, an artificial horizon and STALL / PULL UP warnings.
+
+### Tank and APC
+- [ ] Bulwark (tank) and Warden (APC) in Fort Halloran's motor pool: tracks grip and pivot in place; the mouse swings the turret (it follows the crosshair), `LMB` fires the cannon (~3.4 s reload shown in the HUD; shells explode on impact, wreck cars and knock people down) and `RMB` the machine gun. Shells fired from inside armour don't hurt your own crew unless they land on top of you.
+
+### Places and restrictions
+- [ ] **Valeria International**: runway with threshold bars and centre line, taxiway, apron, terminal, control tower, hangars, parked jet and helicopters. **Isla Rojo**: villa, dock with yacht, airstrip, helipad, palms. **Fort Halloran**: fence, gate house, barracks, HQ with flag, hangar and helipads, fuel depot, radar dome.
+- [ ] Crossing Fort Halloran's boundary shows `RESTRICTED AREA — LEAVE NOW` with a countdown; at zero you get 4★. Running into the compound = 5★, climbing into the tanks / APCs = 6★. Leaving and hiding cools the level down as usual.
+- [ ] The map (`M`) shows the airport, the island, marinas, helipads and the fort (a red zone); the minimap names the region.

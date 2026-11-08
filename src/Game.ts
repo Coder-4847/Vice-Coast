@@ -5,6 +5,7 @@ import { TerrainData } from './world/TerrainData';
 import { CraftManager } from './craft/CraftManager';
 import { Piloting } from './craft/Piloting';
 import { Skydive } from './craft/Skydive';
+import { Restricted } from './combat/Restricted';
 import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
@@ -66,6 +67,7 @@ export class Game {
   crafts: CraftManager | null = null;
   piloting: Piloting | null = null;
   skydive: Skydive | null = null;
+  restricted: Restricted | null = null;
   npcs: Npcs | null = null;
   combat: Combat | null = null;
   wanted: Wanted | null = null;
@@ -189,6 +191,7 @@ export class Game {
         hud: this.combatHud, camera: this.camera,
       });
       const pol = this.police;
+      if (this.piloting) this.restricted = new Restricted({ wanted: this.wanted, player: this.player, piloting: this.piloting, hud: this.combatHud, hudRoot: this.ui.hudRoot, toast: (m) => this.ui.toast(m) });
       // weapon crates, armour and medkits next to the spawn point
       const px = 112;
       this.pickups = new Pickups([
@@ -369,6 +372,7 @@ export class Game {
     if (!c || !this.combatHud) return;
     c.update(dt);
     if (this.police && !c.flow) this.police.update(dt);
+    if (this.restricted && !c.flow) this.restricted.update(dt);
     const w = this.wanted;
     const arrest = this.police ? this.police.arresting : 0;
     this.combatHud.update(dt, {
