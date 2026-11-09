@@ -113,7 +113,7 @@ campaign has a plan; it will be built in later passes.
 * **Gold medal** needs all three optional objectives in a single run. They vary per mission: time, accuracy, flawless, no wanted
   level, no civilian casualties and a few mission-specific ones.
 * **Replay** any completed mission from the phone's *Missions* app. Replays pay half and never change the story.
-* **Switching** characters: hold `Z` (D-pad left) for the wheel. Cutscene-driven switches happen automatically in some missions.
+* **Switching** characters: press `Z` (D-pad left) for the wheel. Some missions switch you automatically when the plan calls for it.
 
 ## Voice and subtitles
 
