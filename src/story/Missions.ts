@@ -24,6 +24,8 @@ export interface RunStats {
   alerts: number;
   /** 0–1; 1 when no shots were fired. */
   accuracy: number;
+  /** Numbers scripts record for mission-specific gold objectives. */
+  extra: Record<string, number>;
 }
 
 export interface GoldDef { id: string; label: string; test: (s: RunStats) => boolean }
@@ -83,7 +85,7 @@ class Abort { constructor(readonly reason: string) {} }
 export class MissionRun {
   stage = -1;
   gen: Gen | null = null;
-  readonly stats: RunStats = { time: 0, shots: 0, hits: 0, hpLost: 0, kills: 0, civKills: 0, maxStars: 0, alerts: 0, accuracy: 1 };
+  readonly stats: RunStats = { time: 0, shots: 0, hits: 0, hpLost: 0, kills: 0, civKills: 0, maxStars: 0, alerts: 0, accuracy: 1, extra: {} };
   state: 'running' | 'passed' | 'failed' | 'quit' = 'running';
   failReason = '';
   /** A retried run cannot earn gold. */
@@ -102,10 +104,15 @@ export class MissionRun {
   private cp: Snap | null = null;
   private lastHp = 0;
   private dying = 0;
+  private dyingKind = '';
   private hitSeen = false;
   /** The gold objectives that are currently satisfied (for the HUD). */
   goldNow: boolean[] = [];
   tags = new Set<string>();
+  /** Seconds this frame (cutscene frames included). */
+  dt = 1 / 60;
+  private readonly disposers: (() => void)[] = [];
+  private readonly craftsMade = new Map<string, import('../craft/Craft').Craft>();
 
   constructor(readonly s: Story, readonly def: MissionDef) {}
 
@@ -187,6 +194,7 @@ export class MissionRun {
       else this.removeVehicle(e);
     }
     this.vehicles.clear();
+    for (const d of this.disposers.splice(0)) d();
     this.fails.length = 0;
     this.timerLeft = -1;
     s.hud.setTimer(null);
@@ -205,6 +213,7 @@ export class MissionRun {
   tick(dt: number): void {
     const s = this.s, g = this.g;
     if (this.state !== 'running') return;
+    this.dt = dt;
     const vit = g.combat!.vitals;
     const cut = s.cutscenes.active;
     if (!cut) {
@@ -229,10 +238,11 @@ export class MissionRun {
     // dying fails the mission once the Wasted / Busted sequence has played
     if (g.combat?.flow) {
       this.dying = 1;
+      this.dyingKind = g.combat.flow.kind;
       this.stats.maxStars = Math.max(this.stats.maxStars, stars);
       return;
     }
-    if (this.dying === 1) { this.fail(vit.dead ? 'You were killed.' : 'You were arrested.'); return; }
+    if (this.dying === 1) { this.fail(this.dyingKind === 'wasted' ? 'You were killed.' : 'You were arrested.'); return; }
     for (const f of this.fails) if (f.test()) { this.fail(f.reason); return; }
 
     // step the stage
@@ -319,6 +329,16 @@ export class MissionRun {
 
   get timeLeft(): number { return this.timerLeft; }
 
+  clearFails(): void { this.fails.length = 0; }
+
+  clearRoute(): void { this.s.clearWaypoint(); }
+
+  /** Take the pistol out if it is holstered. */
+  draw(): void {
+    const w = this.g.weapon;
+    if (w && !w.isDrawn) w.toggleHolster();
+  }
+
   /** Abort the whole mission from inside a stage. */
   abort(reason: string): never { throw new Abort(reason); }
 
@@ -385,6 +405,16 @@ export class MissionRun {
     return e.driver;
   }
 
+  /** Remove a named vehicle from the world. */
+  dispose(name: string): void {
+    const e = this.vehicles.get(name);
+    if (!e) return;
+    if (e.blip) this.s.beacons.remove(e.blip);
+    if (e.driver) this.s.drivers.stop(e.v);
+    this.removeVehicle(e);
+    this.vehicles.delete(name);
+  }
+
   playerIn(name: string): boolean {
     const d = this.g.driving;
     const e = this.vehicles.get(name);
@@ -396,16 +426,48 @@ export class MissionRun {
   /** Is the player (or the car they drive) within `r` of a place? */
   near(p: Place, r: number): boolean {
     const w = this.s.place(p);
-    const d = this.g.driving;
-    const pos = d && d.mode === 'driving' ? d.vehicle!.position : this.g.player!.pos;
+    const pos = this.playerPos();
     return Math.hypot(pos.x - w.x, pos.z - w.z) < r;
   }
 
   playerPos(): { x: number; z: number } {
-    const d = this.g.driving;
-    const pos = d && d.mode === 'driving' ? d.vehicle!.position : this.g.player!.pos;
+    const g = this.g;
+    const d = g.driving;
+    const c = g.piloting?.active ? g.piloting.craft : null;
+    const pos = c ? c.position : d && d.mode === 'driving' ? d.vehicle!.position : g.player!.pos;
     return { x: pos.x, z: pos.z };
   }
+
+  /** Is the player flying this named craft? */
+  playerFlying(name: string): boolean {
+    const c = this.craftsMade.get(name);
+    return !!c && !!this.g.piloting?.active && this.g.piloting.craft === c;
+  }
+
+  /** Spawn a boat, helicopter or plane for the mission and mark it. */
+  craft(name: string, spec: string, p: Place, o: { yaw?: number; blip?: boolean } = {}): import('../craft/Craft').Craft {
+    const have = this.craftsMade.get(name);
+    if (have) return have;
+    const w = this.s.place(p);
+    const c = this.g.crafts!.spawn(spec, w.x, w.z, o.yaw ?? 0);
+    this.craftsMade.set(name, c);
+    if (o.blip !== false) this.blip('craft:' + name, w, { color: '#4aa8ff', glyph: '✈', name, r: 3 });
+    return c;
+  }
+
+  craftOf(name: string): import('../craft/Craft').Craft { return this.craftsMade.get(name)!; }
+
+  /** Give the player a weapon for the mission. */
+  give(id: 'vc9' | 'smg' | 'shotgun' | 'rifle', rounds = 90): void {
+    const w = this.g.weapon;
+    if (!w) return;
+    w.give(id, rounds);
+    if (!w.isDrawn) w.toggleHolster();
+    w.select(id);
+  }
+
+  /** Something to clean up when the mission ends or restarts (ramps, props). */
+  onCleanup(fn: () => void): void { this.disposers.push(fn); }
 
   // ---- generator helpers --------------------------------------------------------------------------------------
 
@@ -447,11 +509,13 @@ export class MissionRun {
   *enter(name: string, text?: string): Gen {
     const e = this.vehicles.get(name)!;
     this.objective(text ?? `Get in the ${this.vehName(name)}`);
+    this.s.setWaypoint(e.v.position.x, e.v.position.z);
     while (!this.playerIn(name)) {
       if (e.blip) this.s.beacons.move(e.blip, e.v.position.x, e.v.position.z);
       yield;
     }
     this.unmark(name);
+    this.s.clearWaypoint();
   }
 
   *cutscene(id: string): Gen {
@@ -473,7 +537,8 @@ export class MissionRun {
   *kill(tag: string, spawns: HostileOpts[], text: string, o: { sub?: string; blip?: boolean } = {}): Gen {
     const peds: Ped[] = [];
     for (const sp of spawns) {
-      const p = this.s.hostiles.spawn({ ...sp, tag });
+      const w = this.s.snap(sp.x, sp.z);
+      const p = this.s.hostiles.spawn({ ...sp, x: w.x, z: w.z, tag });
       if (p) peds.push(p);
     }
     this.tags.add(tag);
@@ -506,6 +571,32 @@ export class MissionRun {
 
   /** A short beat on foot at the checkpoint spot, e.g. after a cutscene. */
   *settle(): Gen { yield* this.wait(0.4); }
+
+  /** Wait until the player is controlling `c` (telling them to switch if they are not). */
+  *asChar(c: CharId, text: string, sub = ''): Gen {
+    this.noSwitch = false;
+    while (this.active !== c) {
+      this.objective(`Switch to ${CHARS[c].nick} (${this.s.switchKey()})`, sub);
+      yield;
+    }
+    this.objective(text, sub);
+  }
+
+  /** Fly or drive to a place and land / stop there. `r` is the radius, plane must be on the ground and slow. */
+  *land(name: string, p: Place, text: string, r = 260): Gen {
+    const c = this.craftsMade.get(name)!;
+    const w = this.blip('land', p, { color: '#ffd166', glyph: '✈', name: text, r: 6 });
+    this.s.setWaypoint(w.x, w.z);
+    this.objective(text);
+    while (true) {
+      const d = Math.hypot(c.position.x - w.x, c.position.z - w.z);
+      const grounded = c.wheels.length ? c.wheels.every((q) => q.onGround) : c.speedKmh < 3;
+      if (d < r && grounded && c.speedKmh < 25) break;
+      yield;
+    }
+    this.unblip('land');
+    this.s.clearWaypoint();
+  }
 
   *switchTo(c: CharId, why?: string): Gen {
     if (this.active === c) return;

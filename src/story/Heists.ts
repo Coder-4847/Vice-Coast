@@ -8,4 +8,5 @@ export class Heists {
   nearBoard(_x: number, _z: number, _r: number): { id: string; prompt: string } | null { return null; }
   openBoard(_id: string): void { /* later */ }
   update(_dt: number): void { /* later */ }
+  unlock(_id: string): void { /* later */ }
 }

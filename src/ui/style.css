@@ -476,7 +476,7 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .cin-bar.on { height: 11.5vh; }
 .subtitle { position: absolute; left: 50%; bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: min(760px, 88vw); padding: 8px 18px 10px; border-radius: 8px; background: rgba(6, 8, 12, 0.62); text-align: center; font-size: calc(var(--fs-md) * var(--sub-scale, 1)); line-height: 1.4; text-shadow: 0 1px 4px #000; transition: opacity var(--dur-2) var(--ease); }
 .story-layer.cinematic .subtitle { bottom: calc(11.5vh + var(--sp-4)); }
-.subtitle b { font-weight: 700; letter-spacing: 0.02em; }
+.subtitle b { font-weight: 700; letter-spacing: 0.02em; margin-right: 0.5em; }
 .cin-skip { position: absolute; right: var(--sp-4); bottom: calc(11.5vh + 6px); font-size: var(--fs-xs); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 .cin-skip.is-hidden, .subtitle.is-hidden, .story-tip.is-hidden { opacity: 0; visibility: hidden; }
 .story-banner { position: absolute; left: 50%; top: 22%; transform: translate(-50%, 6px); text-align: center; opacity: 0; transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); display: flex; flex-direction: column; gap: 4px; }
@@ -498,7 +498,7 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .gold-chip.done { color: #ffd166; }
 .obj-timer { position: absolute; top: calc(var(--sp-4) + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 4px 14px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--line); font-variant-numeric: tabular-nums; font-size: var(--fs-md); transition: opacity var(--dur-3) var(--ease); }
 .obj-timer.warn { color: #ff6a5a; border-color: #ff6a5a; animation: breathe 0.9s var(--ease-in-out) infinite; }
-.ability { position: absolute; left: calc(var(--sp-4) + env(safe-area-inset-left)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom) + 18px); width: 190px; display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); transition: opacity var(--dur-3) var(--ease); }
+.ability { position: absolute; left: calc(var(--sp-4) + env(safe-area-inset-left)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom) + 96px); width: 190px; display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); transition: opacity var(--dur-3) var(--ease); }
 .ability .ab-bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .ability .ab-bar i { display: block; height: 100%; width: 100%; transform-origin: left; transition: transform 0.12s linear; }
 .ability.active { color: var(--text); }

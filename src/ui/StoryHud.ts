@@ -76,7 +76,7 @@ export class StoryHud {
 
   /** Show a subtitle line for `secs` seconds. */
   say(who: string, color: string, text: string, secs: number): void {
-    this.subWho.textContent = who ? who + ' ' : '';
+    this.subWho.textContent = who ? who + ':' : '';
     this.subWho.style.color = color;
     this.subText.textContent = text;
     this.sub.classList.remove('is-hidden');

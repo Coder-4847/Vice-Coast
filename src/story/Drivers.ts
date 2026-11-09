@@ -95,20 +95,39 @@ export class Drivers {
       d.path = r.pts as [number, number][];
       d.pi = 0;
     }
-    // aim point: a look-ahead along the path, clamped by the straight target when near
+    // follow the path: find where we are on it, then aim `look` metres further along
     const speed = v.speed;
-    const look = 9 + Math.abs(speed) * 0.55;
+    const look = Math.max(9, Math.min(30, 6 + Math.abs(speed) * 0.9));
     let ax = tgt.x, az = tgt.z;
-    if (dist > look * 1.2 && d.path.length > 1) {
-      // advance past the points we have reached, then walk `look` metres along the polyline
-      while (d.pi < d.path.length - 2 && Math.hypot(d.path[d.pi + 1]![0] - px, d.path[d.pi + 1]![1] - pz) < Math.max(7, look * 0.5)) d.pi++;
+    let bend = 0;
+    if (d.path.length > 1 && dist > look * 1.1) {
+      const P = d.path;
+      // closest point on the next few segments (progress only moves forward)
+      let bi = d.pi, bd = Infinity, bt = 0;
+      for (let i = d.pi; i < Math.min(P.length - 1, d.pi + 8); i++) {
+        const x0 = P[i]![0], z0 = P[i]![1], x1 = P[i + 1]![0], z1 = P[i + 1]![1];
+        const sx = x1 - x0, sz = z1 - z0, sl = sx * sx + sz * sz || 1;
+        const t = clamp(((px - x0) * sx + (pz - z0) * sz) / sl, 0, 1);
+        const qx = x0 + sx * t, qz = z0 + sz * t;
+        const dd = (px - qx) * (px - qx) + (pz - qz) * (pz - qz);
+        if (dd < bd) { bd = dd; bi = i; bt = t; }
+      }
+      d.pi = bi;
+      // walk `look` metres along the polyline from the projection
+      let i = bi;
+      let cx = P[i]![0] + (P[i + 1]![0] - P[i]![0]) * bt, cz = P[i]![1] + (P[i + 1]![1] - P[i]![1]) * bt;
       let rem = look;
-      let cx = px, cz = pz;
-      for (let i = d.pi + 1; i < d.path.length; i++) {
-        const nx = d.path[i]![0], nz = d.path[i]![1];
+      let ahead = 0;
+      const h0 = Math.atan2(P[i + 1]![0] - P[i]![0], P[i + 1]![1] - P[i]![1]);
+      while (i < P.length - 1) {
+        const nx = P[i + 1]![0], nz = P[i + 1]![1];
         const seg = Math.hypot(nx - cx, nz - cz);
-        if (seg >= rem) { ax = cx + (nx - cx) * (rem / seg); az = cz + (nz - cz) * (rem / seg); break; }
-        rem -= seg; cx = nx; cz = nz; ax = nx; az = nz;
+        if (seg >= rem) { const k = seg > 1e-6 ? rem / seg : 0; ax = cx + (nx - cx) * k; az = cz + (nz - cz) * k; rem = 0; break; }
+        rem -= seg; ahead += seg; cx = nx; cz = nz; ax = nx; az = nz; i++;
+        if (ahead < 34 && i < P.length - 1) {
+          const h1 = Math.atan2(P[i + 1]![0] - P[i]![0], P[i + 1]![1] - P[i]![1]);
+          bend = Math.max(bend, Math.abs(Math.atan2(Math.sin(h1 - h0), Math.cos(h1 - h0))));
+        }
       }
     }
     _f.set(0, 0, -1).applyQuaternion(v.quaternion);
@@ -118,10 +137,10 @@ export class Drivers {
     const crossY = (_f.z * tx - _f.x * tz) / tl;
     const ang = Math.atan2(-crossY, dot);
 
-    // speed plan: slow for sharp turns, never exceed cruise
+    // speed plan: slow for the bend ahead and for sharp heading errors, never exceed cruise
     const cruise = (d.o.kmh ?? 60) / 3.6;
-    let want = cruise * (1 - clamp(Math.abs(ang) / 1.3, 0, 0.72));
-    if (d.o.aggressive) want = Math.max(want, cruise * 0.5);
+    let want = cruise * (1 - clamp(Math.max(bend * 0.9, Math.abs(ang) * 0.6) / 1.3, 0, 0.78));
+    if (d.o.aggressive) want = Math.max(want, cruise * 0.45);
     if (d.o.arrive) want = Math.min(want, Math.max(4, dist * 0.35));
 
     // unstick: if we are barely moving while asking for throttle, back up for a second

@@ -82,7 +82,7 @@ export class Hostiles {
     else p.look = { ...lookFor({ cast: 'thug' }), shirt: CAST.thug!.look.shirt + (Math.floor(Math.random() * 3) - 1) * 0x101010, h: 0.96 + Math.random() * 0.14 };
     p.look.sleeve = p.look.shirt;
     const m: Meta = {
-      kind, tag: o.tag ?? 'x', hold: !!o.hold, unaware: !!o.unaware, alert: o.unaware ? 0 : 1, patrol: o.patrol ?? [], pi: 0, power: o.power ?? 1,
+      kind, tag: o.tag ?? 'x', hold: !!o.hold, unaware: !!o.unaware, alert: o.unaware ? 0 : 1, patrol: o.patrol ?? [], pi: 0, power: o.power ?? 0.7,
       fireT: 0.8 + Math.random() * 0.9, burst: 0, home: { x: o.x, z: o.z }, seen: 0,
     };
     this.meta.set(p, m);

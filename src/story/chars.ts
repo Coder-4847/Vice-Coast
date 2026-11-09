@@ -76,5 +76,6 @@ export const CAST: Record<string, CastDef> = {
   marisol: { id: 'marisol', voice: VOICES.marisol!, look: look(0xc68863, 0x16110d, 0x8c3b3b, 0x1e2230, 0.98, 0.96) },
   silas: { id: 'silas', voice: VOICES.silas!, look: look(0xf1c7a5, 0x2a1d14, 0x2c2c2f, 0x1e2230, 1.02, 0.9) },
   guard: { id: 'guard', voice: VOICES.guard!, look: look(0xe0ac86, 0x2a1d14, 0x2a2d33, 0x1b1d20, 1.04, 1.06) },
+  guard2: { id: 'guard2', voice: VOICES.guard!, look: look(0xc68863, 0x16110d, 0x30343a, 0x1b1d20, 1.0, 1.0) },
   thug: { id: 'thug', voice: VOICES.thug!, look: look(0xc68863, 0x16110d, 0x8c2b2b, 0x1e2230, 1.02, 1.04) },
 };

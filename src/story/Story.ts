@@ -1,4 +1,4 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import type { Game } from '../Game';
 import { StoryHud } from '../ui/StoryHud';
 import { btn, row, section, type Page } from '../ui/Modal';
@@ -140,7 +140,7 @@ export class Story {
   // ------------------------------------------------------------------------------------------------ helpers for scripts
 
   place(p: Place, car = false): { x: number; z: number } {
-    if (typeof p !== 'string') return { x: p.x, z: p.z };
+    if (typeof p !== 'string') return car ? this.snap(p.x, p.z, 3.2) : { x: p.x, z: p.z };
     const def = PLACES[p];
     if (!def) throw new Error(`unknown place ${p}`);
     const hit = this.placeCache.get(p + (car ? '!' : ''));
@@ -152,6 +152,41 @@ export class Story {
     else out = cm.points.find(def.x, def.z, (car || def.car) ? 3.4 : 2.2, { walkOnly: false, maxR: 140 });
     this.placeCache.set(p + (car ? '!' : ''), out);
     return out;
+  }
+
+  /** The nearest open ground to a point (for spawning people). */
+  snap(x: number, z: number, margin = 0.9): { x: number; z: number } {
+    return this.g.commerce!.points.find(x, z, margin, { walkOnly: false, maxR: 24 });
+  }
+
+  switchKey(): string {
+    const g = this.g;
+    return g.input.activeDevice === 'gamepad' ? 'D-pad ←' : g.input.activeDevice === 'touch' ? 'Switch' : 'Z';
+  }
+
+  /** A launch ramp: returns a remover. `ry` is the direction of travel (forward = (sin ry, cos ry)). */
+  ramp(x: number, z: number, ry: number, len = 15, width = 9, rise = 3.6): () => void {
+    const g = this.g;
+    const gy = this.g.world.heightAt(x, z);
+    const th = Math.asin(rise / len);
+    const t = 0.7;
+    const cy = gy + (len / 2) * Math.sin(th) - (t / 2) * Math.cos(th) + 0.1;
+    const handles = g.physics!.addBuildings([{ cx: x, cy, cz: z, hx: width / 2, hy: t / 2, hz: len / 2, ry, rx: -th }]);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, t, len), this.rampMat());
+    mesh.rotation.order = 'YXZ';
+    mesh.rotation.set(-th, ry, 0);
+    mesh.position.set(x, cy, z);
+    g.world.scene.add(mesh);
+    return () => { g.physics!.removeBuildings(handles); g.world.scene.remove(mesh); mesh.geometry.dispose(); };
+  }
+
+  private rampM: THREE.MeshStandardMaterial | null = null;
+  private rampMat(): THREE.MeshStandardMaterial {
+    if (!this.rampM) {
+      this.rampM = new THREE.MeshStandardMaterial({ color: 0xd9d4c8, roughness: 0.8, metalness: 0.1 });
+      this.g.world.rig.register(this.rampM);
+    }
+    return this.rampM;
   }
 
   placeName(p: Place): string { return typeof p === 'string' ? (PLACES[p]?.label ?? p) : 'there'; }
