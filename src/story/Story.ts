@@ -370,7 +370,7 @@ export class Story {
     const goldRows = def.gold.map((d) => ({ d, ok: medals.includes(d.id) }));
     const best = def.gold.length && goldRows.every((r) => rec.medals.includes(r.d.id));
     void allGold; void best;
-    setTimeout(() => cm.open(this.summaryPage(def, run, pay, goldRows.map((r) => ({ label: r.d.label, ok: r.ok })))), 1200);
+    setTimeout(() => { if (!this.mission) cm.open(this.summaryPage(def, run, pay, goldRows.map((r) => ({ label: r.d.label, ok: r.ok })))); }, 1200);
   }
 
   private summaryPage(def: MissionDef, run: MissionRun, pay: number, gold: { label: string; ok: boolean }[]): Page {
@@ -424,7 +424,7 @@ export class Story {
         void cp;
       },
     };
-    setTimeout(() => cm.open(page), 600);
+    setTimeout(() => { if (this.mission === run) cm.open(page); }, 600);
   }
 
   private retry(run: MissionRun, full: boolean): void {

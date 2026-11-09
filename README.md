@@ -42,6 +42,7 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Draw / holster · inspect | `1` · `G` | D-pad ↓ · — | Arms (cycles weapons) |
 | Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`5` (pistol, SMG, shotgun, rifle) | `LB` + right stick | Arms |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
+| Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` | Switch · Power |
 | Map (full-screen, set waypoint) | `M` | `Back` (View) | Map |
 | Menu | `Esc` or `P` | `Start` (Options) | Menu |
 | Noclip (debug) | `F9` | — | — |
@@ -127,6 +128,27 @@ with missions and heists in later phases.
 **Saving:** three slots in browser storage, chosen on the title screen. The game autosaves every four minutes (when nobody is after
 you) and whenever you buy, sleep or leave a shop. **Menu → Saves** lets you save, load, delete, **export** a slot to a file and **import** one.
 
+### Story, three protagonists and heists
+
+**Marcus "Mack" Delgado** (driver), **Imani Cole** (pilot) and **Teddy Vance** (stuntman) are playable and switchable. New games start with
+Mack; Imani and Teddy join as the story unlocks them (each arrives with a free home: Boardwalk Studio, Hangar 3, the Cinder Flats trailer).
+Press `Z` (D-pad ←) for the switch wheel: the camera pulls up, drops onto the other character and the one you left stands where you left them.
+Each has a special ability on `X` (`RB`) that recharges: **Slipstream** (Mack: time slows while driving, perfect drift control),
+**Overwatch** (Imani: time slows and aim locks in; aircraft take much less damage), **Rampage** (Teddy: a fraction of the damage, harder blasts).
+
+Missions start from lettered beams on the map and minimap (M, I, T, ★ for everyone): walk or drive up and press `E`. In this build the
+campaign has **Act I, 12 missions** (Valet, Old Debts, Slipstream, Charter, Overwatch, Dead Drop, Followers, Stash House, Dust Up, Three Roads,
+Switch, Dead Ringers) and **two heists**: *The Gilded Counter* (jeweller) and *Valeria Savings* (bank). The full plan, 38 missions and 6 heists, is in
+[docs/STORY.md](docs/STORY.md).
+
+* Every stage start is a **checkpoint**. Failing offers *Retry from checkpoint*, *Restart* or *Quit*, and **Skip** after three failures.
+* Each mission has three **gold objectives** (time, accuracy, flawless, never wanted…): all three in one clean run is a gold medal.
+  Finished missions can be **replayed** from the phone's *Missions* app (they pay half and do not change the story).
+* **Cutscenes** are real-time in the engine, letterboxed and subtitled; `Enter` skips. Subtitles and optional spoken dialogue
+  (browser text-to-speech, a different voice per character) are in *Settings → Accessibility*.
+* **Heist board** (in Mack's flat, a blue beam): choose an approach (**loud**, **quiet** or **smart**), a crew (Benny, Dex, Silas: each takes a cut and
+  changes the job) and finish the prep missions; then do the job inside a purpose-built interior and get away. The split is paid by performance.
+
 ### Boats, aircraft and armour
 
 Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
@@ -164,10 +186,11 @@ src/
   physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
   economy/ money, save slots, properties, shops, garage and customisation screens, interaction points
+  story/   mission engine (generator scripts, checkpoints, medals), cutscene director, protagonists + abilities, gunmen and scripted drivers, heists and their interiors, content/ (missions, cutscenes, heists)
   craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
   audio/   procedural Web Audio engine (no sample files)
-docs/      PERFORMANCE.md, QA.md
+docs/      PERFORMANCE.md, QA.md, STORY.md, WORLD.md
 ```
 
 ## Deployment
@@ -186,8 +209,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 7. **Combat and police** ✅ — weapons, health and armour, 1–6 star wanted levels
 8. **Remaining land biomes** ✅ — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
 9. **Aircraft, boats and military vehicles** ✅ — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
-10. **Economy, properties, garage, clothing, shops, phone** ✅ (this build) — saving, 9 properties, car dealer and tuning shop, clothes and weapons shops, ATMs and a phone (stock market, tattoos, chop-shop minigame, business fronts, nitro, hidden compartments, aircraft / boat customisation and the Snapstream feed are deferred)
-11. Mission framework and story
+10. **Economy, properties, garage, clothing, shops, phone** ✅ — saving, 9 properties, car dealer and tuning shop, clothes and weapons shops, ATMs and a phone (stock market, tattoos, chop-shop minigame, business fronts, nitro, hidden compartments, aircraft / boat customisation and the Snapstream feed are deferred)
+11. **Mission framework and story** ✅ (this build) — mission engine, cutscenes, three switchable protagonists, 12 missions, 2 heists (the other 26 missions and 4 heists are outlined in docs/STORY.md; crew injuries and the full crew system arrive in Phase 12)
 12. Robberies and crew
 13. Side activities, radio, collectibles
 14. Polish

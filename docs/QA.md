@@ -266,3 +266,28 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Clothing / barber: the figure preview updates; sleeves and gloves change in first person; the driver in a car matches. Wardrobe at a property shows only what you own.
 - [ ] Weapon shop: buy weapons, ammo, extended magazine (bigger magazine), suppressor (quiet, nobody reacts), optic (more zoom), finish (changes the gun colour), medkit / armour.
 - [ ] Phone: opens over the game and holster the weapon; Messages, Contacts (calls), Maps, Bank, Cab (set a waypoint first), Garage, Motors, Realty (sets a waypoint), Insure, Camera (downloads a PNG).
+
+
+## Phase 11 — Story, protagonists, heists
+
+### Starting and switching
+- [ ] A new game opens on Mack at the Boardwalk Studio with a short letterboxed intro (`Enter` twice skips). `?debug` skips it.
+- [ ] Finishing *Slipstream* unlocks Imani and *Dead Drop* unlocks Teddy (banner + message). `Z` (D-pad ←) opens the switch wheel: ← → / 1 2 3 choose, `Enter` switches. The camera rises, lands on the other character, the outfit and home change and the one you left stands where you left them. Locked characters are greyed out.
+- [ ] Abilities on `X` (`RB`): Slipstream needs a car (time slows, the car holds a drift), Overwatch slows time and shrinks the crosshair, Rampage turns the screen red and soaks damage. Each meter drains while active and recharges slowly.
+- [ ] Phone → **Switch** lists the three characters; **Missions** lists available / completed missions.
+
+### Missions
+- [ ] Lettered beams (M / I / T / ★) mark mission starts on the world and the map; `E` starts one. Another character's job is greyed with "switch to …". Nothing starts while wanted.
+- [ ] Objective panel top-left, gold-objective chips under it, countdown timers top-centre, subtitles bottom-centre; waypoints route to the next objective.
+- [ ] Dying or failing offers *Retry from checkpoint* / *Restart* / *Quit*; *Skip* appears after the third failure. A retried run earns no gold.
+- [ ] Passing pays the reward, shows the summary with gold objectives, and unlocks the next missions. Replays (phone → Missions → a finished mission) pay half.
+- [ ] You cannot save during a mission (toast), and autosave pauses.
+- [ ] Cutscenes: letterbox, named subtitles, `Enter` (twice) skips, the HUD hides, enemies hold fire, you cannot be hurt. Settings → Accessibility has Subtitles, Subtitle size and Spoken dialogue (browser TTS, off by default).
+
+### Act I (12 missions)
+- [ ] Mack: **Valet**, **Old Debts**, **Slipstream**. Imani: **Charter** (take off, fly, land on Isla Rojo), **Overwatch** (rifle from the ridge, fly out and land), **Dead Drop**. Teddy: **Followers** (ramp jump), **Stash House**, **Dust Up**. Together: **Three Roads**, **Switch** (swap between all three with `Z`), **Dead Ringers**.
+
+### Heists
+- [ ] After *Dead Ringers* a blue beam at Mack's flat is the **heist board**. Choose loud / quiet / smart, pick crew (Benny after Old Debts, Dex after Dust Up, Silas after the first heist), finish the prep missions, then *Start the job*.
+- [ ] The job: drive to the shop door, step in (fade), work through the guards, display cases, vault and cash bags (hold `E` at each marker), leave, lose the police, take the money home. Loud starts the alarm; quiet and smart rely on staying out of guards' sight and the cameras (crouch with `C`).
+- [ ] The result card shows the take, the crew cuts and your share; the cash lands in your wallet.

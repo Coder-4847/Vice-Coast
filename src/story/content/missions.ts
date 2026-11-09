@@ -158,9 +158,14 @@ export const MISSIONS: MissionDef[] = [
         while (!m.playerFlying('plane2')) yield;
         m.unblip('craft:plane2');
         m.clearRoute();
-        yield* m.goto('airport.strip', 'Take off and get out of range', { r: 600 });
+        yield* m.goto('airport.strip', 'Take off and get out of range', { r: 700 });
+        yield* m.land('plane2', 'airport.strip', 'Land back at Valeria International', 320);
       },
-      function* (m): Gen { yield* m.cutscene('m05_after'); },
+      function* (m): Gen {
+        m.objective('Climb out of the Skylark');
+        while (m.g.piloting?.active) yield;
+        yield* m.cutscene('m05_after');
+      },
     ],
   },
   {

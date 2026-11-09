@@ -114,6 +114,7 @@ export class Cutscenes {
     if (def.hour !== undefined) g.world.setHour(def.hour);
     // take over the game
     if (g.driving && g.driving.mode !== 'foot') g.driving.abort();
+    if (g.piloting && g.piloting.mode !== 'foot') g.piloting.abort();
     this.saved = { weaponDrawn: !!g.weapon?.isDrawn, fov: g.camera.fov };
     if (g.weapon?.isDrawn) g.weapon.toggleHolster();
     if (g.viewmodel) g.viewmodel.group.visible = false;
