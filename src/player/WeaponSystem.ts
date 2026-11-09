@@ -127,6 +127,8 @@ export class WeaponSystem {
   bloom = 0;
   /** Current total spread, degrees (drives the crosshair). */
   spread = 1;
+  /** Special ability (Overwatch) tightens the cone. */
+  spreadScale = 1;
   /** Seconds since the last shot. */
   sinceShot = 9;
   /** Set true for one frame when a shot goes off / dry-fires / lands a hit; read by the HUD and viewmodel. */
@@ -376,7 +378,7 @@ export class WeaponSystem {
 
     // --- one ray per pellet: eye → aim direction with a random point inside the spread cone --------------------
     for (let k = 0; k < def.pellets; k++) {
-      const deg = this.spread * def.spreadMul + (def.pellets > 1 ? def.pelletSpread : 0);
+      const deg = (this.spread * def.spreadMul + (def.pellets > 1 ? def.pelletSpread : 0)) * this.spreadScale;
       const cone = THREE.MathUtils.degToRad(deg) * 0.5;
       const r = Math.sqrt(Math.random()) * cone;
       const a = Math.random() * Math.PI * 2;

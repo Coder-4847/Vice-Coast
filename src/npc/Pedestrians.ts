@@ -77,7 +77,7 @@ export class PedNet {
 
 // ====================================================================================== appearances
 
-export type Role = 'civ' | 'cop' | 'swat' | 'fed' | 'sniper' | 'soldier';
+export type Role = 'civ' | 'cop' | 'swat' | 'fed' | 'sniper' | 'soldier' | 'thug' | 'actor';
 export type Arch = 'cop' | 'swat' | 'fed' | 'soldier' | 'walker' | 'commuter' | 'jogger' | 'worker' | 'tourist' | 'party' | 'drunk' | 'kid' | 'musician' | 'listener' | 'protester' | 'sunbather' | 'stroller' | 'local';
 export type PedState = 'walk' | 'wait' | 'idle' | 'flee' | 'film' | 'down' | 'stand' | 'path' | 'lie';
 
@@ -794,7 +794,7 @@ export class PedRenderer {
         nl++;
       }
       // accessories
-      if (p.role !== 'civ' && p.state !== 'down') {
+      if ((p.role !== 'civ' && p.role !== 'actor' || p.role === 'actor' && p.aim) && p.state !== 'down') {
         const rifle = p.role !== 'cop' || p.look.h > 1.02;
         this.set(this.acc, nacc++, _qb, 0.06 * w, 1.3 * h, (rifle ? 0.5 : 0.36) * h, bx, by, bz, rifle ? 0.07 : 0.05, rifle ? 0.1 : 0.1, rifle ? 0.85 : 0.3, 0x15171a);
       } else if (p.state === 'film' || (p.accessory === 1 && p.state !== 'down' && p.state !== 'flee')) {

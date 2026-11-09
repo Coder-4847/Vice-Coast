@@ -2,6 +2,7 @@ import { Emitter } from '../core/Emitter';
 import { DEFAULT_KIT, DEFAULT_OUTFIT, INSURANCE_FEE, PROPERTY_BY_ID, REPAIR_COST, SELL_RATE, START_BANK, START_CASH } from './catalog';
 import type { OwnedProperty, OwnedVehicle, Profile, SaveData, Stats, VehicleCustom } from './types';
 import { WEAPONS, type WeaponId } from '../player/Weapons';
+import { newStory } from '../story/types';
 
 export const newProfile = (): Profile => ({
   cash: START_CASH,
@@ -22,6 +23,7 @@ export const newProfile = (): Profile => ({
   stats: { spent: 0, earned: 0, playSeconds: 0, carsBought: 0, kills: 0 },
   seq: 2,
   home: null,
+  story: newStory(),
 });
 
 /** Fill any fields a save from an older build is missing. */
@@ -38,6 +40,7 @@ export function migrate(p: Partial<Profile>): Profile {
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,
     messages: p.messages ?? base.messages,
+    story: { ...base.story, ...(p.story ?? {}), meter: { ...base.story.meter, ...(p.story?.meter ?? {}) }, missions: p.story?.missions ?? {}, heists: p.story?.heists ?? {}, flags: p.story?.flags ?? {}, chars: p.story?.chars ?? {}, unlocked: p.story?.unlocked ?? base.story.unlocked },
   };
 }
 
@@ -142,6 +145,13 @@ export class Economy extends Emitter<EconomyEvents> {
     return true;
   }
 
+  /** A protagonist's home: owned for free, no upkeep. */
+  grantProperty(id: string): void {
+    if (this.owns(id)) { this.owns(id)!.free = true; return; }
+    this.p.props.push({ id, boughtDay: this.p.day, overdue: 0, free: true });
+    this.p.home ??= id;
+  }
+
   sellProperty(id: string): number {
     const def = PROPERTY_BY_ID[id];
     if (!def || !this.owns(id)) return 0;
@@ -161,6 +171,7 @@ export class Economy extends Emitter<EconomyEvents> {
     let total = 0;
     for (const o of [...this.p.props]) {
       const def = PROPERTY_BY_ID[o.id]!;
+      if (o.free) { o.overdue = 0; continue; }
       if (this.charge(def.upkeep, `Upkeep: ${def.name}`)) { o.overdue = 0; total += def.upkeep; }
       else {
         o.overdue++;

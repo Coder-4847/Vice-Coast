@@ -37,6 +37,10 @@ export interface SettingsData {
     reduceMotion: boolean;
     textScale: number;
     colorBlind: ColorBlindMode;
+    /** Story dialogue: subtitles on screen, their size, and optional browser text-to-speech. */
+    subtitles: boolean;
+    subtitleScale: number;
+    spokenDialogue: boolean;
   };
 }
 
@@ -68,7 +72,7 @@ export function defaultSettings(): SettingsData {
       touchLayout: {},
     },
     audio: { master: 0.8 },
-    accessibility: { reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off' },
+    accessibility: { reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off', subtitles: true, subtitleScale: 1, spokenDialogue: false },
   };
 }
 
@@ -127,6 +131,7 @@ export class Settings extends Emitter<{ change: SettingsData }> {
     d.graphics.fov = c(d.graphics.fov, 50, 110);
     d.controls.padDeadzone = c(d.controls.padDeadzone, 0.05, 0.4);
     d.accessibility.textScale = c(d.accessibility.textScale, 0.85, 1.4);
+    d.accessibility.subtitleScale = c(d.accessibility.subtitleScale, 0.8, 1.8);
     d.audio.master = c(d.audio.master, 0, 1);
     return d;
   }

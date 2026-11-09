@@ -9,6 +9,7 @@ import { Restricted } from './combat/Restricted';
 import { Commerce } from './economy/Commerce';
 import { mountSlots } from './economy/screens';
 import { Phone } from './ui/Phone';
+import { Story } from './story/Story';
 import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
@@ -73,6 +74,9 @@ export class Game {
   restricted: Restricted | null = null;
   commerce: Commerce | null = null;
   phone: Phone | null = null;
+  story: Story | null = null;
+  /** Suppresses the "Waypoint set" toast for story-driven waypoints. */
+  silentWp = false;
   npcs: Npcs | null = null;
   combat: Combat | null = null;
   wanted: Wanted | null = null;
@@ -152,7 +156,7 @@ export class Game {
     this.map.onWaypoint = (wp) => {
       if (wp) this.world.beacon.set(wp.x, wp.z);
       else this.world.beacon.clear();
-      this.ui.toast(wp ? 'Waypoint set' : 'Waypoint cleared');
+      if (!this.silentWp) this.ui.toast(wp ? 'Waypoint set' : 'Waypoint cleared');
     };
 
     this.loop = new GameLoop({
@@ -241,6 +245,7 @@ export class Game {
       cm.onModalClose = () => this.leaveModal();
       this.phone = new Phone(document.getElementById('ui')!, cm);
       this.phone.onClose = () => this.closePhone();
+      this.story = new Story(this);
     }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
@@ -414,6 +419,7 @@ export class Game {
   private fixedUpdate(dt: number): void {
     if ((this.state !== 'playing' && this.state !== 'phone') || !this.physics || !this.player) return;
     Vehicle.wetness = this.world.weather.wetness;
+    this.story?.fixedUpdate(dt);
     this.driving?.fixedUpdate(dt);
     this.piloting?.fixedUpdate();
     this.skydive?.fixedUpdate(dt);
@@ -569,7 +575,8 @@ export class Game {
       this.effects.update(dt);
     }
     this.commerce?.update(dt);
-    if (this.state === 'playing' && this.input.pressed('phone')) this.openPhone();
+    this.story?.update(dt);
+    if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
     piloting?.update(dt);
@@ -588,6 +595,7 @@ export class Game {
       this.camera.quaternion.slerpQuaternions(this.introFromQuat, this.introTmpQuat, k);
       if (this.intro >= 1) this.input.gameplayEnabled = true;
     }
+    this.story?.applyCamera(this.camera, dt);
     this.audio.setListener(this.camera);
     if (weapon) {
       const v = driving?.mode === 'driving' || driving?.mode === 'exiting' ? driving.vehicle : null;
@@ -606,7 +614,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: this.commerce?.prompt ? this.commerce.prompt : driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
+        enter: this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }
@@ -882,6 +890,7 @@ export class Game {
       }
       if (e.code !== 'Escape' || e.repeat) return;
       if (this.input.capturing) return;
+      if (this.story?.cutscenes.active || this.story?.protagonists.wheelOpen) return;
       if (this.state === 'playing') this.pause();
       else if (this.state === 'paused') this.resume();
       else if (this.state === 'map') this.closeMap();

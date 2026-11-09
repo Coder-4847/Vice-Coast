@@ -8,6 +8,10 @@ export class Vitals {
   health = 100;
   armour = 0;
   dead = false;
+  /** Story cutscenes and ability moments: no damage lands. */
+  invulnerable = false;
+  /** Rampage and friends scale all incoming damage. */
+  damageScale = 1;
   /** Seconds since the last hit. */
   sinceHit = 99;
   /** 0–1 screen flash after taking damage (HUD vignette). */
@@ -20,7 +24,8 @@ export class Vitals {
   onHurt: ((amount: number) => void) | null = null;
 
   hurt(amount: number, fromX?: number, fromZ?: number, px = 0, pz = 0): void {
-    if (this.dead || amount <= 0) return;
+    if (this.dead || this.invulnerable || amount <= 0) return;
+    amount *= this.damageScale;
     const soak = Math.min(this.armour, amount * 0.7);
     this.armour -= soak;
     const hp = amount - soak;

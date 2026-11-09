@@ -1,4 +1,5 @@
 import type { WeaponId } from '../player/Weapons';
+import type { StoryState } from '../story/types';
 
 export type Finish = 'gloss' | 'matte' | 'metallic' | 'pearl' | 'chrome';
 export type GloveStyle = 'none' | 'leather' | 'tactical' | 'white';
@@ -56,6 +57,8 @@ export interface OwnedProperty {
   id: string;
   boughtDay: number;
   overdue: number;
+  /** A protagonist's home: no upkeep, never repossessed. */
+  free?: boolean;
 }
 
 export interface WeaponKit {
@@ -97,6 +100,8 @@ export interface Profile {
   seq: number;
   /** The property last used as a spawn point after Wasted / Busted. */
   home: string | null;
+  /** Missions, heists and the three protagonists. */
+  story: StoryState;
 }
 
 export interface SaveData {

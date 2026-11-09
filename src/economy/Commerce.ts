@@ -184,6 +184,8 @@ export class Commerce {
 
   async save(slot = this.slot ?? 1, quiet = false): Promise<boolean> {
     if (this.saving || !this.game.player || !this.game.combat) return false;
+    if (this.game.story?.mission && !quiet) { this.game.ui.toast('You can\'t save in the middle of a mission'); return false; }
+    if (this.game.story?.mission) return false;
     this.saving = true;
     try {
       this.sync();
@@ -218,6 +220,7 @@ export class Commerce {
     }
     this.sinceSave = 0;
     this.lastHour = g.world.tod.hour;
+    g.story?.onBegin(!data);
   }
 
   /** Make the world match the profile: outfit, weapon kits and ammo, owned cars, property beams and craft. */

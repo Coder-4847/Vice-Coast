@@ -124,6 +124,8 @@ export class Vehicle {
   /** Visual-only: door open amount (0–1) and driver present. */
   doorOpen = 0;
   occupied = false;
+  /** Slipstream: extra counter-steer so slides stay controllable (0 normally). */
+  abilityGrip = 0;
   health = 1000;
   /** Burnt-out wreck (cannot be driven or entered). */
   exploded = false;
@@ -337,8 +339,8 @@ export class Vehicle {
     const maxDeg = sp.maxDeg + (sp.highSpeedDeg - sp.maxDeg) * clamp(vAbs / 45, 0, 1) ** 0.7;
     let target = inp.steer * THREE.MathUtils.degToRad(maxDeg);
     // counter-steer assist: when the tail slides out, point the wheels where the car is actually going
-    if (spec.assist.counterSteer > 0 && vAbs > 5 && !inp.handbrake) {
-      const assist = clamp(this.slipAngle * spec.assist.counterSteer * (fs > 0 ? 1 : -1), -0.3, 0.3);
+    if ((spec.assist.counterSteer > 0 || this.abilityGrip > 0) && vAbs > 5 && !(inp.handbrake && this.abilityGrip === 0)) {
+      const assist = clamp(this.slipAngle * (spec.assist.counterSteer + this.abilityGrip * 1.4) * (fs > 0 ? 1 : -1), -0.45, 0.45);
       target += assist * (1 - 0.6 * Math.abs(inp.steer));
     } else if (inp.handbrake && vAbs > 6) {
       // during a handbrake slide give a little extra lock so the drift can be steered

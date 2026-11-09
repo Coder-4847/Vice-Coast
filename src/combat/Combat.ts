@@ -52,6 +52,10 @@ export class Combat {
   /** Called when the respawn happens (clear wanted, police units, etc.). */
   onRespawn: ((kind: FlowKind) => void) | null = null;
   stats = { explosions: 0, burning: 0 };
+  /** Per-protagonist passives: fall damage, blast damage dealt by the player, damage to aircraft. */
+  fallScale = 1;
+  blastScale = 1;
+  craftScale = 1;
   /** Boats, aircraft and armour (set once the craft layer exists). */
   crafts: CraftManager | null = null;
   piloting: Piloting | null = null;
@@ -65,7 +69,7 @@ export class Combat {
     this.vitals.onDeath = () => this.begin('wasted');
     d.player.onLand = (speed) => {
       // landing from more than ~4 m hurts
-      if (speed > 13) this.vitals.hurt(Math.min(90, (speed - 13) * 9));
+      if (speed > 13) this.vitals.hurt(Math.min(90, (speed - 13) * 9) * this.fallScale);
     };
   }
 
@@ -76,7 +80,7 @@ export class Combat {
     const pc = this.piloting?.active ? this.piloting.craft : null;
     if (pc) {
       // the airframe / hull soaks most of it, but a hit on a pilot still hurts
-      pc.hurt(amount * (pc.spec.kind === 'ground' ? 1.2 : 3));
+      pc.hurt(amount * (pc.spec.kind === 'ground' ? 1.2 : 3) * this.craftScale);
       amount *= pc.spec.kind === 'ground' ? 0.12 : 0.3;
     }
     const inCar = driving.mode === 'driving' && driving.vehicle;
@@ -95,6 +99,7 @@ export class Combat {
    */
   boom(x: number, y: number, z: number, radius: number, damage: number, byPlayer = false): void {
     const { effects, audio, player, vehicles, npcs, driving } = this.d;
+    if (byPlayer && this.blastScale !== 1) { damage *= this.blastScale; radius *= 1 + (this.blastScale - 1) * 0.35; }
     this.stats.explosions++;
     const size = Math.min(2.6, radius / 8);
     _v.set(x, y, z);

@@ -105,8 +105,8 @@ export function propertyPage(c: Commerce, def: PropertyDef, fromCar = false): Pa
           ? row({ label: 'Garage', sub: `${e.stored(def.id).length} / ${def.slots} stored`, onClick: () => host.push(garagePage(c, def, fromCar)) })
           : info(def.bays === 'plane' ? 'Your Skylark and Sparrow are parked on the apron outside.' : 'Your Marlin speedboat is moored near the boat house.'),
         row({ label: 'Make this my home', sub: 'You wake up here after being Wasted or Busted', disabled: e.p.home === def.id, onClick: () => { e.p.home = def.id; host.refresh(); } }),
-        section('Ownership'),
-        row({ label: 'Sell property', sub: `Get ${money(Math.floor(def.price * 0.7))} back`, onClick: () => host.push(confirmPage('Sell property', `Sell ${def.name} for ${money(Math.floor(def.price * 0.7))}? Cars parked there will be left outside.`, 'Sell it', () => { e.sellProperty(def.id); c.refreshMarkers(); host.close(); })) }),
+        ...(e.owns(def.id)?.free ? [info('This is one of your characters\' homes: it is never sold and costs nothing to keep.')] : [section('Ownership'),
+        row({ label: 'Sell property', sub: `Get ${money(Math.floor(def.price * 0.7))} back`, onClick: () => host.push(confirmPage('Sell property', `Sell ${def.name} for ${money(Math.floor(def.price * 0.7))}? Cars parked there will be left outside.`, 'Sell it', () => { e.sellProperty(def.id); c.refreshMarkers(); host.close(); })) })]),
       );
     },
   };

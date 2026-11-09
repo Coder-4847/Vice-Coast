@@ -115,11 +115,11 @@ export class Police {
     const hooks = d.npcs.peds.hooks!;
     const prevHooks = { ...hooks };
     hooks.hit = (p, byPlayer) => {
-      if (!byPlayer) return;
+      if (!byPlayer || p.role === 'thug' || p.role === 'actor') return;
       this.crime(p.role === 'civ' ? 7 : 10, p.x, p.z, { cop: p.role !== 'civ' });
     };
     hooks.killed = (p, byPlayer) => {
-      if (!byPlayer) return;
+      if (!byPlayer || p.role === 'thug' || p.role === 'actor') return;
       this.crime(p.role === 'civ' ? 28 : 85, p.x, p.z, { cop: p.role !== 'civ' });
     };
     void prevHooks;

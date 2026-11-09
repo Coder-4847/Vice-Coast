@@ -431,6 +431,10 @@ export class SettingsMenu {
       this.group('Motion & text'),
       this.toggle('Reduce motion', () => this.settings.data.accessibility.reduceMotion, (v) => this.update((d) => (d.accessibility.reduceMotion = v)), 'Removes UI animation. Camera effects follow this setting as they are added.'),
       this.slider('Text size', 0.85, 1.4, 0.05, () => this.settings.data.accessibility.textScale, (v) => this.update((d) => (d.accessibility.textScale = v)), (v) => `${Math.round(v * 100)}%`),
+      this.group('Story dialogue'),
+      this.toggle('Subtitles', () => this.settings.data.accessibility.subtitles, (v) => this.update((d) => (d.accessibility.subtitles = v)), 'Shows who is speaking and what they say in cutscenes and while playing.'),
+      this.slider('Subtitle size', 0.8, 1.8, 0.1, () => this.settings.data.accessibility.subtitleScale, (v) => this.update((d) => (d.accessibility.subtitleScale = v)), (v) => `${Math.round(v * 100)}%`),
+      this.toggle('Spoken dialogue', () => this.settings.data.accessibility.spokenDialogue, (v) => this.update((d) => (d.accessibility.spokenDialogue = v)), 'Reads lines aloud with your browser\'s text-to-speech, each character in a different pitch and speed. Off by default.'),
       this.group('Colour'),
       this.segmented('Colour-blind accent', cb, () => this.settings.data.accessibility.colorBlind, (v) => this.update((d) => (d.accessibility.colorBlind = v)), 'Swaps the UI accent for a colour-safe one. World colour filters arrive with post-processing.'),
     );
