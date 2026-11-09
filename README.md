@@ -105,6 +105,28 @@ Walk to a car in the lot (east of the range, ~170 m along the beach) and press t
 
 Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
+### Money, properties, shops and the phone
+
+You start with $5,000 in cash and $2,500 in the bank. Coloured beams mark things you can use: **gold** = a property for sale
+(**green** once it is yours), **blue** = a shop, **orange** = a vehicle shop, **green pillars** = ATMs. Walk up and press `E`.
+
+| Where | What it does |
+| --- | --- |
+| ATMs (beach, downtown, mall, harbor, Costa Merida, Pinecrest, airport, …) | Deposit and withdraw. Cash is lost when you are Wasted (10%) or Busted (25%); the bank is safe and pays property upkeep |
+| Properties (9, from a $6,500 desert trailer to the $2.4 M Isla Rojo estate) | Buy; then **save**, **sleep** until 06:00 (heals, starts a new day), **wardrobe**, **garage**, set as home (respawn there), sell for 70%. Upkeep is billed daily; three unpaid days and it is repossessed |
+| Valeria Motors (showroom) | Browse the six cars in an orbit view, pick a paint, **buy** (delivered to a garage with space, or parked outside) or **test drive** for two minutes |
+| Redline Customs | Drive a car in and press `E`: register it to you (25% of its price) or sell it to the back room (30%). Owned cars get paint (18 colours, 5 finishes incl. pearlescent and chrome), trim, rims, glass tint, spoilers, underglow, plates, engine / brakes / suspension / turbo, run-flat tyres and bulletproof plating, previewed live |
+| Threadline, Costa Rags, The Clip Joint, Pinecrest Barbers | Jackets, gloves, sunglasses, hair style and colour (the figure preview updates as you choose; you see sleeves and gloves in first person and the whole figure in a car) |
+| Brass & Barrel, Cinder Surplus | Weapons, ammo, extended magazines, suppressors, optics, finishes, medkits and armour |
+| Burger and taco joints | Food heals |
+| **Phone** (`T` · D-pad up · the Phone button on touch) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), **online car dealer**, realty listings, insurance claims for written-off cars, and a **camera** that saves a PNG |
+
+Money comes from wallets dropped by people you take down, cars sold at the back room, and property sales; steadier income arrives
+with missions and heists in later phases.
+
+**Saving:** three slots in browser storage, chosen on the title screen. The game autosaves every four minutes (when nobody is after
+you) and whenever you buy, sleep or leave a shop. **Menu → Saves** lets you save, load, delete, **export** a slot to a file and **import** one.
+
 ### Boats, aircraft and armour
 
 Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
@@ -141,6 +163,7 @@ src/
   npc/     signal clock, lane network + traffic AI, pedestrians (sidewalk graph, archetypes, reactions), ambient events
   physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
+  economy/ money, save slots, properties, shops, garage and customisation screens, interaction points
   craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
   audio/   procedural Web Audio engine (no sample files)
@@ -162,8 +185,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 6. **NPCs and traffic** ✅ — traffic AI and signals, crowds, reactions, ambient events
 7. **Combat and police** ✅ — weapons, health and armour, 1–6 star wanted levels
 8. **Remaining land biomes** ✅ — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
-9. **Aircraft, boats and military vehicles** ✅ (this build) — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
-10. Economy, properties, garage, phone
+9. **Aircraft, boats and military vehicles** ✅ — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
+10. **Economy, properties, garage, clothing, shops, phone** ✅ (this build) — saving, 9 properties, car dealer and tuning shop, clothes and weapons shops, ATMs and a phone (stock market, tattoos, chop-shop minigame, business fronts, nitro, hidden compartments, aircraft / boat customisation and the Snapstream feed are deferred)
 11. Mission framework and story
 12. Robberies and crew
 13. Side activities, radio, collectibles

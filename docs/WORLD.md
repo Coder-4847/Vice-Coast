@@ -77,3 +77,13 @@ meshes (two draw calls per craft) plus animated rotors, propellers, gear and tur
 | Fort Halloran (fence, barracks, HQ, motor pool, hangar, radar) | `towns/fort.ts`, `GEO.fort`; restricted-area logic in `combat/Restricted.ts` |
 
 Runways are road paths of kind `runway` (`lanes: 1` = maintained: clean markings and threshold bars).
+
+
+## Economy and interaction points (Phase 10)
+
+`src/economy/`: `catalog.ts` (data: properties, shops, ATMs, clothes, weapon parts, paints, performance costs), `Economy.ts` (cash, bank,
+properties, vehicles, daily upkeep), `SaveStore.ts` (IndexedDB slots with a localStorage fallback, export / import), `Points.ts` (finds the
+nearest open ground for every entrance by generating the surrounding scenery chunks and testing clearance; draws the beams),
+`ShopFronts.ts` (the little buildings behind the entrances), `screens.ts` (every shop / bank / garage / tuning screen as a `Page`),
+`Commerce.ts` (the glue: HUD money, autosave, new days, test drives, deliveries, taxi, photo). `ui/Modal.ts` is the shared page-stack shell;
+`ui/Phone.ts` the phone. Add a shop by adding it to `SHOPS` and a screen in `screens.ts`.

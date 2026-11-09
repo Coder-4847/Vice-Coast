@@ -534,6 +534,17 @@ export function openTuning(c: Commerce, _pt: Point): void {
             start(o);
           },
         }),
+        row({
+          label: 'Sell it to the back room', sub: 'No questions asked: a third of what it is worth, in cash', right: money(Math.round(v.spec.price * 0.3)),
+          onClick: () => {
+            const n = Math.round(v.spec.price * 0.3);
+            g.driving?.abort();
+            vm.remove(v);
+            e.earn(n, 'Chop shop');
+            host.toast(`Sold for ${money(n)}`);
+            host.close();
+          },
+        }),
         row({ label: 'Not now', onClick: () => host.close() }),
       );
     },

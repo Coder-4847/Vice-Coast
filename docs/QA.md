@@ -240,3 +240,29 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] **Valeria International**: runway with threshold bars and centre line, taxiway, apron, terminal, control tower, hangars, parked jet and helicopters. **Isla Rojo**: villa, dock with yacht, airstrip, helipad, palms. **Fort Halloran**: fence, gate house, barracks, HQ with flag, hangar and helipads, fuel depot, radar dome.
 - [ ] Crossing Fort Halloran's boundary shows `RESTRICTED AREA — LEAVE NOW` with a countdown; at zero you get 4★. Running into the compound = 5★, climbing into the tanks / APCs = 6★. Leaving and hiding cools the level down as usual.
 - [ ] The map (`M`) shows the airport, the island, marinas, helipads and the fort (a red zone); the minimap names the region.
+
+
+## Phase 10 — Money, properties, shops, garage, phone
+
+### Saving
+- [ ] Title screen: press any key → three slot cards. **New game** starts fresh, **Continue** loads; Import takes a `.json` save file. (`?debug` skips this and starts an unsaved game; add `&slots` to see the picker.)
+- [ ] Menu → **Saves**: Save here / Load / Delete / Export / Import per slot. A saved game restores position, time, health, cash, bank, properties, owned cars (out in the world or stored), outfit, weapons, ammo and attachments.
+- [ ] Autosave toasts appear about every four minutes, after buying, sleeping and leaving shops, never while wanted.
+
+### Money and ATMs
+- [ ] Cash shows top-left with a count-up and a +/− delta; ATMs (green pillars) deposit and withdraw; being Wasted costs 10% of your cash, Busted 25%; killing someone drops a wallet.
+
+### Properties
+- [ ] Gold beams mark properties for sale, with a building behind each (inside Port Valeria a sign post). Buying turns the beam green and lists it on the map in green.
+- [ ] Owned: Save game, Sleep until morning (new day, upkeep is billed, health restored), Wardrobe, Garage, Make home (you respawn there after Wasted / Busted), Sell (70%).
+- [ ] The Hangar comes with a Skylark and a Sparrow on the apron, the Boat House with a Marlin.
+
+### Garage and cars
+- [ ] Showroom: ‹ › browse, paint chips, Buy (delivered to a garage or parked outside), Test drive (two minutes, `E` at the showroom ends it).
+- [ ] Redline Customs: drive in, stop, `E`. Register or sell the car; then Paint / Wheels / Glass / Body / Plates / Performance / Protection with live preview and a running total; Pay applies it (performance parts rebuild the car outside the bay; the car goes faster).
+- [ ] A property garage stores owned cars (`E` next to the property while driving), takes them out, repairs on storing and sells them; a written-off car shows "Written off" and can be claimed (phone → Insurance, or at the garage).
+
+### Shops and phone
+- [ ] Clothing / barber: the figure preview updates; sleeves and gloves change in first person; the driver in a car matches. Wardrobe at a property shows only what you own.
+- [ ] Weapon shop: buy weapons, ammo, extended magazine (bigger magazine), suppressor (quiet, nobody reacts), optic (more zoom), finish (changes the gun colour), medkit / armour.
+- [ ] Phone: opens over the game and holster the weapon; Messages, Contacts (calls), Maps, Bank, Cab (set a waypoint first), Garage, Motors, Realty (sets a waypoint), Insure, Camera (downloads a PNG).

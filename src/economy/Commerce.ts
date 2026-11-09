@@ -70,7 +70,11 @@ export class Commerce {
   }
 
   /** Called once the world, vehicles, combat and NPCs exist. */
+  /** How long placing the shops and properties took at start-up (ms). */
+  initMs = 0;
+
   init(): void {
+    const t0 = performance.now();
     const g = this.game;
     const plan = g.world.city.plan;
     this.points = new Points({
@@ -109,6 +113,7 @@ export class Commerce {
     }
     this.eco.reset();
     this.applyProfile(false);
+    this.initMs = performance.now() - t0;
   }
 
   // ------------------------------------------------------------------------------------------- HUD

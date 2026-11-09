@@ -196,3 +196,10 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
   covers the island (6300 × 7800 m at 8 m per pixel).
 - Headless SwiftShader captures of large viewports (≥ 960 × 540) used for QA can run out of memory when thousands of updates are
   stepped in one task; the game itself is stable in a normal frame loop (checked for a minute outside the city).
+
+## Phase 10 notes
+
+- Entrance placement runs once at start-up (~50 ms) and per frame costs a few microseconds (30 points, two instanced draws for the beams
+  and rings). Shop fronts add one more streamed chunk source.
+- Menus are plain DOM; the world is paused behind them and the showroom / tuning views render a single extra car.
+- Saves are a few kilobytes of JSON per slot.
