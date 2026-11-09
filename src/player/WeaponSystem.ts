@@ -114,6 +114,9 @@ export class WeaponSystem {
   reserve = 60;
   /** 0 hip … 1 fully aimed. */
   ads = 0;
+  /** Attachments bought in the weapon shop. */
+  readonly suppressed: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false };
+  readonly scoped: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false };
   /** Trigger pull 0–1 (visual). */
   trigger = 0;
   /** Slide position 0 forward … 1 back (visual, includes lock-back on empty). */
@@ -368,7 +371,8 @@ export class WeaponSystem {
     _right.set(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
     _up.crossVectors(_right, _aim).normalize();
     _origin.copy(p.eyePosition);
-    this.npc?.alarm(_origin.x, _origin.z);
+    const quiet = this.suppressed[def.id];
+    if (!quiet) this.npc?.alarm(_origin.x, _origin.z);
 
     // --- one ray per pellet: eye → aim direction with a random point inside the spread cone --------------------
     for (let k = 0; k < def.pellets; k++) {
@@ -407,7 +411,7 @@ export class WeaponSystem {
     this.effects.casing(this.ejectWorld, _right, _up.set(0, 1, 0), _dir.set(-Math.sin(p.yaw), 0, -Math.cos(p.yaw)).negate());
 
     // --- sound, haptics, recoil ----------------------------------------------------------------
-    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, def.sound);
+    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, def.sound, quiet ? 0.22 : 1);
     this.input.rumble(Math.min(1, 0.55 * def.kick), 0.35, 70);
     // Recoil pattern: a reliable climb with a gentle sideways drift that flips now and then.
     const n = Math.min(this.shotsInBurst, 7);

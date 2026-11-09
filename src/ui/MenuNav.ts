@@ -86,7 +86,8 @@ export class MenuNav {
 
   focusFirst(): void {
     const rows = this.rows();
-    const sel = rows.length ? this.focusables(rows[Math.min(1, rows.length - 1)]!) : [];
+    if (!rows.length) return;
+    const sel = this.focusables(rows[Math.min(1, rows.length - 1)]!);
     this.focusEl(sel[0] ?? this.focusables(rows[0]!)[0]);
   }
 

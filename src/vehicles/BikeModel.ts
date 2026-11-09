@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ArmRig, HandRig, POSES } from '../player/HandRig';
 import { buildWheel } from './CarModel';
+import type { Outfit, VehicleCustom } from '../economy/types';
 import type { Vehicle } from './Vehicle';
 
 /** Procedural sport bike with a rider whose arms use the same IK rig as the first-person hands. */
@@ -8,6 +9,9 @@ export class BikeModel {
   readonly group = new THREE.Group();
   readonly materials: THREE.Material[] = [];
   readonly bodyMat: THREE.MeshPhysicalMaterial;
+  private jacketMat!: THREE.MeshStandardMaterial;
+  private cuffMat!: THREE.MeshStandardMaterial;
+  private readonly rimMats: THREE.MeshStandardMaterial[] = [];
   private readonly front = new THREE.Group();
   private readonly frontWheel = new THREE.Group();
   private readonly rearWheel = new THREE.Group();
@@ -102,6 +106,7 @@ export class BikeModel {
     // --- wheels ------------------------------------------------------------------------------------------------------------
     const fw = buildWheel(spec.wheelRadius, spec.wheelWidth, '#bfc3c9', 1);
     const rw = buildWheel(spec.wheelRadius, spec.wheelWidth + 0.05, '#bfc3c9', 1);
+    this.rimMats.push(fw.userData.rimMat as THREE.MeshStandardMaterial, rw.userData.rimMat as THREE.MeshStandardMaterial);
     this.frontSpin.add(fw);
     this.frontWheel.add(this.frontSpin);
     this.rearSpin.add(rw);
@@ -115,6 +120,8 @@ export class BikeModel {
     const cuff = new THREE.MeshStandardMaterial({ color: 0x25272b, roughness: 0.95 });
     const helmet = new THREE.MeshPhysicalMaterial({ color: 0xe9e9ea, roughness: 0.25, clearcoat: 1 });
     const visor = new THREE.MeshPhysicalMaterial({ color: 0x101820, roughness: 0.05, clearcoat: 1 });
+    this.jacketMat = jacket;
+    this.cuffMat = cuff;
     this.materials.push(jacket, accent, cuff, helmet, visor);
     this.armR = new ArmRig(jacket, skin, cuff);
     this.armL = new ArmRig(jacket, skin, cuff);
@@ -155,6 +162,26 @@ export class BikeModel {
     });
     cone.castShadow = false;
     cone.receiveShadow = false;
+  }
+
+  applyOutfit(o: Outfit): void {
+    this.jacketMat.color.set(o.top);
+    this.cuffMat.color.set(o.gloves === 'none' ? o.cuff : o.gloves === 'leather' ? '#2a1c14' : o.gloves === 'tactical' ? '#1d2118' : '#ececec');
+    (this.handR.material as THREE.MeshPhysicalMaterial).color.set(o.skin);
+  }
+
+  applyCustom(c: VehicleCustom): void {
+    const m = this.bodyMat;
+    m.color.set(c.color);
+    switch (c.finish) {
+      case 'matte': m.metalness = 0.1; m.roughness = 0.82; m.clearcoat = 0; m.iridescence = 0; break;
+      case 'metallic': m.metalness = 0.85; m.roughness = 0.22; m.clearcoat = 1; m.iridescence = 0; break;
+      case 'pearl': m.metalness = 0.5; m.roughness = 0.2; m.clearcoat = 1; m.iridescence = 1; m.iridescenceIOR = 1.6; m.iridescenceThicknessRange = [200, 520]; break;
+      case 'chrome': m.color.set('#dfe3e8'); m.metalness = 1; m.roughness = 0.04; m.clearcoat = 0; m.iridescence = 0; break;
+      default: m.metalness = this.vehicle.spec.body.metallic; m.roughness = this.vehicle.spec.body.roughness; m.clearcoat = 1; m.iridescence = 0;
+    }
+    m.needsUpdate = true;
+    for (const r of this.rimMats) r.color.set(c.rim);
   }
 
   setLights(headlights: boolean, braking: boolean, reversing: boolean, night: number): void {

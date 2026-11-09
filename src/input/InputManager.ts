@@ -196,6 +196,10 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   pressed(action: Action): boolean {
     return this.cur[action] && !this.prev[action];
   }
+  /** Mark this frame's press as handled so nothing else reacts to it (a prompt that takes the interact key). */
+  swallow(action: Action): void {
+    this.prev[action] = this.cur[action];
+  }
   released(action: Action): boolean {
     return !this.cur[action] && this.prev[action];
   }

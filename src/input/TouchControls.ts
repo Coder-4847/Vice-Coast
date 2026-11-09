@@ -26,6 +26,7 @@ const BUTTONS: ButtonDef[] = [
   { id: 'sprint', action: 'sprint', label: 'Sprint', x: 0.3, y: 0.8, size: 62, latch: true },
   { id: 'weapons', action: 'weaponWheel', label: 'Arms', x: 0.4, y: 0.1, size: 54 },
   { id: 'map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 54 },
+  { id: 'phone', action: 'phone', label: 'Phone', x: 0.3, y: 0.1, size: 54 },
   { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54, mode: 'both' },
   // ---- driving layout: steer with the left stick, pedals under the right thumb
   { id: 'v-gas', action: 'fire', label: 'Gas', x: 0.9, y: 0.68, size: 96, mode: 'vehicle' },
@@ -37,6 +38,7 @@ const BUTTONS: ButtonDef[] = [
   { id: 'v-horn', action: 'horn', label: 'Horn', x: 0.1, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-lights', action: 'headlights', label: 'Lights', x: 0.4, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-phone', action: 'phone', label: 'Phone', x: 0.7, y: 0.1, size: 52, mode: 'vehicle' },
 ];
 
 const STICK_RADIUS = 58;

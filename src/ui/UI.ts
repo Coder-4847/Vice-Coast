@@ -41,6 +41,7 @@ export interface UIHooks {
   setGyro(on: boolean): Promise<boolean>;
   autoPreset(): PresetName;
   env: EnvControls;
+  mountSaves?(host: HTMLElement): () => void;
 }
 
 
@@ -118,7 +119,7 @@ export class UI {
       'div', 'screen title is-hidden',
       h('div', 'center', h('h1', 'wordmark', 'Vice Coast'), h('div', 'kicker', 'San Verano')),
       this.press,
-      h('div', 'build', 'Phase 5 · Port Valeria'),
+      h('div', 'build', 'Phase 10 · Money and property'),
     );
 
     // HUD

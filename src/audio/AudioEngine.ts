@@ -218,14 +218,15 @@ export class AudioEngine {
   // -------------------------------------------------------------------------- sounds
 
   /** 9 mm pistol shot. `openness` 0 (canyon / indoors) … 1 (open field) picks the reverb tail. */
-  gunshot(openness: number, pos?: Node3, kind: 'pistol' | 'smg' | 'shotgun' | 'rifle' = 'pistol'): void {
+  gunshot(openness: number, pos?: Node3, kind: 'pistol' | 'smg' | 'shotgun' | 'rifle' = 'pistol', level = 1): void {
     if (!this.ready()) return;
     const t = this.now();
     const o = this.out(pos, 20);
     this.wetOpen.gain.setTargetAtTime(0.5 * openness, t, 0.01);
     this.wetCanyon.gain.setTargetAtTime(0.65 * (1 - openness) + 0.08, t, 0.01);
     // per-weapon voicing: [crack freq, body start, thump freq, thump decay, loudness]
-    const v = { pistol: [1800, 2600, 190, 0.16, 1], smg: [2400, 3200, 240, 0.1, 0.8], shotgun: [900, 1800, 110, 0.32, 1.25], rifle: [2200, 3000, 150, 0.2, 1.1] }[kind];
+    const v = { pistol: [1800, 2600, 190, 0.16, 1], smg: [2400, 3200, 240, 0.1, 0.8], shotgun: [900, 1800, 110, 0.32, 1.25], rifle: [2200, 3000, 150, 0.2, 1.1] }[kind].slice();
+    v[4] = v[4]! * level;
     this.burst(o, t, { type: 'highpass', freq: v[0]!, q: 0.7, peak: 0.9 * v[4]!, decay: 0.07, send: 0.55 });          // crack
     this.burst(o, t, { type: 'bandpass', freq: v[1]!, sweepTo: 500, q: 0.6, peak: 1.0 * v[4]!, attack: 0.001, decay: kind === 'shotgun' ? 0.3 : 0.16, send: 0.5 }); // body
     this.tone(o, t, { freq: v[2]!, to: 48, peak: 1.0 * v[4]!, decay: v[3]!, send: 0.4 });                              // thump

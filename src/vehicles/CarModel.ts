@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Outfit, VehicleCustom } from '../economy/types';
 import { ArmRig, HandRig, POSES } from '../player/HandRig';
 import type { BodyStyle, VehicleSpec } from './specs';
 import type { Vehicle } from './Vehicle';
@@ -81,7 +82,7 @@ export function extrudeProfile(points: P2[], L: number, width: number, taper: [n
   return g;
 }
 
-const plateTex = (): THREE.CanvasTexture => {
+export const plateTex = (text?: string): THREE.CanvasTexture => {
   const c = document.createElement('canvas');
   c.width = 128; c.height = 64;
   const g = c.getContext('2d')!;
@@ -89,7 +90,7 @@ const plateTex = (): THREE.CanvasTexture => {
   g.strokeStyle = '#223'; g.lineWidth = 3; g.strokeRect(3, 3, 122, 58);
   g.fillStyle = '#c33'; g.font = 'bold 9px sans-serif'; g.fillText('SAN VERANO', 28, 15);
   g.fillStyle = '#223'; g.font = 'bold 30px sans-serif';
-  g.fillText(`VC${Math.floor(1000 + Math.random() * 8999)}`.slice(0, 6), 12, 48);
+  g.fillText((text ?? `VC${Math.floor(1000 + Math.random() * 8999)}`).slice(0, 7), 12, 48);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -150,6 +151,7 @@ export function buildWheel(radius: number, width: number, rimColor = '#c9ccd2', 
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(rimR * 0.85, rimR * 0.85, 0.012, 24).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x707479, roughness: 0.5, metalness: 0.9 }));
   disc.position.x = -side * hw * 0.2;
   g.add(disc);
+  g.userData.rimMat = rimMat;
   return g;
 }
 
@@ -179,6 +181,19 @@ export class CarModel {
   private readonly _b = new THREE.Vector3();
   private readonly _m = new THREE.Matrix4();
   readonly bodyMat: THREE.MeshPhysicalMaterial;
+  private glassMat!: THREE.MeshPhysicalMaterial;
+  private trimMat!: THREE.MeshStandardMaterial;
+  private plateMat!: THREE.MeshStandardMaterial;
+  private jacketMat!: THREE.MeshStandardMaterial;
+  private cuffMat!: THREE.MeshStandardMaterial;
+  private hairMat!: THREE.MeshStandardMaterial;
+  private hairMesh!: THREE.Mesh;
+  private glassesMesh!: THREE.Mesh;
+  private readonly rimMats: THREE.MeshStandardMaterial[] = [];
+  private spoiler: THREE.Group | null = null;
+  private neon: THREE.Mesh | null = null;
+  private neonMat: THREE.MeshBasicMaterial | null = null;
+  private baseGlassOpacity = 0.82;
 
   constructor(readonly vehicle: Vehicle) {
     const spec = vehicle.spec;
@@ -192,7 +207,9 @@ export class CarModel {
     // --- materials -----------------------------------------------------------------------------------------
     this.bodyMat = new THREE.MeshPhysicalMaterial({ color: st.color, metalness: st.metallic, roughness: st.roughness, clearcoat: 1, clearcoatRoughness: 0.07 });
     const trim = new THREE.MeshStandardMaterial({ color: st.accent, roughness: 0.55, metalness: 0.2 });
+    this.trimMat = trim;
     const glass = new THREE.MeshPhysicalMaterial({ color: st.glassTint, roughness: 0.04, metalness: 0.1, clearcoat: 1, transparent: true, opacity: 0.82 });
+    this.glassMat = glass;
     const dark = new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.8, metalness: 0.2 });
     const chrome = new THREE.MeshStandardMaterial({ color: 0xcfd2d6, roughness: 0.15, metalness: 1 });
     this.headlightMat = new THREE.MeshStandardMaterial({ color: 0xdfe7ee, emissive: new THREE.Color(1, 0.95, 0.8), emissiveIntensity: 0.15, roughness: 0.1, metalness: 0.3 });
@@ -271,6 +288,7 @@ export class CarModel {
     this.shell.add(bumperF, bumperR);
     // plates
     const plate = new THREE.MeshStandardMaterial({ map: plateTex(), roughness: 0.5 });
+    this.plateMat = plate;
     plate.fog = false;
     this.materials.push(plate);
     const pf = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.17), plate);
@@ -362,6 +380,8 @@ export class CarModel {
     const jacket = new THREE.MeshStandardMaterial({ color: 0x3d4248, roughness: 0.9 });
     const skin = this.handR.material;
     const cuff = new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.95 });
+    this.jacketMat = jacket;
+    this.cuffMat = cuff;
     this.materials.push(jacket, cuff);
     this.armR = new ArmRig(jacket, skin, cuff);
     this.armL = new ArmRig(jacket, skin, cuff);
@@ -371,9 +391,16 @@ export class CarModel {
     torso.scale.set(1.0, 1, 0.75);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 14), skin);
     head.position.set(0, 0.66, -0.02);
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0x241a14, roughness: 0.9 }));
+    this.hairMat = new THREE.MeshStandardMaterial({ color: 0x241a14, roughness: 0.9 });
+    this.materials.push(this.hairMat);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), this.hairMat);
     hair.position.copy(head.position);
     hair.position.y += 0.012;
+    this.hairMesh = hair;
+    this.glassesMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.04, 0.03), new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: 0.2, metalness: 0.4 }));
+    this.glassesMesh.position.set(head.position.x, head.position.y + 0.012, head.position.z - 0.105);
+    this.glassesMesh.visible = false;
+    this.driver.add(this.glassesMesh);
     const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.4, 4, 10), jacket);
     thigh.rotation.x = Math.PI / 2;
     thigh.position.set(0.1, 0.0, -0.22);
@@ -398,6 +425,7 @@ export class CarModel {
       const sideSign = Math.sign(w.x) || 1;
       const wheel = buildWheel(spec.wheelRadius, spec.wheelWidth, st.kind === 'super' ? '#8a8d92' : '#c9ccd2', sideSign);
       spin.add(wheel);
+      if (wheel.userData.rimMat) this.rimMats.push(wheel.userData.rimMat as THREE.MeshStandardMaterial);
       root.add(spin);
       // mirror so the dished face points outward on both sides
       if (w.x < 0) wheel.scale.x = -1;
@@ -427,6 +455,74 @@ export class CarModel {
   private steerRoot!: THREE.Group;
 
   /** Spoilers, scoops, bed, light bars… */
+
+  /** What the player is wearing, shown on the driver figure. */
+  applyOutfit(o: Outfit): void {
+    this.jacketMat.color.set(o.top);
+    this.cuffMat.color.set(o.gloves === 'none' ? o.cuff : o.gloves === 'leather' ? '#2a1c14' : o.gloves === 'tactical' ? '#1d2118' : '#ececec');
+    (this.handR.material as THREE.MeshPhysicalMaterial).color.set(o.skin);
+    this.hairMat.color.set(o.hair);
+    this.hairMesh.visible = o.hairStyle !== 'bald';
+    this.hairMesh.scale.set(1, o.hairStyle === 'long' ? 1.25 : o.hairStyle === 'buzz' ? 0.82 : o.hairStyle === 'slick' ? 0.95 : 1, o.hairStyle === 'long' ? 1.18 : 1);
+    this.glassesMesh.visible = o.glasses;
+  }
+
+  /** Paint, finish, glass, rims, plate, spoiler and underglow. */
+  applyCustom(c: VehicleCustom): void {
+    const m = this.bodyMat;
+    m.color.set(c.color);
+    switch (c.finish) {
+      case 'matte': m.metalness = 0.1; m.roughness = 0.82; m.clearcoat = 0; m.iridescence = 0; break;
+      case 'metallic': m.metalness = 0.85; m.roughness = 0.22; m.clearcoat = 1; m.clearcoatRoughness = 0.05; m.iridescence = 0; break;
+      case 'pearl': m.metalness = 0.5; m.roughness = 0.2; m.clearcoat = 1; m.clearcoatRoughness = 0.03; m.iridescence = 1; m.iridescenceIOR = 1.6; m.iridescenceThicknessRange = [200, 520]; break;
+      case 'chrome': m.color.set('#dfe3e8'); m.metalness = 1; m.roughness = 0.04; m.clearcoat = 0; m.iridescence = 0; break;
+      default: m.metalness = this.vehicle.spec.body.metallic; m.roughness = this.vehicle.spec.body.roughness; m.clearcoat = 1; m.clearcoatRoughness = 0.07; m.iridescence = 0;
+    }
+    m.needsUpdate = true;
+    this.trimMat.color.set(c.accent);
+    this.glassMat.opacity = [this.baseGlassOpacity, 0.9, 0.96, 0.995][c.tint] ?? this.baseGlassOpacity;
+    this.glassMat.color.set(['#0b1219', '#070c11', '#040608', '#010101'][c.tint] ?? '#0b1219');
+    for (const r of this.rimMats) r.color.set(c.rim);
+    const old = this.plateMat.map;
+    this.plateMat.map = plateTex(c.plate);
+    this.plateMat.needsUpdate = true;
+    old?.dispose();
+    const W = this.vehicle.spec.size.width, L = this.vehicle.spec.size.length;
+    if (this.spoiler) { this.shell.remove(this.spoiler); this.spoiler = null; }
+    if (c.spoiler > 0) {
+      const g = new THREE.Group();
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(W * 0.86, c.spoiler === 2 ? 0.05 : 0.035, c.spoiler === 2 ? 0.34 : 0.2), this.trimMat);
+      const h = c.spoiler === 2 ? 0.3 : 0.1;
+      wing.position.set(0, h, 0);
+      g.add(wing);
+      if (c.spoiler === 2) for (const x of [-1, 1]) { const st = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.1), this.trimMat); st.position.set(x * W * 0.3, h / 2, 0); g.add(st); }
+      const kind = this.vehicle.spec.body.kind;
+      g.position.set(0, this.vehicle.spec.size.height * (kind === 'super' ? 0.8 : 0.88) + this.vehicle.spec.clearance - (c.spoiler === 2 ? 0.0 : 0.1), L / 2 - 0.32);
+      g.traverse((o) => { o.castShadow = true; });
+      this.shell.add(g);
+      this.spoiler = g;
+    }
+    if (c.neon) {
+      if (!this.neon) {
+        this.neonMat = new THREE.MeshBasicMaterial({ color: c.neon, transparent: true, opacity: 0.0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, side: THREE.DoubleSide });
+        this.neon = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.35, L * 1.2).rotateX(-Math.PI / 2), this.neonMat);
+        this.neon.position.y = 0.03;
+        this.neon.renderOrder = 4;
+        this.neon.frustumCulled = false;
+        this.shell.add(this.neon);
+        this.materials.push(this.neonMat);
+      }
+      this.neonMat!.color.set(c.neon);
+      this.neon.visible = true;
+    } else if (this.neon) this.neon.visible = false;
+    // run-flat / armour have no visual
+  }
+
+  /** Underglow brightens after dark. */
+  setNeon(night: number): void {
+    if (this.neon?.visible && this.neonMat) this.neonMat.opacity = 0.35 + 0.5 * night;
+  }
+
   private styleDetails(st: BodyStyle, spec: VehicleSpec, sil: ReturnType<typeof silhouettes>, trim: THREE.Material, dark: THREE.Material, chrome: THREE.Material): void {
     const L = spec.size.length;
     const W = spec.size.width;
@@ -472,6 +568,7 @@ export class CarModel {
 
   /** Light state, called each frame. */
   setLights(headlights: boolean, braking: boolean, reversing: boolean, night: number): void {
+    this.setNeon(night);
     this.headlightMat.emissiveIntensity = headlights ? 3.2 : 0.15;
     this.tailMat.emissiveIntensity = braking ? 5 : headlights ? 1.6 : 0.3;
     if (reversing) this.tailMat.emissiveIntensity = Math.max(this.tailMat.emissiveIntensity, 1.2);

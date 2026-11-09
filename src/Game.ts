@@ -6,6 +6,9 @@ import { CraftManager } from './craft/CraftManager';
 import { Piloting } from './craft/Piloting';
 import { Skydive } from './craft/Skydive';
 import { Restricted } from './combat/Restricted';
+import { Commerce } from './economy/Commerce';
+import { mountSlots } from './economy/screens';
+import { Phone } from './ui/Phone';
 import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
@@ -37,7 +40,7 @@ import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
-export type GameState = 'loading' | 'title' | 'playing' | 'paused' | 'map';
+export type GameState = 'loading' | 'title' | 'playing' | 'paused' | 'map' | 'modal' | 'phone';
 
 const TITLE_FOV = 50;
 
@@ -55,7 +58,7 @@ export class Game {
   readonly loop: GameLoop;
 
   private readonly canvas: HTMLCanvasElement;
-  private readonly camera: THREE.PerspectiveCamera;
+  readonly camera: THREE.PerspectiveCamera;
   physics: Physics | null = null;
   readonly audio = new AudioEngine();
   player: Player | null = null;
@@ -68,6 +71,8 @@ export class Game {
   piloting: Piloting | null = null;
   skydive: Skydive | null = null;
   restricted: Restricted | null = null;
+  commerce: Commerce | null = null;
+  phone: Phone | null = null;
   npcs: Npcs | null = null;
   combat: Combat | null = null;
   wanted: Wanted | null = null;
@@ -123,6 +128,7 @@ export class Game {
       finishTouchLayout: () => this.endTouchEdit(),
       setGyro: (on) => this.touch.setGyro(on),
       autoPreset: () => this.autoPreset,
+      mountSaves: (host) => (this.commerce ? this.commerce.mountSaves(host) : () => undefined),
       env: {
         hour: () => this.world.tod.hour,
         setHour: (h) => this.world.setHour(h),
@@ -226,6 +232,15 @@ export class Game {
         if (x > 90 && x < 205 && z > -45 && z < 125) return;
         this.combat?.crime?.(2.5, x, z);
       };
+    }
+    if (this.player && this.vehicles && this.combat) {
+      const cm = new Commerce(this);
+      this.commerce = cm;
+      cm.init();
+      cm.onModalOpen = () => this.enterModal();
+      cm.onModalClose = () => this.leaveModal();
+      this.phone = new Phone(document.getElementById('ui')!, cm);
+      this.phone.onClose = () => this.closePhone();
     }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
@@ -397,7 +412,7 @@ export class Game {
   }
 
   private fixedUpdate(dt: number): void {
-    if (this.state !== 'playing' || !this.physics || !this.player) return;
+    if ((this.state !== 'playing' && this.state !== 'phone') || !this.physics || !this.player) return;
     Vehicle.wetness = this.world.weather.wetness;
     this.driving?.fixedUpdate(dt);
     this.piloting?.fixedUpdate();
@@ -433,7 +448,15 @@ export class Game {
       case 'map':
         this.map.tick(dt);
         break;
+      case 'modal':
+        this.updateModalState(dt);
+        break;
+      case 'phone':
+        this.updatePlaying(dt, alpha);
+        this.updatePhoneState();
+        break;
     }
+    if (this.state === 'title' && this.commerce?.modal.active) this.padNavModal();
     this.updateMapHud(dt);
 
     this.updateFov(dt);
@@ -445,6 +468,40 @@ export class Game {
       this.loop.sampleCount,
     );
     this.ui.updateStats(dt, this.loop.stats, this.gfx, this.gfx.renderer.info.render);
+  }
+
+  private updatePhoneState(): void {
+    const ph = this.phone;
+    if (!ph?.isOpen) return;
+    ph.tick();
+    const n = this.input.nav;
+    if (n.x || n.y) ph.navigate(n.x, n.y);
+    if (n.confirm) ph.confirm();
+    if (n.back) ph.pop();
+  }
+
+  private padNavModal(): void {
+    const cm = this.commerce;
+    if (!cm?.modal.active) return;
+    const n = this.input.nav;
+    if (n.x || n.y) cm.modal.navigate(n.x, n.y);
+    if (n.confirm) cm.modal.confirm();
+    if (n.back && this.state === 'modal') cm.modal.back();
+  }
+
+  private updateModalState(dt: number): void {
+    const cm = this.commerce;
+    if (!cm) return;
+    this.padNavModal();
+    cm.updateModal(dt);
+    this.vehicles?.update(1);
+    this.crafts?.update(1, this.camera);
+    this.audio.setListener(this.camera);
+  }
+
+  /** Render a frame right now (the phone camera). */
+  renderNow(): void {
+    this.renderFrame();
   }
 
   private renderFrame(): void {
@@ -505,12 +562,14 @@ export class Game {
         if (!this.combat?.flow) weapon.update(dt);
         this.updateWheel(dt, weapon);
         // zoom in a little when aiming, out a little when sprinting
-        this.camera.fov = this.baseFov * (1 - 0.2 * weapon.ads) + 6 * player.sprintBlend;
+        this.camera.fov = this.baseFov * (1 - (weapon.scoped[weapon.def.id] ? 0.45 : 0.2) * weapon.ads) + 6 * player.sprintBlend;
         this.camera.updateProjectionMatrix();
         vm.update(dt, player, weapon, this.camera, this.camera.aspect);
       }
       this.effects.update(dt);
     }
+    this.commerce?.update(dt);
+    if (this.state === 'playing' && this.input.pressed('phone')) this.openPhone();
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);
     piloting?.update(dt);
@@ -547,7 +606,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
+        enter: this.commerce?.prompt ? this.commerce.prompt : driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }
@@ -640,6 +699,69 @@ export class Game {
     this.input.gameplayEnabled = true;
     this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
+  }
+
+  /** A shop / bank / garage screen opens over the world: the sim pauses and the pointer is released. */
+  enterModal(): void {
+    if (this.state === 'title') return;
+    if (this.state !== 'playing') return;
+    this.state = 'modal';
+    this.ui.hudRoot.classList.add('dim');
+    this.input.gameplayEnabled = false;
+    this.loop.paused = true;
+    this.touch.setActive(false);
+    this.ui.setCaptureHint(false);
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
+
+  leaveModal(): void {
+    if (this.state !== 'modal') return;
+    this.state = 'playing';
+    this.ui.hudRoot.classList.remove('dim');
+    this.loop.paused = false;
+    this.input.gameplayEnabled = true;
+    this.touch.setActive(true);
+    this.camera.fov = this.baseFov;
+    this.camera.updateProjectionMatrix();
+    if (this.input.activeDevice === 'kbm') void this.lockPointer();
+  }
+
+  openPhone(): void {
+    if (this.state !== 'playing' || !this.phone || this.piloting?.busy || this.skydive?.active) return;
+    this.state = 'phone';
+    this.input.gameplayEnabled = false;
+    this.touch.setActive(false);
+    this.ui.setCaptureHint(false);
+    if (this.weapon?.isDrawn) this.weapon.toggleHolster();
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.phone.open();
+  }
+
+  closePhone(): void {
+    if (this.state !== 'phone') return;
+    this.state = 'playing';
+    this.input.gameplayEnabled = true;
+    this.touch.setActive(true);
+    if (this.input.activeDevice === 'kbm') void this.lockPointer();
+  }
+
+  /** Title screen → the three save slots. */
+  private openSlotPicker(): void {
+    const cm = this.commerce;
+    if (!cm || cm.modal.active) return;
+    cm.modal.open({
+      title: 'Vice Coast',
+      kicker: 'Choose a save slot',
+      hideMoney: true,
+      hints: 'Pick a slot to continue or start fresh · Import loads a save file',
+      render: (host) => {
+        mountSlots(cm, host.body, (slot, data) => {
+          cm.modal.close();
+          cm.begin(slot, data);
+          this.startPlaying();
+        });
+      },
+    });
   }
 
   /** Feed the minimap with the player's (or driven vehicle's) position and heading. */
@@ -737,12 +859,22 @@ export class Game {
     // "Press any key" on the title screen, from any device.
     this.input.on('anyinput', () => {
       this.audio.unlock();
-      if (this.state === 'title') this.startPlaying();
+      if (this.state !== 'title') return;
+      // ?debug and automation boot straight into a fresh, unsaved game; everyone else picks a slot first
+      const q = new URLSearchParams(location.search);
+      if (!this.commerce || (q.has('debug') && !q.has('slots'))) {
+        this.commerce?.begin(null, null);
+        this.startPlaying();
+      } else this.openSlotPicker();
     });
     this.input.on('device', () => this.ui.refreshPrompts());
     this.input.on('gamepad', () => this.ui.refreshPrompts());
 
     window.addEventListener('keydown', (e) => {
+      if (this.state === 'phone' && !e.repeat && !this.input.capturing && this.input.binding('phone').kbm.includes(e.code)) {
+        this.phone?.close();
+        e.preventDefault();
+      }
       if (e.code === 'F9' && this.player && this.state === 'playing') {
         this.player.noclip = !this.player.noclip;
         this.ui.toast(this.player.noclip ? 'Noclip on' : 'Noclip off');
@@ -753,6 +885,8 @@ export class Game {
       if (this.state === 'playing') this.pause();
       else if (this.state === 'paused') this.resume();
       else if (this.state === 'map') this.closeMap();
+      else if (this.state === 'modal') this.commerce?.modal.back();
+      else if (this.state === 'phone') this.phone?.pop();
     });
 
     // The browser releases the pointer on Esc; treat any loss of capture while playing as "pause".

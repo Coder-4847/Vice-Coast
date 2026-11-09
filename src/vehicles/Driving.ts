@@ -162,6 +162,15 @@ export class Driving {
 
   // ------------------------------------------------------------------------------------- enter / exit
 
+  /** Put the player in a vehicle wherever they are (test drives, deliveries): they appear beside the door and climb in. */
+  forceEnter(v: Vehicle): void {
+    const { player, vehicles } = this.d;
+    const door = vehicles.doorWorld(v, _a);
+    const side = _b.set(v.spec.doorSide, 0, 0).applyQuaternion(v.quaternion).setY(0).normalize();
+    player.teleport(door.x + side.x * 0.8, door.z + side.z * 0.8, 0);
+    this.beginEnter(v);
+  }
+
   private beginEnter(v: Vehicle): void {
     const { player, weapon, viewmodel, vehicles } = this.d;
     this.mode = 'entering';

@@ -4,6 +4,7 @@ import { ArmRig, HandRig, POSES, type HandPose } from './HandRig';
 import type { Player } from './Player';
 import { Pistol } from './Pistol';
 import { LongGun, type GunModel } from './LongGun';
+import type { Outfit, WeaponKit } from '../economy/types';
 import type { WeaponId } from './Weapons';
 import { DRAW_TIME, HOLSTER_TIME, INSPECT_TIME, RELOAD, type WeaponSystem } from './WeaponSystem';
 
@@ -74,6 +75,8 @@ export class Viewmodel {
   readonly camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.01, 6);
   readonly pistol = new Pistol();
   private model: GunModel = this.pistol;
+  private sleeveMat!: THREE.MeshStandardMaterial;
+  private cuffMat!: THREE.MeshStandardMaterial;
   private readonly longs = new Map<WeaponId, LongGun>();
   private currentId: WeaponId = 'vc9';
   private adsPose: Pose = pose(0, -0.0595, -0.40, 0, 0, 0);
@@ -119,6 +122,30 @@ export class Viewmodel {
   /** Debug overrides for look-development screenshots. */
   debug: { reloadT?: number; ads?: number; holster?: number; sprint?: number; inspectT?: number; pose?: string; cam?: { p: number[]; t: number[]; fov?: number } } = {};
 
+  /** Sleeves, gloves and skin from what the player is wearing. */
+  applyOutfit(o: Outfit): void {
+    this.sleeveMat.color.set(o.top);
+    const skin = this.right.material;
+    const glove = o.gloves === 'leather' ? '#2c1d14' : o.gloves === 'tactical' ? '#1f231a' : o.gloves === 'white' ? '#e9e9e9' : null;
+    if (glove) {
+      skin.color.set(glove); skin.roughness = o.gloves === 'white' ? 0.7 : 0.62; skin.sheen = 0; this.cuffMat.color.set(glove);
+      this.right.nailMat.color.set(glove); this.left.nailMat.color.set(glove);
+    } else {
+      skin.color.set(o.skin); skin.roughness = 0.58; skin.sheen = 0.6; this.cuffMat.color.set(o.cuff);
+      const nail = new THREE.Color(o.skin).lerp(new THREE.Color('#ffd9c2'), 0.35);
+      this.right.nailMat.color.copy(nail); this.left.nailMat.color.copy(nail);
+    }
+  }
+
+  /** Cosmetic tint of a weapon's metal parts. */
+  applyKit(id: WeaponId, kit: WeaponKit): void {
+    const gun = id === 'vc9' ? this.pistol : this.longs.get(id);
+    if (!gun) return;
+    const mats = gun.materials as THREE.MeshStandardMaterial[];
+    const metals = id === 'vc9' ? [mats[0]!, mats[1]!] : [mats[0]!];
+    for (const m of metals) m.color.set(kit.tint);
+  }
+
   /** Called when the empty magazine is released: world position + velocity for the falling prop. */
   onMagDrop: ((pos: THREE.Vector3, vel: THREE.Vector3) => void) | null = null;
 
@@ -129,6 +156,8 @@ export class Viewmodel {
     const cuff = new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.95, metalness: 0 });
     this.armR = new ArmRig(sleeve, skin, cuff);
     this.armL = new ArmRig(sleeve, skin, cuff);
+    this.sleeveMat = sleeve;
+    this.cuffMat = cuff;
     this.materials.push(skin, sleeve, cuff, ...this.pistol.materials);
 
     this.gun.add(this.pistol.group);

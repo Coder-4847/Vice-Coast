@@ -64,7 +64,7 @@ export class HandRig {
   private readonly fingerRoots: THREE.Object3D[] = [];
   private readonly thumbJoints: THREE.Object3D[] = [];
   private thumbRoot!: THREE.Object3D;
-  private readonly nailMat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#d9a789'), roughness: 0.3, clearcoat: 0.6, fog: false });
+  readonly nailMat = new THREE.MeshPhysicalMaterial({ color: new THREE.Color('#d9a789'), roughness: 0.3, clearcoat: 0.6, fog: false });
   private readonly current: HandPose = structuredClone(POSES.relaxed) as HandPose;
 
   constructor(material?: THREE.MeshPhysicalMaterial) {

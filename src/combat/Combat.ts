@@ -81,8 +81,8 @@ export class Combat {
     }
     const inCar = driving.mode === 'driving' && driving.vehicle;
     if (inCar) {
-      driving.vehicle!.health = Math.max(0, driving.vehicle!.health - amount * 3);
-      amount *= 0.3;
+      driving.vehicle!.health = Math.max(0, driving.vehicle!.health - amount * 3 * (driving.vehicle!.custom?.armour ? 0.4 : 1));
+      amount *= driving.vehicle!.custom?.armour ? 0.18 : 0.3;
     }
     this.vitals.hurt(amount, fromX, fromZ, player.pos.x, player.pos.z);
   }
@@ -160,7 +160,7 @@ export class Combat {
   hitCollider(handle: number, damage: number): boolean {
     const { vehicles, npcs } = this.d;
     for (const v of vehicles.vehicles) {
-      if (v.collider.handle === handle) { v.health = Math.max(0, v.health - damage * 2.2); return true; }
+      if (v.collider.handle === handle) { v.health = Math.max(0, v.health - damage * 2.2 * (v.custom?.armour ? 0.35 : 1)); return true; }
     }
     const cr = this.crafts?.byCollider(handle);
     if (cr) {

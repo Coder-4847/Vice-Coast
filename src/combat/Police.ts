@@ -848,7 +848,7 @@ export class Police {
       const c = Math.cos(s.yaw), sn = Math.sin(s.yaw);
       for (const v of this.d.vehicles.vehicles) {
         for (const w of v.wheels) {
-          if (!w.onGround || w.popped) continue;
+          if (!w.onGround || w.popped || v.custom?.runflat) continue;
           const px = w.contact.x - s.x, pz = w.contact.z - s.z;
           const across = px * c - pz * sn;
           const along = px * sn + pz * c;

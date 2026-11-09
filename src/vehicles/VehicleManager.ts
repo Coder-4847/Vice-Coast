@@ -2,15 +2,18 @@ import * as THREE from 'three';
 import type { Physics } from '../physics/Physics';
 import { terrainHeight } from '../world/Terrain';
 import { Vehicle } from './Vehicle';
-import { VEHICLES } from './specs';
+import { VEHICLES, type VehicleSpec } from './specs';
 import { BikeModel } from './BikeModel';
 import { CarModel } from './CarModel';
+import type { Outfit, OwnedVehicle, VehicleCustom } from '../economy/types';
 
 /** Common surface of CarModel / BikeModel. */
 export interface VehicleVisual {
   group: THREE.Group;
   materials: THREE.Material[];
   update(): void;
+  applyOutfit?(o: Outfit): void;
+  applyCustom?(c: VehicleCustom): void;
   setLights(headlights: boolean, braking: boolean, reversing: boolean, night: number): void;
 }
 
@@ -42,7 +45,50 @@ export class VehicleManager {
     this.models.set(v, visual);
     this.group.add(visual.group);
     this.onVisual?.(visual);
+    if (this.outfit) visual.applyOutfit?.(this.outfit);
     return v;
+  }
+
+  outfit: Outfit | null = null;
+
+  /** An owned vehicle with its performance parts applied to a copy of the spec, and its paint on the model. */
+  spawnOwned(o: OwnedVehicle, x: number, z: number, yaw: number): Vehicle {
+    const base = VEHICLES[o.spec];
+    if (!base) throw new Error(`Unknown vehicle ${o.spec}`);
+    const spec = tuneSpec(base, o.custom);
+    const y = Math.max(terrainHeight(x, z), 0);
+    const v = new Vehicle(this.physics, spec, x, y, z, yaw);
+    v.home = { x, z, yaw };
+    v.ownedUid = o.uid;
+    v.custom = o.custom;
+    this.vehicles.push(v);
+    const visual = createVisual(v);
+    this.models.set(v, visual);
+    this.group.add(visual.group);
+    this.onVisual?.(visual);
+    visual.applyCustom?.(o.custom);
+    if (this.outfit) visual.applyOutfit?.(this.outfit);
+    return v;
+  }
+
+  /** Repaint / re-tune a live owned vehicle in place (the tuning shop). */
+  recustom(v: Vehicle, c: VehicleCustom): void {
+    v.custom = c;
+    this.models.get(v)?.applyCustom?.(c);
+  }
+
+  setOutfit(o: Outfit): void {
+    this.outfit = o;
+    for (const m of this.models.values()) m.applyOutfit?.(o);
+  }
+
+  /** Remove a vehicle (stored in a garage, sold, or replaced). */
+  remove(v: Vehicle): void {
+    const i = this.vehicles.indexOf(v);
+    if (i >= 0) this.vehicles.splice(i, 1);
+    const m = this.models.get(v);
+    if (m) { this.group.remove(m.group); this.models.delete(v); }
+    v.dispose();
   }
 
   /** Put every vehicle back in its slot, repaired (after a wasted / busted respawn). */
@@ -105,4 +151,20 @@ export class VehicleManager {
     out.set(v.spec.doorSide * (v.spec.size.width / 2 + 0.35), -v.spec.comHeight + 0.2, v.spec.seat.z - 0.1);
     return out.applyQuaternion(v.quaternion).add(v.position);
   }
+}
+
+/** Performance parts → a copy of the spec with more power, bite and grip. */
+export function tuneSpec(base: VehicleSpec, c: VehicleCustom): VehicleSpec {
+  const p = c.perf;
+  if (!p.engine && !p.brakes && !p.suspension && !p.turbo) return base;
+  const s = structuredClone(base) as VehicleSpec;
+  s.engine.peakTorque *= 1 + 0.07 * p.engine + (p.turbo ? 0.1 : 0);
+  s.engine.topSpeedKmh *= 1 + 0.025 * p.engine + (p.turbo ? 0.03 : 0);
+  if (p.turbo) s.engine.turbo = true;
+  s.brake.force *= 1 + 0.12 * p.brakes;
+  s.grip.lat *= 1 + 0.03 * p.suspension;
+  s.grip.long *= 1 + 0.02 * p.brakes + 0.015 * p.suspension;
+  s.suspension.antiRoll *= 1 + 0.12 * p.suspension;
+  s.suspension.dampingRatio = Math.min(0.95, s.suspension.dampingRatio * (1 + 0.04 * p.suspension));
+  return s;
 }

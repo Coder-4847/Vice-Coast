@@ -311,6 +311,9 @@ const TOWNS: readonly [number, number, number][] = [
   [GEO.fort.x, GEO.fort.z, GEO.fort.r + 120],
   [GEO.airport.x, GEO.airport.z, 520],
   [GEO.island.x, GEO.island.z, 330],
+  // lots for sale: the Crestview Villa and the Kestrel Cabin keep their clearings
+  [1060, -1000, 80],
+  [1113, -1680, 60],
 ];
 
 /** 1 inside a settlement, fading to 0 outside (wild vegetation keeps clear). */

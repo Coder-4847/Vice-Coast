@@ -29,11 +29,14 @@ interface MenuHooks {
   setGyro(on: boolean): Promise<boolean>;
   autoPreset(): PresetName;
   notify(message: string): void;
+  /** Fills the Saves tab; returns a function that re-reads the slots. */
+  mountSaves?(host: HTMLElement): () => void;
 }
 
 type Sync = () => void;
 
-const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test'] as const;
+const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test', 'Saves'] as const;
+const SAVE_TAB = 8;
 const ENV_TAB = 1;
 const TEST_TAB = 7;
 
@@ -71,7 +74,7 @@ export class SettingsMenu {
     });
 
     const body = h('div', 'panel-body');
-    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest()];
+    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest(), this.savesPage()];
     this.pages.forEach((p) => {
       p.classList.add('tabpage');
       p.setAttribute('role', 'tabpanel');
@@ -139,6 +142,19 @@ export class SettingsMenu {
     this.pages.forEach((p, n) => p.classList.toggle('on', n === i));
     this.input.cancelCapture();
     this.sync();
+    if (i === SAVE_TAB) {
+      if (this.refreshSaves) this.refreshSaves();
+      else this.refreshSaves = this.hooks.mountSaves?.(this.savesHost) ?? null;
+    }
+  }
+
+  private refreshSaves: (() => void) | null = null;
+  private savesHost!: HTMLElement;
+
+  private savesPage(): HTMLElement {
+    const page = h('div', 'saves-host');
+    this.savesHost = page;
+    return page;
   }
 
   private sync(): void {

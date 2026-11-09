@@ -129,6 +129,9 @@ export class Vehicle {
   exploded = false;
   /** World spawn slot, used when the lot is reset after wasted/busted. */
   home: { x: number; z: number; yaw: number } | null = null;
+  /** Set for vehicles the player owns (garage / customisation). */
+  ownedUid: string | null = null;
+  custom: import('../economy/types').VehicleCustom | null = null;
 
   static wetness = 0;
 
