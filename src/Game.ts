@@ -900,7 +900,7 @@ export class Game {
 
     // The browser releases the pointer on Esc; treat any loss of capture while playing as "pause".
     document.addEventListener('pointerlockchange', () => {
-      if (!document.pointerLockElement && this.state === 'playing' && this.input.activeDevice === 'kbm') this.pause();
+      if (!document.pointerLockElement && this.state === 'playing' && this.input.activeDevice === 'kbm' && !this.story?.cutscenes.active && !this.story?.protagonists.wheelOpen) this.pause();
     });
     this.canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && this.state === 'playing' && !document.pointerLockElement) void this.lockPointer();

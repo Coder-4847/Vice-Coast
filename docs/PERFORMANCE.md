@@ -203,3 +203,15 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
   and rings). Shop fronts add one more streamed chunk source.
 - Menus are plain DOM; the world is paused behind them and the showroom / tuning views render a single extra car.
 - Saves are a few kilobytes of JSON per slot.
+
+## Phase 11 notes
+
+- The story layer adds no draw calls of its own while idle: mission beams and rings are two instanced meshes (up to 40 markers),
+  cutscene actors and idle protagonists are ordinary instanced pedestrians, and gunmen are pedestrians with a small combat brain.
+  Per frame it walks the ~14 mission records and the live hostiles; the objective panel, timers and ability meter only touch the DOM
+  when their text changes.
+- Scripted drivers use the existing road router (a few ms per route, recomputed every 1.6–3.5 s per car) and ordinary vehicle physics.
+- A heist interior is ~100 boxes built once when you step through the door, far out on the salt pan, and removed when you leave. It uses
+  emissive standard materials and no extra lights, so no shaders are recompiled.
+- Headless SwiftShader tests that step thousands of frames can crawl when the page's canvas and overlays are visible (the software
+  compositor repaints them each call); the story smoke tests hide both and run in a few minutes. Real GPUs are unaffected.

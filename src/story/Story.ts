@@ -45,6 +45,9 @@ export class Story {
   private readonly markerIds = new Map<string, number>();
   private markerKey = '';
   private markerT = 0;
+  /** Banners that wait until the player is back in the game (after a summary card). */
+  private readonly queue: (() => void)[] = [];
+  private queueT = 0;
   private ready = false;
 
   constructor(readonly g: Game) {
@@ -123,7 +126,11 @@ export class Story {
     g.commerce!.refreshMarkers();
     if (isNew && !debug && !st.introSeen) {
       st.introSeen = true;
-      setTimeout(() => this.playCutscene('intro'), 1800);
+      setTimeout(() => this.playCutscene('intro', () => {
+        this.hud.showTip('Your first job is marked on the map (M). Phone: Missions app.', 10);
+        const w = this.place('gala');
+        this.setWaypoint(w.x, w.z);
+      }), 1800);
     }
   }
 
@@ -276,7 +283,7 @@ export class Story {
     cm.spawnPropCrafts(c.home);
     this.protagonists.refreshFigure(id);
     cm.refreshMarkers();
-    this.hud.showBanner('New character', c.nick.toUpperCase(), `${c.role} · press ${this.g.input.activeDevice === 'gamepad' ? 'D-pad ←' : 'Z'} to switch`, 'good', 4);
+    this.queue.push(() => this.hud.showBanner('New character', c.nick.toUpperCase(), `${c.role} · press ${this.switchKey()} to switch`, 'good', 4));
   }
 
   // ------------------------------------------------------------------------------------------------ mission flow
@@ -519,6 +526,8 @@ export class Story {
       if (this.markerT <= 0) { this.markerT = 0.5; this.syncMarkers(); }
     } else if (this.markerIds.size) this.clearMarkers();
     this.mission?.tick(dt);
+    this.queueT -= dt;
+    if (this.queue.length && this.queueT <= 0 && g.state === 'playing' && !g.commerce!.modal.active && !this.cutscenes.active && !this.mission) { this.queue.shift()!(); this.queueT = 4.5; }
     this.heists.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();
