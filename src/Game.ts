@@ -593,7 +593,7 @@ export class Game {
       this.camera.position.lerpVectors(this.introFromPos, this.camera.position, k);
       this.introTmpQuat.copy(this.camera.quaternion);
       this.camera.quaternion.slerpQuaternions(this.introFromQuat, this.introTmpQuat, k);
-      if (this.intro >= 1) this.input.gameplayEnabled = true;
+      if (this.intro >= 1 && !this.story?.sceneBlocksInput()) this.input.gameplayEnabled = true;
     }
     this.story?.applyCamera(this.camera, dt);
     this.audio.setListener(this.camera);

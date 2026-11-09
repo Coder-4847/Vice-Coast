@@ -24,6 +24,9 @@ export class StoryHud {
   private readonly meterKey = h('span', 'ab-key');
   private readonly tip = h('div', 'story-tip is-hidden');
   private readonly skip = h('div', 'cin-skip is-hidden');
+  private lastObj = '';
+  private lastTimer = '';
+  private lastMeter = '';
   private bannerT0 = 0;
   private subT = 0;
   private tipT = 0;
@@ -43,6 +46,9 @@ export class StoryHud {
   // ----------------------------------------------------------------------------------------------- objective
 
   setObjective(kicker: string | null, text: string | null, sub = '', gold: { label: string; done: boolean }[] = []): void {
+    const key = `${kicker}|${text}|${sub}|${gold.map((g) => (g.done ? 1 : 0) + g.label).join(',')}`;
+    if (key === this.lastObj) return;
+    this.lastObj = key;
     if (!text) { this.obj.classList.add('is-hidden'); return; }
     this.obj.classList.remove('is-hidden');
     this.objKicker.textContent = kicker ?? '';
@@ -54,10 +60,13 @@ export class StoryHud {
   }
 
   setTimer(label: string | null, secs = 0, warn = false): void {
+    const s = Math.max(0, Math.ceil(secs));
+    const key = label === null ? '' : `${label}|${s}|${warn}`;
+    if (key === this.lastTimer) return;
+    this.lastTimer = key;
     if (label === null) { this.timer.classList.add('is-hidden'); return; }
     this.timer.classList.remove('is-hidden');
     this.timer.classList.toggle('warn', warn);
-    const s = Math.max(0, Math.ceil(secs));
     this.timer.textContent = `${label}  ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
 
@@ -115,6 +124,9 @@ export class StoryHud {
   // ----------------------------------------------------------------------------------------------- ability meter
 
   setMeter(name: string | null, frac = 0, active = false, color = '#ff7a59', key = ''): void {
+    const sig = name ? `${name}|${Math.round(frac * 100)}|${active}|${color}|${key}` : '';
+    if (sig === this.lastMeter) return;
+    this.lastMeter = sig;
     if (!name) { this.meter.classList.add('is-hidden'); return; }
     this.meter.classList.remove('is-hidden');
     this.meter.classList.toggle('active', active);

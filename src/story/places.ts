@@ -5,7 +5,7 @@ import type { Place } from './types';
  * Named places the story refers to. `ref` points at a property or shop (already snapped onto open ground by the
  * economy); everything else is a rough coordinate that the story snaps to the nearest open ground when it is first used.
  */
-export interface PlaceDef { x: number; z: number; ref?: string; label: string; /** Needs room for a car, not just a person. */ car?: boolean }
+export interface PlaceDef { x: number; z: number; ref?: string; /** Offset from the referenced point (so a mission marker does not sit on a shop or property prompt). */ off?: [number, number]; label: string; /** Needs room for a car, not just a person. */ car?: boolean }
 
 const A = GEO.airport, I = GEO.island, C = GEO.cinder;
 
@@ -13,6 +13,10 @@ export const PLACES: Record<string, PlaceDef> = {
   'home.mack': { x: 150, z: 70, ref: 'boardwalk', label: 'Boardwalk Studio' },
   'home.imani': { x: A.x + 100, z: A.apronZ - 40, ref: 'hangar', label: 'Hangar 3' },
   'home.teddy': { x: C.x - 20, z: C.z + 50, ref: 'trailer', label: 'Cinder Flats Trailer' },
+  'mack.door': { x: 150, z: 70, ref: 'boardwalk', off: [7, 5], label: 'Boardwalk Studio' },
+  'imani.door': { x: A.x + 100, z: A.apronZ - 40, ref: 'hangar', off: [8, 6], label: 'Hangar 3' },
+  'teddy.door': { x: C.x - 20, z: C.z + 50, ref: 'trailer', off: [7, 5], label: 'Cinder Flats Trailer' },
+  'redline.yard': { x: 830, z: 140, ref: 'redline', off: [-16, 14], label: 'Redline Customs yard', car: true },
   'tower': { x: 1010, z: -60, label: 'Meridian Tower', car: true },
   'gala': { x: 1000, z: -24, label: 'The Gala', car: true },
   'redline': { x: 830, z: 140, ref: 'redline', label: 'Redline Customs', car: true },

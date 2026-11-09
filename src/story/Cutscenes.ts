@@ -101,6 +101,8 @@ export class Cutscenes {
     this.def = def;
     this.onEnd = onEnd ?? null;
     this.active = true;
+    if (g.driving && g.driving.mode !== 'foot') g.driving.abort();
+    if (g.piloting && g.piloting.mode !== 'foot') g.piloting.abort();
     // anchor
     if (def.anchor === 'player') {
       this.ax = g.player!.pos.x; this.az = g.player!.pos.z;
@@ -113,8 +115,6 @@ export class Cutscenes {
     this.gy = terrainHeight(this.ax, this.az);
     if (def.hour !== undefined) g.world.setHour(def.hour);
     // take over the game
-    if (g.driving && g.driving.mode !== 'foot') g.driving.abort();
-    if (g.piloting && g.piloting.mode !== 'foot') g.piloting.abort();
     this.saved = { weaponDrawn: !!g.weapon?.isDrawn, fov: g.camera.fov };
     if (g.weapon?.isDrawn) g.weapon.toggleHolster();
     if (g.viewmodel) g.viewmodel.group.visible = false;

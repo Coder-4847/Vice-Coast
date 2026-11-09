@@ -151,7 +151,8 @@ export class Story {
     const cm = this.g.commerce!;
     let out: { x: number; z: number };
     const pt = def.ref ? cm.points.byRef(def.ref) : undefined;
-    if (pt) out = { x: pt.x, z: pt.z };
+    if (pt && def.off) out = cm.points.find(pt.x + def.off[0], pt.z + def.off[1], (car || def.car) ? 3.4 : 2.2, { walkOnly: false, maxR: 40 });
+    else if (pt) out = { x: pt.x, z: pt.z };
     else out = cm.points.find(def.x, def.z, (car || def.car) ? 3.4 : 2.2, { walkOnly: false, maxR: 140 });
     this.placeCache.set(p + (car ? '!' : ''), out);
     return out;

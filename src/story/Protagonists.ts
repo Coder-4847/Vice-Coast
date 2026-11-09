@@ -93,7 +93,6 @@ export class Protagonists {
     if (this.busy || s.cutscenes.active) return 'busy';
     if (s.st.unlocked.length < 2) return 'Only one character is available so far.';
     if (g.combat?.flow) return 'busy';
-    if (s.mission && !s.mission.def.stages.length) return 'busy';
     if (s.mission?.noSwitch) return 'You can\'t switch characters right now.';
     if (g.piloting?.busy || g.skydive?.active) return 'You can\'t switch while flying.';
     return null;

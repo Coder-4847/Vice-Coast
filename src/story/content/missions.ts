@@ -51,7 +51,7 @@ export const MISSIONS: MissionDef[] = [
     ],
   },
   {
-    id: 'm02', title: 'Old Debts', char: 'mack', act: 1, giver: 'benny', after: ['m01'], start: 'redline', hour: 21.5, reward: 2200,
+    id: 'm02', title: 'Old Debts', char: 'mack', act: 1, giver: 'benny', after: ['m01'], start: 'redline.yard', hour: 21.5, reward: 2200,
     blurb: 'Lazaro collectors lean on Benny at Redline Customs. Mack steps in.',
     gold: [GOLD.accuracy(0.45), GOLD.flawless(50), GOLD.time(330)],
     unlock: (s) => send(s, 'Benny', 'Marcus. Thank you. I mean it. Come by when your hands stop shaking.'),
@@ -72,7 +72,7 @@ export const MISSIONS: MissionDef[] = [
     ],
   },
   {
-    id: 'm03', title: 'Slipstream', char: 'mack', act: 1, giver: 'benny', after: ['m02'], start: 'redline', hour: 22.5, reward: 3000,
+    id: 'm03', title: 'Slipstream', char: 'mack', act: 1, giver: 'benny', after: ['m02'], start: 'redline.yard', hour: 22.5, reward: 3000,
     blurb: 'Catch the Lazaro courier and take the ledger case, using everything Mack has behind the wheel.',
     gold: [GOLD.time(300), GOLD.flawless(60), GOLD.clean()],
     unlock: (s) => {
@@ -107,7 +107,7 @@ export const MISSIONS: MissionDef[] = [
 
   // ================================================================================================ ACT I: IMANI
   {
-    id: 'm04', title: 'Charter', char: 'imani', act: 1, giver: 'pilar', after: ['m03'], start: 'home.imani', hour: 17.5, reward: 3500,
+    id: 'm04', title: 'Charter', char: 'imani', act: 1, giver: 'pilar', after: ['m03'], start: 'imani.door', hour: 17.5, reward: 3500,
     blurb: 'Fly a sealed case from Valeria International to Isla Rojo. No questions.',
     gold: [GOLD.time(480), GOLD.flawless(0), GOLD.clean()],
     stages: [
@@ -169,7 +169,7 @@ export const MISSIONS: MissionDef[] = [
     ],
   },
   {
-    id: 'm06', title: 'Dead Drop', char: 'imani', act: 1, giver: 'pilar', after: ['m05'], start: 'home.imani', hour: 11, reward: 3800,
+    id: 'm06', title: 'Dead Drop', char: 'imani', act: 1, giver: 'pilar', after: ['m05'], start: 'imani.door', hour: 11, reward: 3800,
     blurb: 'Get the binder to Marisol Vega at the Valeria Sun, with the Task Force on the road.',
     gold: [GOLD.time(300), GOLD.flawless(50), GOLD.lowStars(2)],
     unlock: (s) => {
@@ -200,7 +200,7 @@ export const MISSIONS: MissionDef[] = [
 
   // ================================================================================================ ACT I: TEDDY
   {
-    id: 'm07', title: 'Followers', char: 'teddy', act: 1, giver: 'dex', after: ['m06'], start: 'home.teddy', hour: 15.5, reward: 3000,
+    id: 'm07', title: 'Followers', char: 'teddy', act: 1, giver: 'dex', after: ['m06'], start: 'teddy.door', hour: 15.5, reward: 3000,
     blurb: 'A live stunt in the desert: one car, one ramp, one very long way down.',
     gold: [GOLD.time(240), { id: 'jump', label: 'Jump 55 metres or more', test: (s) => (s.extra.jump ?? 0) >= 55 }, GOLD.flawless(0)],
     stages: [
@@ -301,7 +301,7 @@ export const MISSIONS: MissionDef[] = [
 
   // ================================================================================================ ACT I: TOGETHER
   {
-    id: 'm10', title: 'Three Roads', char: 'any', act: 1, giver: 'pruitt', after: ['m09'], start: 'home.mack', hour: 20, reward: 2000,
+    id: 'm10', title: 'Three Roads', char: 'any', act: 1, giver: 'pruitt', after: ['m09'], start: 'mack.door', hour: 20, reward: 2000,
     blurb: 'Pruitt gathers all three at Mack\'s flat. Nobody trusts him; everybody takes the job.',
     gold: [GOLD.time(120)],
     stages: [
