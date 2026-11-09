@@ -4,6 +4,9 @@ import { money } from '../economy/Economy';
 import { VEHICLES } from '../vehicles/specs';
 import { h } from './dom';
 import { MenuNav } from './MenuNav';
+import { CHARS } from '../story/chars';
+import { Story } from '../story/Story';
+import { CHAR_IDS } from '../story/types';
 import { row, section } from './Modal';
 
 interface App { id: string; name: string; glyph: string; color: string }
@@ -18,6 +21,8 @@ const APPS: App[] = [
   { id: 'motors', name: 'Motors', glyph: '▣', color: '#ff8a5c' },
   { id: 'realty', name: 'Realty', glyph: '⌂', color: '#9a7aff' },
   { id: 'insurance', name: 'Insure', glyph: '◉', color: '#ff6a6a' },
+  { id: 'missions', name: 'Missions', glyph: '★', color: '#ffd166' },
+  { id: 'switch', name: 'Switch', glyph: '⇄', color: '#4aa8ff' },
   { id: 'camera', name: 'Camera', glyph: '◐', color: '#e8e9ec' },
 ];
 
@@ -136,6 +141,8 @@ export class Phone {
       case 'motors': this.push('Valeria Motors', (el) => this.motors(el)); break;
       case 'realty': this.push('Valeria Realty', (el) => this.realty(el)); break;
       case 'insurance': this.push('Mors Mutual', (el) => this.insurance(el)); break;
+      case 'missions': this.push('Missions', (el) => this.missions(el)); break;
+      case 'switch': this.push('Characters', (el) => this.characters(el)); break;
       case 'camera': this.close(); setTimeout(() => this.c.photo(), 450); break;
       default:
     }
@@ -251,5 +258,61 @@ export class Phone {
       }));
     }
     el.append(section(''));
+  }
+
+  // ---------------------------------------------------------------------------------------------- story
+
+  private missions(el: HTMLElement): void {
+    const st = this.c.game.story;
+    if (!st) return;
+    const avail = Story.missions.filter((d) => st.available(d));
+    el.append(h('p', 'm-info', st.mission ? `On a mission: ${st.mission.def.title}` : 'Pick a mission to mark its start on your map.'));
+    if (st.heists.list().length) el.append(row({ label: 'Heist board', sub: 'Plan jobs at the board in Mack\'s flat', onClick: () => { const p = st.heists.boardPoint(); this.c.game.map.setWaypoint({ x: p.x, z: p.z }); this.c.game.ui.toast('Waypoint set: heist board'); } }));
+    el.append(section('Available'));
+    if (!avail.length) el.append(h('p', 'm-info', 'Nothing new right now. Unlock more by finishing missions.'));
+    for (const d of avail) {
+      const mine = d.char === 'any' || d.char === st.active;
+      el.append(row({
+        label: d.title, sub: `${d.char === 'any' ? 'Everyone' : CHARS[d.char].nick} · ${d.blurb}`, badge: mine ? '' : 'Switch', right: `Act ${d.act}`,
+        onClick: () => { const w = st.place(d.start); this.c.game.map.setWaypoint({ x: w.x, z: w.z }); this.c.game.ui.toast(`Waypoint set: ${d.title}`); },
+      }));
+    }
+    const done = Story.missions.filter((d) => st.done(d.id));
+    if (done.length) el.append(section('Completed'));
+    for (const d of done) {
+      const rec = st.record(d.id);
+      const gold = d.gold.length && d.gold.every((g) => rec.medals.includes(g.id));
+      el.append(row({
+        label: d.title, sub: rec.skipped ? 'Skipped' : `Best ${Math.floor(rec.best / 60)}:${String(rec.best % 60).padStart(2, '0')} · ${rec.medals.length}/${d.gold.length} gold objectives`,
+        right: gold ? '★ Gold' : `${'★'.repeat(rec.medals.length)}${'☆'.repeat(Math.max(0, d.gold.length - rec.medals.length))}`,
+        onClick: () => this.push(d.title, (e) => this.replay(e, d.id)),
+      }));
+    }
+  }
+
+  private replay(el: HTMLElement, id: string): void {
+    const st = this.c.game.story;
+    const d = st && Story.def(id);
+    if (!st || !d) return;
+    const rec = st.record(id);
+    el.append(
+      h('div', 'st-block', h('h3', '', d.title), h('p', '', d.blurb)),
+      ...d.gold.map((g) => row({ label: g.label, right: rec.medals.includes(g.id) ? '★' : '☆', selected: rec.medals.includes(g.id) })),
+      row({ label: 'Replay mission', sub: 'Pays half. The story is not affected.', disabled: !!st.mission, onClick: () => { this.close(); setTimeout(() => st.replay(d), 400); } }),
+    );
+  }
+
+  private characters(el: HTMLElement): void {
+    const st = this.c.game.story;
+    if (!st) return;
+    el.append(h('p', 'm-info', 'Switch to another character: they stand where you left them. Special ability: ' + CHARS[st.active].ability.name + '.'));
+    for (const id of CHAR_IDS) {
+      const c = CHARS[id];
+      const open = st.st.unlocked.includes(id);
+      el.append(row({
+        label: c.name, sub: open ? `${c.role} · ${c.ability.name}: ${c.ability.blurb}` : 'You have not met this character yet.', badge: id === st.active ? 'Playing' : '', disabled: !open || id === st.active,
+        onClick: () => { const why = st.protagonists.canSwitch(); if (why) { this.c.game.ui.toast(why === 'busy' ? 'Not right now' : why); return; } this.close(); setTimeout(() => st.protagonists.switchTo(id), 450); },
+      }));
+    }
   }
 }

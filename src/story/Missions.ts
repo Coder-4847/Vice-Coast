@@ -112,6 +112,7 @@ export class MissionRun {
   /** Seconds this frame (cutscene frames included). */
   dt = 1 / 60;
   private readonly disposers: (() => void)[] = [];
+  private readonly hooks: (() => void)[] = [];
   private readonly craftsMade = new Map<string, import('../craft/Craft').Craft>();
 
   constructor(readonly s: Story, readonly def: MissionDef) {}
@@ -196,6 +197,7 @@ export class MissionRun {
     this.vehicles.clear();
     for (const d of this.disposers.splice(0)) d();
     this.fails.length = 0;
+    this.hooks.length = 0;
     this.timerLeft = -1;
     s.hud.setTimer(null);
     s.hud.setObjective(null, null);
@@ -245,7 +247,8 @@ export class MissionRun {
     if (this.dying === 1) { this.fail(this.dyingKind === 'wasted' ? 'You were killed.' : 'You were arrested.'); return; }
     for (const f of this.fails) if (f.test()) { this.fail(f.reason); return; }
 
-    // step the stage
+    // per-frame hooks, then step the stage
+    for (const h of this.hooks) h();
     if (this.gen) {
       try {
         const r = this.gen.next();
@@ -262,6 +265,7 @@ export class MissionRun {
 
   private nextStage(): void {
     this.fails.length = 0;
+    this.hooks.length = 0;
     if (this.stage + 1 >= this.def.stages.length) { this.pass(); return; }
     this.startStage(this.stage + 1);
     this.s.hud.showTip('Checkpoint', 2);
@@ -330,6 +334,9 @@ export class MissionRun {
   get timeLeft(): number { return this.timerLeft; }
 
   clearFails(): void { this.fails.length = 0; }
+
+  /** Run `fn` every frame until the end of this stage. */
+  each(fn: () => void): void { this.hooks.push(fn); }
 
   clearRoute(): void { this.s.clearWaypoint(); }
 
@@ -571,6 +578,23 @@ export class MissionRun {
 
   /** A short beat on foot at the checkpoint spot, e.g. after a cutscene. */
   *settle(): Gen { yield* this.wait(0.4); }
+
+  /** Hold the interact key at a spot for `secs` seconds (lockpicks, drills, hacks). */
+  *hold(p: Place, text: string, secs: number, o: { r?: number; key?: string; glyph?: string } = {}): Gen {
+    const key = o.key ?? 'hold';
+    this.blip(key, p, { color: '#ffd166', glyph: o.glyph ?? '✦', name: text, r: 1.5 });
+    const label = this.s.interactKey();
+    let prog = 0;
+    while (prog < secs) {
+      const near = this.near(p, o.r ?? 2.4) && !this.playerInAnyCar();
+      const holding = near && this.g.input.down('interact');
+      this.objective(text, near ? `Hold ${label}: ${Math.round((prog / secs) * 100)}%` : 'Move to the marker');
+      if (holding) prog += this.dt;
+      else if (near) prog = Math.max(0, prog - this.dt * 0.6);
+      yield;
+    }
+    this.unblip(key);
+  }
 
   /** Wait until the player is controlling `c` (telling them to switch if they are not). */
   *asChar(c: CharId, text: string, sub = ''): Gen {

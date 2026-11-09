@@ -27,6 +27,8 @@ const BUTTONS: ButtonDef[] = [
   { id: 'weapons', action: 'weaponWheel', label: 'Arms', x: 0.4, y: 0.1, size: 54 },
   { id: 'map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 54 },
   { id: 'phone', action: 'phone', label: 'Phone', x: 0.3, y: 0.1, size: 54 },
+  { id: 'switch', action: 'character', label: 'Switch', x: 0.2, y: 0.1, size: 50, mode: 'both' },
+  { id: 'ability', action: 'ability', label: 'Power', x: 0.1, y: 0.24, size: 50, mode: 'both' },
   { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54, mode: 'both' },
   // ---- driving layout: steer with the left stick, pedals under the right thumb
   { id: 'v-gas', action: 'fire', label: 'Gas', x: 0.9, y: 0.68, size: 96, mode: 'vehicle' },

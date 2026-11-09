@@ -54,6 +54,8 @@ export class Hostiles {
   stats = { shots: 0, hitsOnPlayer: 0, alerts: 0 };
   /** Set while a cutscene plays: nobody shoots. */
   hold = false;
+  /** Crew and prep work shrink how far unaware guards can see you (1 = normal). */
+  stealthScale = 1;
 
   constructor(private readonly g: Game) {}
 
@@ -169,7 +171,7 @@ export class Hostiles {
       if (m.unaware && p.sees) {
         const facing = Math.atan2(dx, dz) - p.yaw;
         const dang = Math.abs(Math.atan2(Math.sin(facing), Math.cos(facing)));
-        const reach = pl.crouchBlend > 0.5 ? 9 : 17;
+        const reach = (pl.crouchBlend > 0.5 ? 9 : 17) * this.stealthScale;
         if (d < reach && dang < 1.05 || d < 4) { m.seen += 0.35; if (m.seen >= 1) this.wake(p, m); } else m.seen = Math.max(0, m.seen - 0.15);
       }
     }

@@ -17,9 +17,11 @@ import { MissionRun, type MissionDef } from './Missions';
 import { PLACES } from './places';
 import { Protagonists } from './Protagonists';
 import { Heists } from './Heists';
+import { HEIST_MISSIONS } from './content/heists';
+import { glyphFor } from '../input/Glyphs';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
 
-const BY_ID = Object.fromEntries(MISSIONS.map((m) => [m.id, m])) as Record<string, MissionDef>;
+const BY_ID: Record<string, MissionDef> = Object.fromEntries([...MISSIONS, ...HEIST_MISSIONS].map((m) => [m.id, m]));
 
 /**
  * The story layer: owns the mission engine, cutscenes, the three protagonists and heists, and wires them into the
@@ -86,6 +88,7 @@ export class Story {
 
   static get missions(): MissionDef[] { return MISSIONS; }
   static def(id: string): MissionDef | undefined { return BY_ID[id]; }
+  defOf(id: string): MissionDef | undefined { return BY_ID[id]; }
 
   // ------------------------------------------------------------------------------------------------ setup
 
@@ -158,6 +161,8 @@ export class Story {
   snap(x: number, z: number, margin = 0.9): { x: number; z: number } {
     return this.g.commerce!.points.find(x, z, margin, { walkOnly: false, maxR: 24 });
   }
+
+  interactKey(): string { return glyphFor(this.g.input, 'interact', this.g.input.activeDevice); }
 
   switchKey(): string {
     const g = this.g;
@@ -296,6 +301,20 @@ export class Story {
     return true;
   }
 
+  /** Replay a finished mission from the phone: fade to its start marker and run it again. */
+  replay(def: MissionDef): void {
+    const g = this.g;
+    if (this.mission || this.cutscenes.active || this.protagonists.busy) return;
+    if ((g.wanted?.stars ?? 0) > 0) { g.ui.toast('Lose the cops first'); return; }
+    const w = this.place(def.start);
+    this.fadeThrough(() => {
+      if (def.char !== 'any' && this.active !== def.char) this.protagonists.setActiveNow(def.char);
+      g.player!.teleport(w.x, w.z + 2, 0);
+      g.world.city.warm(w.x, w.z);
+      this.startMission(def, true);
+    });
+  }
+
   /** The player's choice from the failure screen, or a quit from the phone. */
   quitMission(): void {
     const run = this.mission;
@@ -337,7 +356,8 @@ export class Story {
     const t = Math.round(run.stats.time);
     rec.best = rec.best ? Math.min(rec.best, t) : t;
     for (const m of medals) if (!rec.medals.includes(m)) rec.medals.push(m);
-    const pay = def.noReward ? 0 : run.replay ? Math.floor(def.reward / 2) : first ? def.reward : Math.floor(def.reward / 2);
+    const payout = Math.round(run.stats.extra.payout ?? 0);
+    const pay = (def.noReward ? 0 : run.replay ? Math.floor(def.reward / 2) : first ? def.reward : Math.floor(def.reward / 2)) + payout;
     if (pay > 0) cm.eco.earn(pay, `Mission: ${def.title}`);
     this.finishRun(run);
     if (first) def.unlock?.(this);
@@ -369,6 +389,7 @@ export class Story {
           row({ label: 'Time', right: `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` }),
           row({ label: 'Reward', right: pay ? money(pay) : '—' }),
           row({ label: 'Accuracy', right: run.stats.shots ? `${Math.round(run.stats.accuracy * 100)}%` : '—' }),
+          ...(run.stats.extra.gross !== undefined ? [section('The split'), row({ label: 'Total take', right: money(run.stats.extra.gross) }), row({ label: 'Crew cuts', right: `−${money(run.stats.extra.cuts ?? 0)}` }), row({ label: 'Your share', right: money(run.stats.extra.payout ?? 0), selected: true })] : []),
           btn('Continue', 'primary', () => host.close()),
         );
       },
