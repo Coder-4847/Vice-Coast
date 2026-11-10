@@ -92,9 +92,9 @@ campaign has a plan; it will be built in later passes.
 |---|---|---|---|
 | H1 ✓ | **The Gilded Counter** | Marlowe Row jeweller, Port Valeria | Loud, quiet or smart. Prep: alarm codes (smart), uniforms (quiet), heavy van (loud). |
 | H2 ✓ | **Valeria Savings, Central Branch** | Downtown bank | Vault door timer, guard rotations, forged pass. Prep ×2 per approach. |
-| H3 | **The Long Haul** | Armored convoy, North Highway | Planned. |
-| H4 | **Lucky Seven** | Costa Merida casino vault | Planned. |
-| H5 | **Night Freight** | Cargo train, Cinder Flats rail | Planned. |
+| H3 ✓ | **The Long Haul** | Armored convoy, East Highway | Loud: ram and fight; quiet: spike strip; smart: spoof the tracker. Built in Phase 12. |
+| H4 ✓ | **Lucky Seven** | Costa Merida casino vault | Nine guards, six cameras. Built in Phase 12. |
+| H5 ✓ | **Night Freight** | Cargo train, Cinder Flats siding | A long, narrow train interior. Built in Phase 12. |
 | H6 | **Aurelia** | Crane's private yacht | Planned. |
 
 ### Act II — Crown of Glass (planned)
