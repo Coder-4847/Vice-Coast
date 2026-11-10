@@ -238,4 +238,46 @@ export const CUTSCENES: Record<string, CutsceneDef> = {
       wide([L('pruitt', 'Two for two. Crane is going to notice.'), L('mack', 'Let him. We\'re just getting started.'), L('imani', 'The convoy next?'), L('pruitt', 'Soon. Rest. For once, all of you.')], { look: [0, 1.4, 2] }),
     ],
   },
+  h3_board: {
+    id: 'h3_board', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('pruitt', 'Every Thursday an armored truck carries Meridian\'s cash up the East Highway, with two escort cars behind it.'), L('teddy', 'Can we hit it with a car?'), L('mack', 'We can hit it with a plan.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h3_done: {
+    id: 'h3_done', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('teddy', 'The BACK of an armored truck! I opened the back of an armored truck!'), L('imani', 'You held the flashlight.'), L('pruitt', 'Three. Crane has started calling his lawyers.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h4_board: {
+    id: 'h4_board', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('pruitt', 'The Lucky Seven in Costa Merida. The Lazaros wash Crane\'s cash through it, and the vault is under the baccarat room.'), L('imani', 'Nine guards, six cameras. Charming.'), L('mack', 'We go in with the right people.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h4_done: {
+    id: 'h4_done', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('mack', 'Costa Merida will be talking about this for years.'), L('pruitt', 'Rosa Lazaro has noticed. She is not a woman you want noticing you.'), L('teddy', 'I like her already.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h5_board: {
+    id: 'h5_board', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('pruitt', 'Meridian freight, Cinder siding, one armored container in the sixth car. It moves at night.'), L('imani', 'Six cars, one narrow aisle.'), L('teddy', 'A TRAIN. Finally.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h5_done: {
+    id: 'h5_done', anchor: 'home.mack', heading: -90,
+    actors: [A('mack', [-2, 0], 'pruitt'), A('imani', [0, 0.2], 'pruitt'), A('teddy', [2, 0], 'pruitt'), A('pruitt', [0, 3.5], 'imani')],
+    shots: [
+      wide([L('pruitt', 'That is the last of the money Crane kept in places he could reach. Next we go after the man himself.'), L('mack', 'Then we finish this.'), L('imani', 'Aurelia.')], { look: [0, 1.4, 2] }),
+    ],
+  },
 };

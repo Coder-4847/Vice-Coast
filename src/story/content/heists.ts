@@ -26,6 +26,8 @@ export interface HeistDef {
   /** Prep mission ids per approach. */
   prep: Record<Approach, string[]>;
   par: Record<Approach, number>;
+  /** 'convoy' jobs happen out on the road instead of inside a building. */
+  kind?: 'site' | 'convoy';
 }
 
 const SALT = { x: 4020, z: 1180 };
@@ -61,6 +63,51 @@ export const HEISTS: HeistDef[] = [
     prep: { loud: ['h2_charges', 'h2_armour'], quiet: ['h2_pass', 'h2_scout'], smart: ['h2_hack', 'h2_scout'] },
     par: { loud: 420, quiet: 540, smart: 480 },
   },
+  {
+    id: 'h3', name: 'The Long Haul', kind: 'convoy', blurb: 'An armored truck and two escort cars carry Crane\'s cash to Cinder Flats every week on the East Highway. Stop the truck, open the back, load four bags.',
+    door: 'convoy.ambush',
+    site: { id: 'convoy', name: 'The convoy', w: 10, d: 10, vault: { w: 4, d: 3 }, cases: 0, cameras: 0, at: { x: SALT.x, z: SALT.z }, tint: 0x9aa3b5 },
+    caseValue: 0, bagValue: 65000, guards: 0,
+    hour: { loud: 10, quiet: 14, smart: 11 },
+    intro: 'h3_board', done: 'h3_done',
+    approachText: {
+      loud: 'Ram the truck off the road and fight the escorts. Blow the rear doors and be gone before the helicopters arrive.',
+      quiet: 'Lay a spike strip across the highway. The truck rolls to a stop; two drowsy guards stay behind it.',
+      smart: 'Clone the convoy\'s tracker and send it down a dead-end road with one guard instead of three.',
+    },
+    prep: { loud: ['h3_ram'], quiet: ['h3_spikes'], smart: ['h3_tracker'] },
+    par: { loud: 330, quiet: 360, smart: 360 },
+  },
+  {
+    id: 'h4', name: 'Lucky Seven', blurb: 'The Meridian slush fund washes through the vault under the Lucky Seven casino in Costa Merida: nine guards, six cameras, a very large door.',
+    door: 'casino',
+    site: { id: 'casino', name: 'Lucky Seven Casino', w: 34, d: 24, vault: { w: 12, d: 7 }, cases: 6, cameras: 6, at: { x: SALT.x + 160, z: SALT.z }, tint: 0xb02a4a },
+    caseValue: 9000, bagValue: 140000, guards: 9,
+    hour: { loud: 15, quiet: 4, smart: 21 },
+    intro: 'h4_board', done: 'h4_done',
+    approachText: {
+      loud: 'Walk in with charges and take the floor. Count on a hard fight and a harder vault.',
+      quiet: 'Go in as night staff, keep the high rollers calm, and let the cameras see nothing.',
+      smart: 'Tap the casino network, loop the floor and let the vault open itself.',
+    },
+    prep: { loud: ['h4_charges'], quiet: ['h4_staff'], smart: ['h4_hack'] },
+    par: { loud: 480, quiet: 600, smart: 540 },
+  },
+  {
+    id: 'h5', name: 'Night Freight', blurb: 'A Meridian freight train waits on the Cinder siding at night with an armoured container in the sixth car. The cars are long, narrow and guarded.',
+    door: 'rail.siding',
+    site: { id: 'train', name: 'Meridian freight', w: 8, d: 54, vault: { w: 6, d: 7 }, cases: 6, cameras: 1, at: { x: SALT.x - 10, z: SALT.z + 150 }, tint: 0x8a6a3a },
+    caseValue: 11000, bagValue: 85000, guards: 5,
+    hour: { loud: 2, quiet: 3, smart: 1 },
+    intro: 'h5_board', done: 'h5_done',
+    approachText: {
+      loud: 'Breach the cars and fight down the length of the train before the signal crew radios in.',
+      quiet: 'Cut the signal wire, slip onto the train and work down the cars in the dark.',
+      smart: 'Copy the manifest, learn which car holds what, and walk straight to it.',
+    },
+    prep: { loud: ['h5_breacher'], quiet: ['h5_signal'], smart: ['h5_manifest'] },
+    par: { loud: 420, quiet: 540, smart: 480 },
+  },
 ];
 
 export const HEIST_BY_ID = Object.fromEntries(HEISTS.map((h) => [h.id, h])) as Record<string, HeistDef>;
@@ -82,6 +129,15 @@ export const PREPS: PrepDef[] = [
   { id: 'h2_pass', title: 'Forged staff pass', blurb: 'Copy a manager\'s card at the print shop beside the Sun.', approach: 'quiet' },
   { id: 'h2_scout', title: 'Case the branch', blurb: 'Visit three vantage points around the bank and learn the guard rotation.', approach: 'quiet' },
   { id: 'h2_hack', title: 'Network breach', blurb: 'Tap the bank\'s fibre line in a junction cabinet downtown.', approach: 'smart' },
+  { id: 'h3_ram', title: 'Ram truck', blurb: 'Steal a heavy truck from the Industrial Depot and bring it to the flat.', approach: 'loud' },
+  { id: 'h3_spikes', title: 'Spike strips', blurb: 'Collect road spikes from a contractor at the depot.', approach: 'quiet' },
+  { id: 'h3_tracker', title: 'Clone the tracker', blurb: 'Copy the convoy tracker\'s signature at the Industrial Depot.', approach: 'smart' },
+  { id: 'h4_charges', title: 'Vault charges', blurb: 'Collect heavy breaching charges at the depot.', approach: 'loud' },
+  { id: 'h4_staff', title: 'Staff credentials', blurb: 'Borrow night-staff uniforms from the laundry behind the Sun.', approach: 'quiet' },
+  { id: 'h4_hack', title: 'Casino network', blurb: 'Tap the casino\'s network from Costa Merida.', approach: 'smart' },
+  { id: 'h5_breacher', title: 'Breaching gear', blurb: 'Pick up heavy breaching gear at Brass & Barrel.', approach: 'loud' },
+  { id: 'h5_signal', title: 'Cut the signal wire', blurb: 'Cut the trackside signal wire at the Cinder siding.', approach: 'quiet' },
+  { id: 'h5_manifest', title: 'Freight manifest', blurb: 'Copy the manifest from the depot office.', approach: 'smart' },
 ];
 
 export const HEIST_PREPS: MissionDef[] = [
@@ -149,6 +205,69 @@ export const HEIST_PREPS: MissionDef[] = [
       yield* m.hold({ x: b.x + 12, z: b.z + 22 }, 'Tap the line', 8);
     },
   ], [GOLD.time(180), GOLD.clean()]),
+  prep('h3_ram', 'Ram truck', 'Steal a heavy truck.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      const van = m.vehicle('ram', 'ridgeback', { x: d.x - 10, z: d.z + 14 }, { color: '#4a4f58' });
+      m.failIf('v', () => van.exploded, 'The truck was destroyed.');
+      yield* m.enter('ram', 'Steal the heavy truck at the Industrial Depot');
+      yield* m.goto('home.mack', 'Drive the truck to the Boardwalk Studio', { vehicle: 'ram', r: 20 });
+    },
+  ], [GOLD.time(240), GOLD.clean()]),
+  prep('h3_spikes', 'Spike strips', 'Collect spike strips.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x + 24, z: d.z + 10 }, 'Meet the contractor at the Industrial Depot', { r: 6 });
+      yield* m.hold({ x: d.x + 24, z: d.z + 10 }, 'Collect the spike strips', 4);
+    },
+  ]),
+  prep('h3_tracker', 'Clone the tracker', 'Copy the tracker signature.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x - 26, z: d.z - 8 }, 'Reach the depot office', { onFoot: true, r: 5 });
+      yield* m.hold({ x: d.x - 26, z: d.z - 8 }, 'Clone the convoy tracker', 8);
+    },
+  ], [GOLD.time(180), GOLD.clean()]),
+  prep('h4_charges', 'Vault charges', 'Collect charges.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x - 20, z: d.z + 12 }, 'Meet the contractor at the Industrial Depot', { r: 6 });
+      yield* m.hold({ x: d.x - 20, z: d.z + 12 }, 'Collect the heavy charges', 5);
+    },
+  ]),
+  prep('h4_staff', 'Staff credentials', 'Borrow uniforms.', [
+    function* (m): Gen {
+      yield* m.goto('newsroom', 'Go to the laundry behind the Valeria Sun', { onFoot: true, r: 4 });
+      yield* m.hold(off(m, 'newsroom', 4, 3), 'Take the night-staff uniforms', 5);
+    },
+  ], [GOLD.time(150), GOLD.clean()]),
+  prep('h4_hack', 'Casino network', 'Tap the network.', [
+    function* (m): Gen {
+      const c = m.at('casino');
+      yield* m.goto({ x: c.x + 30, z: c.z + 14 }, 'Travel to Costa Merida and find the network cabinet', { onFoot: true, r: 5 });
+      yield* m.hold({ x: c.x + 30, z: c.z + 14 }, 'Tap the casino network', 8);
+    },
+  ], [GOLD.time(420), GOLD.clean()]),
+  prep('h5_breacher', 'Breaching gear', 'Pick up gear.', [
+    function* (m): Gen {
+      yield* m.goto('motors', 'Go to the back door of Brass & Barrel', { onFoot: true, r: 4 });
+      yield* m.hold(off(m, 'motors', 4, 3), 'Take the breaching crate', 4);
+    },
+  ]),
+  prep('h5_signal', 'Cut the signal wire', 'Cut the wire.', [
+    function* (m): Gen {
+      const r = m.at('rail.siding');
+      yield* m.goto({ x: r.x + 14, z: r.z + 10 }, 'Reach the Cinder siding', { onFoot: true, r: 5 });
+      yield* m.hold({ x: r.x + 14, z: r.z + 10 }, 'Cut the trackside signal wire', 6);
+    },
+  ], [GOLD.time(400), GOLD.clean()]),
+  prep('h5_manifest', 'Freight manifest', 'Copy the manifest.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x - 30, z: d.z - 14 }, 'Reach the depot office', { onFoot: true, r: 5 });
+      yield* m.hold({ x: d.x - 30, z: d.z - 14 }, 'Copy the freight manifest', 6);
+    },
+  ], [GOLD.time(180), GOLD.clean()]),
 ];
 
 
@@ -158,6 +277,7 @@ export interface ExecOpts { approach: Approach; crew: string[]; prepDone: string
 
 /** Build the mission for one heist run with the chosen approach, crew and finished prep. */
 export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
+  if (h.kind === 'convoy') return convoyMission(h, o);
   const { approach, crew } = o;
   const has = (p: string): boolean => o.prepDone.includes(p);
   const fx = o.fx;
@@ -328,3 +448,134 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
 }
 
 export const HEIST_MISSIONS: MissionDef[] = [...HEIST_PREPS];
+
+
+// ------------------------------------------------------------------------------------------------ the convoy job
+
+function convoyMission(h: HeistDef, o: ExecOpts): MissionDef {
+  const { approach, crew, fx } = o;
+  const has = (p: string): boolean => o.prepDone.includes(p);
+  const ctx = { take: 0, alarm: false, pending: 0, downed: new Set<string>() };
+  const total = 4 * h.bagValue;
+  const vaultScale = fx.vaultScale * (approach === 'loud' && has('h3_ram') ? 0.7 : 1);
+  const lockScale = fx.lockScale;
+  const dxz = (a: { x: number; z: number }, b: { x: number; z: number }): number => Math.hypot(a.x - b.x, a.z - b.z);
+
+  return {
+    id: `${h.id}_${approach}`, title: h.name, char: 'any', act: 3, giver: 'pruitt', start: 'home.mack', hidden: true,
+    hour: h.hour[approach], reward: 0, noReward: true, blurb: h.blurb,
+    gold: [
+      GOLD.time(h.par[approach]),
+      approach === 'loud' ? GOLD.flawless(70) : GOLD.stealth(),
+      { id: 'all', label: 'Take every bag', test: (s) => (s.extra.take ?? 0) >= total },
+    ],
+    stages: [
+      function* (m): Gen { yield* m.cutscene(h.intro); },
+      function* (m): Gen {
+        const a = m.at('convoy.ambush');
+        const spot = m.s.snap(a.x + 16, a.z + 12, 3.2);
+        m.vehicle('getaway', 'veloce', spot, { color: '#1a1d24' });
+        yield* m.enter('getaway', 'Take the getaway car');
+        if (approach === 'loud' && has('h3_ram')) { m.g.combat!.vitals.addArmour(100); m.give('smg', 160); }
+        m.give('vc9', 40);
+        yield* m.goto('convoy.ambush', 'Drive to the ambush point on the East Highway', { vehicle: 'getaway', r: 22, key: 'job' });
+      },
+      function* (m): Gen {
+        const s = m.s;
+        const A = m.at('convoy.ambush');
+        const start = m.at('convoy.start');
+        const truck = m.vehicle('truck', 'ridgeback', start, { color: '#d9dde2', blip: false });
+        m.vehicle('esc1', 'pico', { x: start.x - 14, z: start.z }, { color: '#14161a', blip: false });
+        m.vehicle('esc2', 'pico', { x: start.x - 30, z: start.z }, { color: '#14161a', blip: false });
+        m.failIf('burn', () => truck.exploded, 'The truck burned with the money in it.');
+        const dr = m.drive('truck', () => m.at('cinder'), { kmh: 58, arrive: 30 });
+        m.drive('esc1', () => ({ x: truck.position.x, z: truck.position.z }), { kmh: 66 });
+        m.drive('esc2', () => ({ x: truck.position.x, z: truck.position.z }), { kmh: 66 });
+        // crew gunmen
+        const AL = s.allies;
+        AL.clear();
+        AL.mode = approach === 'loud' ? 'follow' : 'hold';
+        AL.onDowned = (def) => { ctx.downed.add(def.id); s.hud.showTip(`${def.name} is down!`, 4); };
+        const p0 = m.playerPos();
+        fx.gunmen.forEach((def, i) => { const w = s.snap(p0.x + 3 + i * 1.8, p0.z + 3, 1); AL.spawn(def, w.x, w.z); });
+        m.onCleanup(() => AL.clear());
+        s.hostiles.stealthScale = 1;
+        m.say('pruitt', 'The convoy is rolling. Truck first, two escort cars behind it.');
+        const stopConvoy = (): void => { s.drivers.stop(truck); s.drivers.stop(m.veh('esc1')); s.drivers.stop(m.veh('esc2')); };
+        const tp = (): { x: number; z: number } => ({ x: truck.position.x, z: truck.position.z });
+        const watchAlarm = (why: string): void => m.each(() => {
+          if (m.stats.alerts > 0 && !ctx.alarm) { ctx.alarm = true; ctx.pending = 2; s.hostiles.alertAll('guards'); s.hud.showBanner('Alarm', why, 'Police on the way', 'bad', 3); }
+        });
+        if (approach === 'loud') {
+          m.objective('Stop the armored truck', 'Ram it or shoot it until it stops');
+          while (truck.health > 520 && !dr.arrived) yield;
+          stopConvoy();
+          ctx.alarm = true; ctx.pending = 3;
+          const t = tp();
+          yield* m.kill('esc', [0, 1, 2, 3].map((i) => ({ x: t.x + Math.cos(i * 1.6) * 12, z: t.z + Math.sin(i * 1.6) * 12, kind: 'smg' as const, look: 'guard' })), 'Take down the escorts');
+        } else if (approach === 'quiet') {
+          yield* m.hold(A, 'Lay the spike strip across the highway', 5 * lockScale, { key: 'spikes', glyph: '▲' });
+          m.objective('Wait for the convoy to roll over the strip', 'Stay out of the road');
+          m.say('imani', 'I have eyes on them. Thirty seconds.');
+          while (dxz(tp(), A) > 15 && !dr.arrived) yield;
+          truck.health = 480;
+          stopConvoy();
+          const t = tp();
+          for (let i = 0; i < 2; i++) s.hostiles.spawn({ x: t.x + (i ? 6 : -6), z: t.z + 3, kind: 'pistol', unaware: true, tag: 'guards', look: 'guard' });
+          watchAlarm('The convoy raised the alarm');
+        } else {
+          const q = m.at('convoy.quiet');
+          yield* m.hold({ x: A.x + 8, z: A.z - 4 }, 'Spoof the convoy tracker', 6 * vaultScale, { key: 'track', glyph: '▣' });
+          s.drivers.stop(truck);
+          const dq = m.drive('truck', () => q, { kmh: 50, arrive: 14 });
+          m.objective('The convoy is following the false route', 'Meet it at the dead-end road');
+          m.route(q);
+          while (!dq.arrived) yield;
+          stopConvoy();
+          const t = tp();
+          s.hostiles.spawn({ x: t.x + 5, z: t.z + 3, kind: 'pistol', unaware: true, tag: 'guards', look: 'guard' });
+          watchAlarm('The driver radioed it in');
+        }
+      },
+      function* (m): Gen {
+        const truck = m.veh('truck');
+        // the rear of the truck: forward is (0,0,-1) rotated by its quaternion
+        const rear = (): { x: number; z: number } => {
+          const q = truck.quaternion;
+          const fx2 = -2 * (q.x * q.z + q.w * q.y), fz2 = -(1 - 2 * (q.x * q.x + q.y * q.y));
+          return { x: truck.position.x - fx2 * 3.6, z: truck.position.z - fz2 * 3.6 };
+        };
+        const loud = approach === 'loud';
+        yield* m.hold(rear(), loud ? 'Blow the rear doors' : 'Cut the rear door locks', loud ? 8 * vaultScale : 11 * lockScale * vaultScale, { key: 'rear', glyph: '✹' });
+        m.say(loud ? 'teddy' : 'mack', 'Doors are open. Four bags.');
+        for (let i = 0; i < 4; i++) {
+          yield* m.hold(rear(), 'Load a cash bag into the car', 1.8, { key: 'bag', glyph: '$' });
+          ctx.take += h.bagValue;
+          m.stats.extra.take = ctx.take;
+          m.s.hud.showTip(`Bag loaded · $${ctx.take.toLocaleString('en-US')}`, 3);
+        }
+        m.s.hostiles.clear();
+      },
+      function* (m): Gen {
+        const stars = Math.max(0, Math.min(5, ctx.pending - fx.starsOff));
+        const p = m.playerPos();
+        if (stars > 0) m.g.wanted?.report(HEAT[stars]! + 2, p.x, p.z, true);
+        m.say('pruitt', stars > 0 ? 'The police found the truck. Get out of there!' : 'Nobody saw a thing. Bring it home.');
+        if ((m.g.wanted?.stars ?? 0) > 0) yield* m.escape(0, 'Lose the police');
+        if (!m.playerIn('getaway') && m.hasVeh('getaway')) yield* m.enter('getaway', 'Get back into the getaway car');
+        yield* m.goto('home.mack', 'Take the money to the Boardwalk Studio', { r: 25 });
+        const cuts = fx.cuts + m.s.crew.skim(crew);
+        const perf = ctx.alarm ? 0.9 : 1.1;
+        const net = Math.round(ctx.take * perf * (1 - cuts));
+        m.stats.extra.payout = net;
+        m.stats.extra.gross = ctx.take;
+        m.stats.extra.cuts = Math.round(ctx.take * perf * cuts);
+        const notes = m.s.crew.settle(crew, { approach, alarm: ctx.alarm, success: true, downed: ctx.downed });
+        m.s.heists.lastResult = { gross: ctx.take, perf, cuts: Math.round(ctx.take * perf * cuts), net, alarm: ctx.alarm, notes };
+        m.s.heists.finishJob(h, approach, net);
+        m.s.allies.clear();
+        yield* m.cutscene(h.done);
+      },
+    ],
+  };
+}

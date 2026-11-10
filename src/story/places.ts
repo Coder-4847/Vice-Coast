@@ -37,6 +37,11 @@ export const PLACES: Record<string, PlaceDef> = {
   'taqueria': { x: C.x - 30, z: C.z + 40, ref: 'taco', label: 'Mama Jo\'s', car: true },
   'stash': { x: C.x + 330, z: C.z + 210, label: 'Lazaro stash house', car: true },
   'ramp': { x: C.x + 200, z: C.z - 120, label: 'Dead Man\'s Gap', car: true },
+  'casino': { x: 480, z: 3300, label: 'Lucky Seven Casino', car: true },
+  'rail.siding': { x: C.x - 90, z: C.z - 130, label: 'Cinder siding', car: true },
+  'convoy.start': { x: 1760, z: 300, label: 'East Highway', car: true },
+  'convoy.ambush': { x: 2300, z: 417, label: 'East Highway ambush', car: true },
+  'convoy.quiet': { x: 2420, z: 520, label: 'Dead-end road', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

@@ -291,3 +291,23 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] After *Dead Ringers* a blue beam at Mack's flat is the **heist board**. Choose loud / quiet / smart, pick crew (Benny after Old Debts, Dex after Dust Up, Silas after the first heist), finish the prep missions, then *Start the job*.
 - [ ] The job: drive to the shop door, step in (fade), work through the guards, display cases, vault and cash bags (hold `E` at each marker), leave, lose the police, take the money home. Loud starts the alarm; quiet and smart rely on staying out of guards' sight and the cameras (crouch with `C`).
 - [ ] The result card shows the take, the crew cuts and your share; the cash lands in your wallet.
+
+
+## Phase 12 — Robberies and crew
+
+### Instant robberies
+- [ ] Kiosks (orange GAS, green MART, purple LIQUOR, gold JEWELS) stand around the world and show on the map as `¢`; a clerk stands behind each counter when you are within ~70 m.
+- [ ] With a gun drawn and aimed at the clerk within ~7 m, the prompt "Hold up the clerk" appears. `E` starts it: the clerk raises their hands, the objective panel shows the bag filling and a countdown. Looking away or holstering pauses it; an armed clerk reaches for a gun if you look away for ~2 s.
+- [ ] The police come faster the longer you stay (1★ → 2★ → 3★); some clerks trigger a silent alarm after ~3 s. Walking away early keeps a share of the cash. A store is on cooldown for two days afterwards.
+- [ ] With a gun drawn, an ATM shows "Smash the ATM (hold)": holding `E` for ~5 s pays $300–1,200 and brings a star; without a gun it opens the bank as before.
+
+### Crew
+- [ ] Phone → **Crew** (and the heist board → *Recruit and manage crew*): the roster with role, skill stars, cut and mood. Recruiting charges the fee; **Bonus** ($2,500) raises loyalty.
+- [ ] Benny joins after *Old Debts*, Dex after *Dust Up*, Pilar after *Charter*, Silas after the jeweller.
+- [ ] Choose up to four crew at the board. Hackers shrink camera sight and vault times, lockpickers shorten case and keycard holds, drivers remove wanted stars, demolitions shorten drilling and breaching.
+- [ ] Gunmen spawn inside the building with you. `B` (D-pad →) opens the command wheel (1 Follow, 2 Hold, 3 Attack, 4 Breach); a "Crew:" chip shows the order. They shoot, enemies shoot back at them, and a downed gunman is hurt or killed afterwards.
+- [ ] The result card lists who was hurt, killed or improved. Hurt crew are out for a few days and recover on their own; the dead stay dead; very low loyalty means skimming and then walking away.
+
+### New heists
+- [ ] **The Long Haul** (East Highway): loud = ram the truck, kill the escorts, blow the rear doors; quiet = lay a spike strip and wait; smart = spoof the tracker and meet the truck at the dead end. Then load four bags and get away.
+- [ ] **Lucky Seven** (casino, Costa Merida) and **Night Freight** (freight train, Cinder siding) use the interior format: guards, cameras, cases, vault, bags.

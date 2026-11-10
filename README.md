@@ -43,6 +43,7 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`5` (pistol, SMG, shotgun, rifle) | `LB` + right stick | Arms |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
 | Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` | Switch · Power |
+| Crew commands (hold / follow / attack / breach) | `B` | D-pad → | Crew |
 | Map (full-screen, set waypoint) | `M` | `Back` (View) | Map |
 | Menu | `Esc` or `P` | `Start` (Options) | Menu |
 | Noclip (debug) | `F9` | — | — |
@@ -149,6 +150,24 @@ Switch, Dead Ringers) and **two heists**: *The Gilded Counter* (jeweller) and *V
 * **Heist board** (in Mack's flat, a blue beam): choose an approach (**loud**, **quiet** or **smart**), a crew (Benny, Dex, Silas: each takes a cut and
   changes the job) and finish the prep missions; then do the job inside a purpose-built interior and get away. The split is paid by performance.
 
+### Robberies and crew
+
+**Instant robberies.** Little service kiosks (gas stations *Petrolia* and friends, groceries, liquor stores, two jewelry counters, marked `¢` on the
+map) have a clerk behind the counter. Draw a gun, walk up and aim at them: press `E` to **hold them up**, then keep them covered while the bag fills
+(10–20 seconds). The longer you stay the faster the police respond (one star after a moment, two, then three). A third of clerks trip a silent
+alarm, some have a hidden gun and reach for it if you stop covering them, and a clerk you shoot is a crime. With a gun out, ATMs can be **smashed open**
+(hold `E`). Stores and ATMs cool down for a day or two.
+
+**Crew.** Twelve specialists in six roles (driver, gunman, hacker, lockpicker, pilot, demolitions) with skill, cut, loyalty and a fee. Benny, Dex,
+Silas and Pilar join through the story; the rest are recruited from the **Crew** app on the phone or at the heist board. Each role changes the job
+(cameras, vault and lock times, wanted stars). **Gunmen come into the building with you** and answer the command wheel (`B`): follow, hold, attack, or breach.
+Enemies shoot at them too. After a job people can be **hurt** (out for a few days) or **killed** (for good), loyalty moves with how things went, you can
+pay bonuses, and a disloyal crew skims extra before walking away. People learn and improve every few jobs.
+
+**Heists** now number five: the jeweller, the bank, **The Long Haul** (an armored truck and two escort cars on the East Highway: ram it, spike it or
+spoof its tracker), **Lucky Seven** (the Costa Merida casino vault) and **Night Freight** (a freight train on the Cinder siding). The museum and the
+yacht are still to come.
+
 ### Boats, aircraft and armour
 
 Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
@@ -186,6 +205,8 @@ src/
   physics/ Rapier world: terrain heightfield, building colliders, material-aware ray queries, 120 Hz substeps
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
   economy/ money, save slots, properties, shops, garage and customisation screens, interaction points
+  crew/    roster, loyalty / injuries / effects, field allies with a command wheel, crew pages
+  crime/   robbery kiosks, clerks and the hold-up / ATM flows, shared police-call helper
   story/   mission engine (generator scripts, checkpoints, medals), cutscene director, protagonists + abilities, gunmen and scripted drivers, heists and their interiors, content/ (missions, cutscenes, heists)
   craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
@@ -210,8 +231,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 8. **Remaining land biomes** ✅ — Cinder Flats, Dusk Harbor, Pinecrest Bay, Mount Kestrel, Costa Merida, highways and rail (Fort Halloran and the islands arrive with Phase 9's boats and aircraft)
 9. **Aircraft, boats and military vehicles** ✅ — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
 10. **Economy, properties, garage, clothing, shops, phone** ✅ — saving, 9 properties, car dealer and tuning shop, clothes and weapons shops, ATMs and a phone (stock market, tattoos, chop-shop minigame, business fronts, nitro, hidden compartments, aircraft / boat customisation and the Snapstream feed are deferred)
-11. **Mission framework and story** ✅ (this build) — mission engine, cutscenes, three switchable protagonists, 12 missions, 2 heists (the other 26 missions and 4 heists are outlined in docs/STORY.md; crew injuries and the full crew system arrive in Phase 12)
-12. Robberies and crew
+11. **Mission framework and story** ✅ — mission engine, cutscenes, three switchable protagonists, 12 missions, 2 heists (the other 26 missions and 4 heists are outlined in docs/STORY.md; crew injuries and the full crew system arrive in Phase 12)
+12. **Robberies and crew** ✅ (this build) — 14 robbery kiosks plus ATMs, a 12-person crew that fights, gets hurt and has loyalty, and three more heists (museum and yacht heists, and the full 38-mission campaign, are still to come)
 13. Side activities, radio, collectibles
 14. Polish
 
