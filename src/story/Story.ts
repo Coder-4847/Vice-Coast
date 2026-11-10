@@ -300,6 +300,7 @@ export class Story {
     if (def.activity) return true;
     if (this.done(def.id)) return false;
     if (def.char !== 'any' && !this.st.unlocked.includes(def.char)) return false;
+    if (def.gate && !def.gate(this)) return false;
     return (def.after ?? []).every((a) => this.done(a));
   }
 

@@ -64,6 +64,8 @@ export interface MissionDef {
   noReward?: boolean;
   /** A repeatable side activity (see activities/defs.ts): never "done", pays out every time, counts toward the tracker. */
   activity?: string;
+  /** Extra availability test (e.g. a heist must be finished first). */
+  gate?: (s: Story) => boolean;
   /** Data the activity wants to keep with the definition (race course, job parameters). */
   meta?: unknown;
 }

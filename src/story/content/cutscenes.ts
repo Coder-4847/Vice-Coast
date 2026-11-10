@@ -1,5 +1,6 @@
 import { CHARS } from '../chars';
 import type { ActorDef, CutsceneDef, Line, Shot } from '../types';
+import { ACT2_SCENES } from './act2Scenes';
 
 // ----------------------------------------------------------------------------------------------- helpers
 
@@ -15,7 +16,7 @@ const close = (x: number, lines: Line[], o: Partial<Shot> = {}): Shot => ({ from
 /** Low heroic angle. */
 const low = (lines: Line[], o: Partial<Shot> = {}): Shot => ({ from: [1.2, 0.5, -4.4], to: [0.6, 0.7, -3.6], look: [0, 1.6, 0], fov: 46, lines, ...o });
 
-export const CUTSCENES: Record<string, CutsceneDef> = {
+const ACT1_SCENES: Record<string, CutsceneDef> = {
   // ---------------------------------------------------------------------------------------------- opening
   intro: {
     id: 'intro', anchor: 'home.mack', heading: -90, hour: 18.2,
@@ -281,3 +282,5 @@ export const CUTSCENES: Record<string, CutsceneDef> = {
     ],
   },
 };
+
+export const CUTSCENES: Record<string, CutsceneDef> = { ...ACT1_SCENES, ...ACT2_SCENES };

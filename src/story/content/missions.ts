@@ -1,6 +1,7 @@
 import { GOLD, type Gen, type MissionDef, type MissionRun } from '../Missions';
 import type { HostileOpts } from '../Hostiles';
 import type { Place } from '../types';
+import { ACT2 } from './act2';
 
 /** A point near a place. */
 const off = (m: MissionRun, p: Place, dx = 0, dz = 0): { x: number; z: number } => { const w = m.at(p); return { x: w.x + dx, z: w.z + dz }; };
@@ -9,7 +10,7 @@ const gm = (m: MissionRun, p: Place, dx: number, dz: number, kind: Gun = 'pistol
 const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number => Math.hypot(a.x - b.x, a.z - b.z);
 const send = (s: import('../Story').Story, from: string, text: string): void => s.g.commerce!.eco.message(from, text);
 
-export const MISSIONS: MissionDef[] = [
+const ACT1: MissionDef[] = [
   // ================================================================================================ ACT I: MACK
   {
     id: 'm01', title: 'Valet', char: 'mack', act: 1, giver: 'pruitt', start: 'gala', hour: 19.5, reward: 1500,
@@ -386,3 +387,5 @@ export const MISSIONS: MissionDef[] = [
     ],
   },
 ];
+
+export const MISSIONS: MissionDef[] = [...ACT1, ...ACT2];

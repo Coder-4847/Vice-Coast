@@ -47,6 +47,10 @@ export const PLACES: Record<string, PlaceDef> = {
   'job.bounty': { x: 960, z: -110, label: 'Bail bonds office', car: true },
   'job.repo': { x: 1250, z: -130, label: 'Repo office', car: true },
   'job.vig': { x: 1180, z: 60, label: 'Precinct 4 lot', car: true },
+  'fort': { x: GEO.fort.x - 300, z: GEO.fort.z - 20, label: 'Fort Halloran motor pool', car: true },
+  'fort.gate': { x: GEO.fort.x - 520, z: GEO.fort.z - 20, label: 'Fort Halloran gate', car: true },
+  'costa.cafe': { x: 520, z: 3150, label: 'Costa Merida cafe', car: true },
+  'tower.top': { x: 1010, z: -60, label: 'Meridian Tower plaza', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

@@ -42,6 +42,7 @@ export class Heists {
     rec.plays++;
     rec.approach = approach;
     rec.take = Math.max(rec.take, net);
+    if (hd.id === 'h1') this.s.g.commerce?.eco.message('Pruitt', 'The jeweller made the news. Brandt is asking questions. Stop by Redline Customs: she is already there.');
     const next = HEISTS[HEISTS.findIndex((x) => x.id === hd.id) + 1];
     if (next && !this.unlocked(next.id)) {
       this.unlock(next.id);
