@@ -68,6 +68,8 @@ export class Drivers {
 
   get active(): number { return this.list.length; }
 
+  driverOf(v: Vehicle): Driver | undefined { return this.list.find((d) => d.v === v); }
+
   fixedUpdate(dt: number): void {
     for (const d of [...this.list]) this.drive1(d, dt);
   }

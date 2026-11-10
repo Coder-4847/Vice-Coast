@@ -42,6 +42,7 @@ export interface UIHooks {
   autoPreset(): PresetName;
   env: EnvControls;
   mountSaves?(host: HTMLElement): () => void;
+  mountProgress?(host: HTMLElement): () => void;
 }
 
 

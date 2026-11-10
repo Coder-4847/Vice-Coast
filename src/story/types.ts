@@ -77,6 +77,17 @@ export interface RobberyStats {
   shootouts: number;
 }
 
+/** What the player has done in one side activity (a race course, a job type, a game). */
+export interface ActRecord {
+  plays: number;
+  /** Wins / completions: the number the completion tracker counts. */
+  wins: number;
+  /** Best time (s) or score; 0 when none. */
+  best: number;
+  /** Anything else an activity wants to remember (course ids won, streaks, level). */
+  ext: Record<string, number>;
+}
+
 export interface StoryState {
   active: CharId;
   unlocked: CharId[];
@@ -89,6 +100,12 @@ export interface StoryState {
   meter: Record<CharId, number>;
   crew: Record<string, CrewRec>;
   rob: RobberyStats;
+  /** Collectible kind → ids found. */
+  collect: Record<string, string[]>;
+  /** Side-activity id → record. */
+  acts: Record<string, ActRecord>;
+  /** Completion milestones and collectible set bonuses already paid. */
+  claimed: string[];
 }
 
 export const newStory = (): StoryState => ({
@@ -102,6 +119,9 @@ export const newStory = (): StoryState => ({
   meter: { mack: 1, imani: 1, teddy: 1 },
   crew: {},
   rob: { count: 0, take: 0, cooldown: {}, shootouts: 0 },
+  collect: {},
+  acts: {},
+  claimed: [],
 });
 
 // ------------------------------------------------------------------------------------------------ cutscenes

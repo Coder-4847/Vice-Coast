@@ -40,7 +40,7 @@ export function migrate(p: Partial<Profile>): Profile {
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,
     messages: p.messages ?? base.messages,
-    story: { ...base.story, ...(p.story ?? {}), meter: { ...base.story.meter, ...(p.story?.meter ?? {}) }, missions: p.story?.missions ?? {}, heists: p.story?.heists ?? {}, flags: p.story?.flags ?? {}, chars: p.story?.chars ?? {}, unlocked: p.story?.unlocked ?? base.story.unlocked, crew: p.story?.crew ?? {}, rob: { ...base.story.rob, ...(p.story?.rob ?? {}), cooldown: p.story?.rob?.cooldown ?? {} } },
+    story: { ...base.story, ...(p.story ?? {}), meter: { ...base.story.meter, ...(p.story?.meter ?? {}) }, missions: p.story?.missions ?? {}, heists: p.story?.heists ?? {}, flags: p.story?.flags ?? {}, chars: p.story?.chars ?? {}, unlocked: p.story?.unlocked ?? base.story.unlocked, crew: p.story?.crew ?? {}, rob: { ...base.story.rob, ...(p.story?.rob ?? {}), cooldown: p.story?.rob?.cooldown ?? {} }, collect: p.story?.collect ?? {}, acts: p.story?.acts ?? {}, claimed: p.story?.claimed ?? [] },
   };
 }
 

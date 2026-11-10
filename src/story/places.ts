@@ -42,6 +42,11 @@ export const PLACES: Record<string, PlaceDef> = {
   'convoy.start': { x: 1760, z: 300, label: 'East Highway', car: true },
   'convoy.ambush': { x: 2300, z: 417, label: 'East Highway ambush', car: true },
   'convoy.quiet': { x: 2420, z: 520, label: 'Dead-end road', car: true },
+  'job.cab': { x: 1020, z: 100, label: 'Marlow Cab depot', car: true },
+  'job.courier': { x: 1070, z: 150, label: 'Swiftline Couriers', car: true },
+  'job.bounty': { x: 960, z: -110, label: 'Bail bonds office', car: true },
+  'job.repo': { x: 1250, z: -130, label: 'Repo office', car: true },
+  'job.vig': { x: 1180, z: 60, label: 'Precinct 4 lot', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

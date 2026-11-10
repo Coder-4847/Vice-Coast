@@ -135,6 +135,11 @@ export class Game {
       setGyro: (on) => this.touch.setGyro(on),
       autoPreset: () => this.autoPreset,
       mountSaves: (host) => (this.commerce ? this.commerce.mountSaves(host) : () => undefined),
+      mountProgress: (host) => {
+        const draw = (): void => { if (this.story) this.story.completion.render(host, { onMark: (k) => this.markNearest(k) }); else host.textContent = 'Start a game to see your progress.'; };
+        draw();
+        return draw;
+      },
       env: {
         hour: () => this.world.tod.hour,
         setHour: (h) => this.world.setHour(h),
@@ -663,6 +668,15 @@ export class Game {
     this.ui.showHud();
     this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
+  }
+
+  /** Waypoint to the nearest collectible of a kind (from the Progress tab). */
+  private markNearest(kind: string): void {
+    const p = this.player;
+    const it = p && this.story?.collect.nearest(kind as import('./collect/defs').CKind, p.pos.x, p.pos.z);
+    if (!it) { this.ui.toast('Nothing left of that kind'); return; }
+    this.map.setWaypoint({ x: it.x, z: it.z });
+    this.ui.toast(`Waypoint set: nearest ${kind}`);
   }
 
   pause(): void {

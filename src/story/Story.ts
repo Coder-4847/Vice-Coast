@@ -22,10 +22,16 @@ import { Robberies } from '../crime/Robberies';
 import { Allies, COMMANDS } from '../crew/Allies';
 import { CrewWheel } from '../ui/CrewWheel';
 import { HEIST_MISSIONS } from './content/heists';
+import { ACT_MISSIONS } from '../activities/missions';
 import { glyphFor } from '../input/Glyphs';
+import { Collectibles } from '../collect/Collectibles';
+import { Completion } from '../collect/Completion';
+import { Venues } from '../minigames/Venues';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
 
-const BY_ID: Record<string, MissionDef> = Object.fromEntries([...MISSIONS, ...HEIST_MISSIONS].map((m) => [m.id, m]));
+import { ACT_BY_ID } from '../activities/defs';
+const ACT_COLOR = (d: MissionDef): string => ACT_BY_ID[d.activity ?? '']?.color ?? '#ffd166';
+const BY_ID: Record<string, MissionDef> = Object.fromEntries([...MISSIONS, ...HEIST_MISSIONS, ...ACT_MISSIONS].map((m) => [m.id, m]));
 
 /**
  * The story layer: owns the mission engine, cutscenes, the three protagonists and heists, and wires them into the
@@ -44,6 +50,9 @@ export class Story {
   readonly crew: Crew;
   readonly robberies: Robberies;
   readonly allies: Allies;
+  readonly collect: Collectibles;
+  readonly completion: Completion;
+  readonly venues: Venues;
   readonly crewWheel: CrewWheel;
   mission: MissionRun | null = null;
   /** The text for the interact prompt when a mission start or heist board is in reach. */
@@ -71,6 +80,9 @@ export class Story {
     this.crew = new Crew(this);
     this.robberies = new Robberies(g, this);
     this.allies = new Allies(g, this.hostiles, this.crew);
+    this.collect = new Collectibles(this);
+    this.completion = new Completion(this);
+    this.venues = new Venues(this);
     this.crewWheel = new CrewWheel(root, g.ui.hudRoot);
     this.crewWheel.onPick = (c) => this.allies.command(c);
     this.crewWheel.onClose = () => { g.loop.timeScale = this.protagonists.timeScaleNow(); };
@@ -136,6 +148,7 @@ export class Story {
     this.protagonists.applyPassives();
     this.protagonists.refreshAllFigures();
     this.markerKey = '';
+    this.collect.onBegin();
     this.ready = true;
     g.commerce!.refreshMarkers();
     if (isNew && !debug && !st.introSeen) {
@@ -284,9 +297,30 @@ export class Story {
 
   available(def: MissionDef): boolean {
     if (def.hidden) return false;
+    if (def.activity) return true;
     if (this.done(def.id)) return false;
     if (def.char !== 'any' && !this.st.unlocked.includes(def.char)) return false;
     return (def.after ?? []).every((a) => this.done(a));
+  }
+
+  /** A side activity finished: update its record. `key` names the course (wins count once per course for races). */
+  actResult(act: string, key: string, win: boolean, score = 0, count = 1): void {
+    const rec = (this.st.acts[act] ??= { plays: 0, wins: 0, best: 0, ext: {} });
+    rec.plays++;
+    if (score > 0) rec.best = rec.best ? Math.min(rec.best, score) : score;
+    if (win) {
+      if (act.startsWith('race.') || act.startsWith('school.')) { rec.ext['w:' + key] = 1; rec.wins = Object.keys(rec.ext).filter((k) => k.startsWith('w:')).length; }
+      else rec.wins += Math.max(1, count);
+    }
+    this.completion.check();
+  }
+
+  /** Count a win for an activity that is not a mission (mini-games, jobs). */
+  actWin(act: string, n = 1): void {
+    const rec = (this.st.acts[act] ??= { plays: 0, wins: 0, best: 0, ext: {} });
+    rec.plays++;
+    rec.wins += n;
+    this.completion.check();
   }
 
   unlockChar(id: CharId): void {
@@ -381,14 +415,15 @@ export class Story {
     rec.best = rec.best ? Math.min(rec.best, t) : t;
     for (const m of medals) if (!rec.medals.includes(m)) rec.medals.push(m);
     const payout = Math.round(run.stats.extra.payout ?? 0);
-    const pay = (def.noReward ? 0 : run.replay ? Math.floor(def.reward / 2) : first ? def.reward : Math.floor(def.reward / 2)) + payout;
+    const pay = (def.noReward || def.activity ? 0 : run.replay ? Math.floor(def.reward / 2) : first ? def.reward : Math.floor(def.reward / 2)) + payout;
+    if (def.activity) this.actResult(def.activity, def.id, run.stats.extra.win !== 0, run.stats.extra.score ?? t, run.stats.extra.count ?? 1);
     if (pay > 0) cm.eco.earn(pay, `Mission: ${def.title}`);
     this.finishRun(run);
     if (first) def.unlock?.(this);
     g.wanted?.clear();
     this.protagonists.applyPassives();
     cm.refreshMarkers();
-    this.hud.showBanner('Mission passed', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
+    this.hud.showBanner(def.activity ? (run.stats.extra.win === 0 ? 'Finished' : 'Won') : 'Mission passed', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
     void cm.save(cm.slot ?? 1, true);
     // a summary card
     const goldRows = def.gold.map((d) => ({ d, ok: medals.includes(d.id) }));
@@ -411,6 +446,7 @@ export class Story {
           ...gold.map((x) => row({ label: x.label, right: x.ok ? '★' : '☆', selected: x.ok })),
           section('Result'),
           row({ label: 'Time', right: `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}` }),
+          ...(run.stats.extra.place ? [row({ label: 'Position', right: `${run.stats.extra.place}${['st', 'nd', 'rd'][run.stats.extra.place - 1] ?? 'th'}${run.stats.extra.field ? ` of ${run.stats.extra.field}` : ''}`, selected: run.stats.extra.place === 1 })] : []),
           row({ label: 'Reward', right: pay ? money(pay) : '—' }),
           row({ label: 'Accuracy', right: run.stats.shots ? `${Math.round(run.stats.accuracy * 100)}%` : '—' }),
           ...(run.stats.extra.gross !== undefined ? [section('The split'), row({ label: 'Total take', right: money(run.stats.extra.gross) }), row({ label: 'Crew cuts', right: `−${money(run.stats.extra.cuts ?? 0)}` }), row({ label: 'Your share', right: money(run.stats.extra.payout ?? 0), selected: true })] : []),
@@ -441,9 +477,9 @@ export class Story {
         host.body.append(
           row({ label: 'Retry from checkpoint', sub: run.stage > 0 ? `Stage ${run.stage + 1}` : 'Start of the mission', onClick: () => { handled = true; host.close(); this.retry(run, false); } }),
           row({ label: 'Restart mission', sub: 'From the very beginning', onClick: () => { handled = true; host.close(); this.retry(run, true); } }),
-          ...(fails >= 3 ? [row({ label: 'Skip mission', sub: 'Move the story on, with no reward or medal', onClick: () => { handled = true; host.close(); this.skipMission(run); } })] : []),
+          ...(fails >= 3 && !run.def.activity ? [row({ label: 'Skip mission', sub: 'Move the story on, with no reward or medal', onClick: () => { handled = true; host.close(); this.skipMission(run); } })] : []),
           row({ label: 'Quit mission', sub: 'Back to the city', onClick: () => { handled = true; host.close(); this.quitMission2(run); } }),
-          h('p', 'm-info', fails >= 3 ? 'You can skip this one.' : `Failed ${fails} time${fails === 1 ? '' : 's'}: skip becomes available after three.`),
+          h('p', 'm-info', run.def.activity ? '' : fails >= 3 ? 'You can skip this one.' : `Failed ${fails} time${fails === 1 ? '' : 's'}: skip becomes available after three.`),
         );
         void cp;
       },
@@ -507,8 +543,10 @@ export class Story {
   private syncMarkers(): void {
     const st = this.st;
     const list = MISSIONS.filter((d) => this.available(d));
+    const pp = this.g.player!.pos;
+    const acts = ACT_MISSIONS.filter((d) => { const w = this.place(d.start); return Math.hypot(w.x - pp.x, w.z - pp.z) < 900; });
     const heistKey = this.heists.markerKey();
-    const key = `${st.active}|${list.map((d) => d.id).join(',')}|${heistKey}`;
+    const key = `${st.active}|${list.map((d) => d.id).join(',')}|${acts.map((d) => d.id).join(',')}|${heistKey}`;
     if (key === this.markerKey) return;
     this.markerKey = key;
     this.clearMarkers();
@@ -518,6 +556,11 @@ export class Story {
       const color = d.char === 'any' ? '#ffd166' : CHARS[d.char].color;
       const glyph = d.char === 'any' ? '★' : CHARS[d.char].nick[0]!;
       const id = this.beacons.add(w.x, w.z, { color: mine ? color : '#6c7183', glyph, name: d.title + (mine ? '' : ` (${CHARS[d.char as CharId].nick})`), r: 3.2, tall: mine ? 14 : 6 });
+      this.markerIds.set(d.id, id);
+    }
+    for (const d of acts) {
+      const w = this.place(d.start);
+      const id = this.beacons.add(w.x, w.z, { color: ACT_COLOR(d), glyph: '⚑', name: d.title, r: 3, tall: 10 });
       this.markerIds.set(d.id, id);
     }
     this.heists.addMarkers(this.markerIds);
@@ -550,6 +593,8 @@ export class Story {
     if (this.queue.length && this.queueT <= 0 && g.state === 'playing' && !g.commerce!.modal.active && !this.cutscenes.active && !this.mission) { this.queue.shift()!(); this.queueT = 4.5; }
     this.heists.update(dt);
     this.robberies.update(dt);
+    this.collect.update(dt);
+    this.completion.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();
   }
@@ -588,13 +633,13 @@ export class Story {
     if (drv && (drv.mode === 'entering' || drv.mode === 'exiting')) return;
     const pos = car ? car.position : g.player!.pos;
     if (car && Math.abs(car.speedKmh) > 6) return;
-    for (const d of MISSIONS) {
+    for (const d of [...MISSIONS, ...ACT_MISSIONS]) {
       if (!this.markerIds.has(d.id)) continue;
       const w = this.place(d.start);
       if (Math.hypot(w.x - pos.x, w.z - pos.z) < (car ? 7 : 3.4)) {
         const mine = d.char === 'any' || d.char === this.active;
         this.near = { kind: 'mission', def: d };
-        this.prompt = mine ? `Start: ${d.title}` : `${d.title}: switch to ${CHARS[d.char as CharId].nick}`;
+        this.prompt = d.activity ? `${d.title}` : mine ? `Start: ${d.title}` : `${d.title}: switch to ${CHARS[d.char as CharId].nick}`;
         break;
       }
     }
@@ -607,7 +652,13 @@ export class Story {
       rob = this.robberies.offer();
       if (rob) this.prompt = rob.text;
     }
+    let col: { text: string; go: () => void } | null = null;
+    if (!this.near && !rob) {
+      col = this.collect.offer() ?? this.venues.offer();
+      if (col) this.prompt = col.text;
+    }
     if (rob && g.input.pressed('interact')) { g.input.swallow('interact'); rob.go(); return; }
+    if (col && g.input.pressed('interact')) { g.input.swallow('interact'); col.go(); return; }
     if (this.near && g.input.pressed('interact')) {
       g.input.swallow('interact');
       if (this.near.kind === 'mission') this.startMission(this.near.def);

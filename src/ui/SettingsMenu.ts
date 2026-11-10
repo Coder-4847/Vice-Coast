@@ -31,12 +31,15 @@ interface MenuHooks {
   notify(message: string): void;
   /** Fills the Saves tab; returns a function that re-reads the slots. */
   mountSaves?(host: HTMLElement): () => void;
+  /** Fills the Progress tab; returns a function that re-reads the tracker. */
+  mountProgress?(host: HTMLElement): () => void;
 }
 
 type Sync = () => void;
 
-const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test', 'Saves'] as const;
+const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test', 'Saves', 'Progress'] as const;
 const SAVE_TAB = 8;
+const PROGRESS_TAB = 9;
 const ENV_TAB = 1;
 const TEST_TAB = 7;
 
@@ -74,7 +77,7 @@ export class SettingsMenu {
     });
 
     const body = h('div', 'panel-body');
-    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest(), this.savesPage()];
+    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest(), this.savesPage(), this.progressPage()];
     this.pages.forEach((p) => {
       p.classList.add('tabpage');
       p.setAttribute('role', 'tabpanel');
@@ -146,6 +149,19 @@ export class SettingsMenu {
       if (this.refreshSaves) this.refreshSaves();
       else this.refreshSaves = this.hooks.mountSaves?.(this.savesHost) ?? null;
     }
+    if (i === PROGRESS_TAB) {
+      if (this.refreshProgress) this.refreshProgress();
+      else this.refreshProgress = this.hooks.mountProgress?.(this.progressHost) ?? null;
+    }
+  }
+
+  private refreshProgress: (() => void) | null = null;
+  private progressHost!: HTMLElement;
+
+  private progressPage(): HTMLElement {
+    const page = h('div', 'progress-host');
+    this.progressHost = page;
+    return page;
   }
 
   private refreshSaves: (() => void) | null = null;

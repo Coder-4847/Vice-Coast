@@ -62,6 +62,10 @@ export interface MissionDef {
   hidden?: boolean;
   /** Heist ids: stats are tracked as usual but the pay-out is the heist's. */
   noReward?: boolean;
+  /** A repeatable side activity (see activities/defs.ts): never "done", pays out every time, counts toward the tracker. */
+  activity?: string;
+  /** Data the activity wants to keep with the definition (race course, job parameters). */
+  meta?: unknown;
 }
 
 interface Snap {
@@ -354,10 +358,10 @@ export class MissionRun {
   at(p: Place): { x: number; z: number } { return this.s.place(p); }
 
   /** A map blip and beam at a place. Returns a handle for `unblip`. */
-  blip(key: string, p: Place, o: { color?: string; glyph?: string; name?: string; r?: number } = {}): { x: number; z: number } {
+  blip(key: string, p: Place, o: { color?: string; glyph?: string; name?: string; r?: number; tall?: number } = {}): { x: number; z: number } {
     this.unblip(key);
     const w = this.s.place(p);
-    const id = this.s.beacons.add(w.x, w.z, { color: o.color ?? CHARS[this.active].color, glyph: o.glyph ?? '◎', name: o.name ?? this.objText, r: o.r ?? 2.8 });
+    const id = this.s.beacons.add(w.x, w.z, { color: o.color ?? CHARS[this.active].color, glyph: o.glyph ?? '◎', name: o.name ?? this.objText, r: o.r ?? 2.8, tall: o.tall });
     this.blips.set(key, id);
     return w;
   }

@@ -7,6 +7,7 @@ import { MenuNav } from './MenuNav';
 import { CHARS } from '../story/chars';
 import { Story } from '../story/Story';
 import { crewPage } from '../crew/CrewUi';
+import { toolkitPage } from '../minigames/skill';
 import { CHAR_IDS } from '../story/types';
 import { row, section } from './Modal';
 
@@ -25,6 +26,8 @@ const APPS: App[] = [
   { id: 'missions', name: 'Missions', glyph: '★', color: '#ffd166' },
   { id: 'switch', name: 'Switch', glyph: '⇄', color: '#4aa8ff' },
   { id: 'crew', name: 'Crew', glyph: '☻', color: '#ff7a59' },
+  { id: 'progress', name: 'Progress', glyph: '%', color: '#ffb347' },
+  { id: 'toolkit', name: 'Toolkit', glyph: '⚿', color: '#7ad7e0' },
   { id: 'camera', name: 'Camera', glyph: '◐', color: '#e8e9ec' },
 ];
 
@@ -145,6 +148,8 @@ export class Phone {
       case 'insurance': this.push('Mors Mutual', (el) => this.insurance(el)); break;
       case 'missions': this.push('Missions', (el) => this.missions(el)); break;
       case 'switch': this.push('Characters', (el) => this.characters(el)); break;
+      case 'progress': this.push('Progress', (el) => { const st = this.c.game.story; if (st) st.completion.render(el, { onMark: (k) => { const p = this.c.game.player!; const it = st.collect.nearest(k as import('../collect/defs').CKind, p.pos.x, p.pos.z); if (it) { this.c.game.map.setWaypoint({ x: it.x, z: it.z }); this.c.game.ui.toast('Waypoint set'); } } }); }); break;
+      case 'toolkit': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(toolkitPage(st)); }, 400); break;
       case 'crew': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(crewPage(st)); }, 400); break;
       case 'camera': this.close(); setTimeout(() => this.c.photo(), 450); break;
       default:
