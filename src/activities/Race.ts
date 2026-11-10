@@ -167,6 +167,7 @@ function* run(m: MissionRun, src: RaceSrc): Gen {
     m.blip('cp', { x, z }, { color: last ? '#ffffff' : '#ffd166', glyph: last ? '⚑' : '◎', name: last ? 'Finish' : `Checkpoint ${idx + 1}`, r: rad / 4.5, tall: src.mode === 'air' ? 220 : 12 });
     if (idx + 1 < total) { const [nx, nz] = cp(idx + 1); m.blip('cp2', { x: nx, z: nz }, { color: '#9aa3b5', glyph: '·', name: 'Next', r: 1.4, tall: src.mode === 'air' ? 120 : 5 }); } else m.unblip('cp2');
     s.setWaypoint(x, z);
+    m.stats.extra.cpx = x; m.stats.extra.cpz = z;
   };
   const progress = (px: number, pz: number, i: number): number => {
     if (i >= total) return total + 1;

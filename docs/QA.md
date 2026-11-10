@@ -311,3 +311,27 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 ### New heists
 - [ ] **The Long Haul** (East Highway): loud = ram the truck, kill the escorts, blow the rear doors; quiet = lay a spike strip and wait; smart = spoof the tracker and meet the truck at the dead end. Then load four bags and get away.
 - [ ] **Lucky Seven** (casino, Costa Merida) and **Night Freight** (freight train, Cinder siding) use the interior format: guards, cameras, cases, vault, bags.
+
+
+## Phase 13 — Radio, activities, collectibles
+
+### Radio
+- [ ] Get into any car: the last station (or Valeria Rock) starts and a toast names the track. `Q` (pad `LB`) cycles Off → six stations; `Shift`+`Q` goes back; clicking a card on the bottom strip tunes it.
+- [ ] Each station sounds like its genre; the DJ / advert / news lines appear as subtitles and the music ducks under them. **Settings → Audio → Radio volume** changes the level; the radio stops when you leave the vehicle and when the game is paused.
+
+### Collectibles
+- [ ] Packages (amber crates with a faint light column), trophy plates (on posts), graffiti walls ("Spray a tag", ~2.6 s, walk away to cancel), murals ("Photograph the mural") and stunt-jump ramps (flag by the ramp; 20 m and 0.7 s of air) each pay once, show "n / total" and a banner; finishing a kind pays its set bonus.
+- [ ] Items show on the map within ~240 m; finding half of a kind shows the rest. **Esc → Progress** lists them and a click sets a waypoint to the nearest one left.
+
+### Completion
+- [ ] **Esc → Progress** and the phone **Progress** app show the overall percentage and each category; crossing 10 / 25 / 50 / 75 / 100 % pays the milestone once (banner + toast).
+
+### Races and jobs
+- [ ] A ⚑ marker appears within ~900 m of each activity start; the prompt shows its title. Races: get in the car, 3-2-1-GO, checkpoints (current gold, next grey), position in the objective panel, prize by finishing place, summary card with position and time.
+- [ ] Boat / bike / air races are against the clock (par on the gold list). Taxi, courier, bounty, repo and vigilante jobs can be repeated and pay in full each time; failing offers retry / restart / quit (no skip).
+- [ ] Flight school and the stunt course start at Valeria International (a plane waits on the runway).
+
+### Mini-games
+- [ ] Casino (Gran Casino marker, Costa Merida): blackjack, roulette and slots move cash correctly (bet is taken on deal/spin, wins are paid, pushes return the bet).
+- [ ] Iron Hound bar (Cinder Flats): $25 buy-in, darts 301 against the house, pool in 20 shots; winner takes $100.
+- [ ] Phone → Toolkit: lock-picking (set pins in the green), hacking (memorise, then click), safe-cracking (turn the dial, lock in three numbers).

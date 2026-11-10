@@ -33,7 +33,7 @@ export function casinoPage(story: Story): Page {
         h('p', 'm-info', 'The house always wins a little more than you do. Bet cash only.'),
         row({ label: 'Blackjack', sub: 'Beat the dealer to 21. Blackjack pays 3 to 2.', right: n('casino.blackjack'), onClick: () => host.push(blackjackPage(story)) }),
         row({ label: 'Roulette', sub: 'Single zero. Colours, numbers, dozens.', right: n('casino.roulette'), onClick: () => host.push(roulettePage(story)) }),
-        row({ label: 'Slots', sub: 'Three reels. Sevens pay fifty.', right: n('casino.slots'), onClick: () => host.push(slotsPage(story)) }),
+        row({ label: 'Slots', sub: 'Three reels. Sevens pay a hundred.', right: n('casino.slots'), onClick: () => host.push(slotsPage(story)) }),
         btn('Leave', '', () => host.close()),
       );
     },
@@ -205,9 +205,9 @@ const REELS = ['7', '★', '♦', '♥', '♣', '♠', '♠', '♣', '♥', '♦
 
 /** Payout multiplier for three symbols (exported for tests). */
 export function slotPay(a: string, b: string, c: string): number {
-  if (a === b && b === c) return a === '7' ? 50 : a === '★' ? 20 : a === '♦' ? 10 : 5;
+  if (a === b && b === c) return a === '7' ? 100 : a === '★' ? 40 : a === '♦' ? 20 : 6;
   const sevens = [a, b, c].filter((s) => s === '7').length;
-  if (sevens === 2) return 2;
+  if (sevens === 2) return 3;
   if (a === b || b === c || a === c) return 1;
   return 0;
 }
@@ -227,7 +227,7 @@ function slotsPage(story: Story): Page {
       b.append(h('div', 'cg-reels', ...reels.map((r) => h('span', `cg-reel${r === '7' ? ' seven' : ''}`, r))));
       if (msg) b.append(h('p', 'cg-msg', msg));
       b.append(section('Bet'), chips(host, bet, (n) => { bet = n; }, eco.cash));
-      b.append(h('p', 'm-info', 'Three 7s pay 50×, three ★ 20×, three ♦ 10×, any other three 5×. Two 7s pay 2×, any pair pays your bet back.'));
+      b.append(h('p', 'm-info', 'Three 7s pay 100×, three ★ 40×, three ♦ 20×, any other three 6×. Two 7s pay 3×, any pair pays your bet back.'));
       b.append(row({
         label: spinning ? 'Spinning…' : `Pull  ${money(bet)}`, disabled: spinning || eco.cash < bet,
         onClick: () => {
@@ -245,7 +245,7 @@ function slotsPage(story: Story): Page {
             if (mult > 0) {
               eco.earn(bet * mult, 'Slots');
               msg = mult > 1 ? `Winner! ${final.join(' ')}  pays ${mult}× — ${money(bet * mult)}` : `A pair: your bet is returned.`;
-              if (mult >= 10) story.actWin('casino.slots');
+              if (mult >= 20) story.actWin('casino.slots');
             } else msg = 'No luck.';
             host.refresh();
           };

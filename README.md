@@ -44,6 +44,7 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
 | Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` | Switch · Power |
 | Crew commands (hold / follow / attack / breach) | `B` | D-pad → | Crew |
+| Radio: next station (in a vehicle; `Shift`+`Q` goes back) | `Q` | `LB` | Radio |
 | Map (full-screen, set waypoint) | `M` | `Back` (View) | Map |
 | Menu | `Esc` or `P` | `Start` (Options) | Menu |
 | Noclip (debug) | `F9` | — | — |
@@ -168,6 +169,19 @@ pay bonuses, and a disloyal crew skims extra before walking away. People learn a
 spoof its tracker), **Lucky Seven** (the Costa Merida casino vault) and **Night Freight** (a freight train on the Cinder siding). The museum and the
 yacht are still to come.
 
+### Radio, side activities and collectibles
+
+**Radio.** Six stations, synthesized live: rock, hip-hop, electronic, latin, jazz/lounge and talk, with DJs, adverts and news as subtitles (and optional spoken lines).
+Press `Q` in any vehicle or aircraft; click a card on the strip to jump to a station. **Radio volume** is in Settings → Audio.
+
+**Side activities** start from flag markers (⚑) that appear within a kilometre: **street, circuit, rally and downhill races** against AI rivals, **bike, boat and air races**
+against the clock, **taxi, courier, bounty, repo and vigilante jobs**, **flight school and a stunt course**. They pay in full every time and can be replayed.
+Walk up to the **Lucky Seven casino** (blackjack, roulette, slots) or the **Iron Hound bar** (darts, pool); the phone's **Toolkit** has lock-picking, hacking and safe-cracking.
+
+**Collectibles.** 40 hidden packages, 24 graffiti walls to spray, 16 murals to photograph, 12 stunt jumps and 15 license-plate trophies in hard places. Finding half
+of a kind marks the rest on the map. **Esc → Progress** (and the phone's *Progress* app) shows the completion percentage across story, heists, robberies, activities and
+collectibles, with cash milestones at 10 / 25 / 50 / 75 / 100 %. Details: [docs/ACTIVITIES.md](docs/ACTIVITIES.md).
+
 ### Boats, aircraft and armour
 
 Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
@@ -232,8 +246,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 9. **Aircraft, boats and military vehicles** ✅ — 4 boats, 2 helicopters, 3 planes, a tank and an APC, skydiving, Valeria International, Isla Rojo and Fort Halloran (airliner, cargo plane, wingsuit, simulation flight and diving are deferred)
 10. **Economy, properties, garage, clothing, shops, phone** ✅ — saving, 9 properties, car dealer and tuning shop, clothes and weapons shops, ATMs and a phone (stock market, tattoos, chop-shop minigame, business fronts, nitro, hidden compartments, aircraft / boat customisation and the Snapstream feed are deferred)
 11. **Mission framework and story** ✅ — mission engine, cutscenes, three switchable protagonists, 12 missions, 2 heists (the other 26 missions and 4 heists are outlined in docs/STORY.md; crew injuries and the full crew system arrive in Phase 12)
-12. **Robberies and crew** ✅ (this build) — 14 robbery kiosks plus ATMs, a 12-person crew that fights, gets hurt and has loyalty, and three more heists (museum and yacht heists, and the full 38-mission campaign, are still to come)
-13. Side activities, radio, collectibles
+12. **Robberies and crew** ✅ — 14 robbery kiosks plus ATMs, a 12-person crew that fights, gets hurt and has loyalty, and three more heists (museum and yacht heists, and the full 38-mission campaign, are still to come)
+13. **Side activities, radio, collectibles** ✅ (this build) — 6 synthesized radio stations, 15 races, 5 job types, flight school and stunt course, casino / darts / pool / toolkit mini-games, 107 collectibles and a completion tracker (the long tail of sports, fishing, hunting, diving and similar activities is deferred, see docs/ACTIVITIES.md)
 14. Polish
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.
