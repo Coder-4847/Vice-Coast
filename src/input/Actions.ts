@@ -48,7 +48,7 @@ export const ACTION_DEFS: ActionDef[] = [
   { id: 'headlights', label: 'Vehicle headlights', group: 'Vehicle', kbm: ['KeyL'], pad: [], rebindable: true },
   { id: 'cameraMode', label: 'Vehicle camera', group: 'Vehicle', kbm: ['KeyV'], pad: [PAD.RIGHT], rebindable: true },
   { id: 'weaponWheel', label: 'Weapon wheel', group: 'Menus', kbm: ['Tab'], pad: [PAD.LB], rebindable: true },
-  { id: 'radioWheel', label: 'Radio wheel', group: 'Menus', kbm: ['KeyQ'], pad: [PAD.RB], rebindable: true },
+  { id: 'radioWheel', label: 'Radio: next station', group: 'Vehicle', kbm: ['KeyQ'], pad: [PAD.LB], rebindable: true },
   { id: 'character', label: 'Switch character', group: 'Menus', kbm: ['KeyZ'], pad: [PAD.LEFT], rebindable: true },
   { id: 'crew', label: 'Crew commands', group: 'Combat', kbm: ['KeyB'], pad: [PAD.RIGHT], rebindable: true },
   { id: 'ability', label: 'Special ability', group: 'Combat', kbm: ['KeyX'], pad: [PAD.RB], rebindable: true },

@@ -68,6 +68,12 @@ export const VOICES: Record<string, Voice> = {
   fuse: v('Fuse', '#ffb86a', 1.05, 1.2, 'm'),
   ox: v('Ox', '#a0d0ff', 0.72, 0.95, 'm'),
   clerk: v('Clerk', '#cfd3dc', 1.0, 1.05, 'm'),
+  rdj1: v('Rex Hollis', '#ff5a4a', 0.7, 1.02, 'm'),
+  rdj2: v('DJ Marlowe', '#ffb02e', 0.8, 1.1, 'm'),
+  rdj3: v('Kiko Vale', '#6ae0ff', 1.1, 1.15, 'm'),
+  rdj4: v('Lupe Santos', '#ff7ab0', 1.05, 1.08, 'f'),
+  rdj5: v('Miles Ardent', '#b49aff', 0.75, 0.9, 'm'),
+  rdj6: v('Dana Cho', '#9aa3b5', 1.0, 1.04, 'f'),
 };
 
 const look = (skin: number, hair: number, shirt: number, pants: number, h = 1, w = 1): CastLook => ({ skin, hair, shirt, pants, shoe: 0x1a1a1c, h, w });

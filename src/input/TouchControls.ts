@@ -41,6 +41,7 @@ const BUTTONS: ButtonDef[] = [
   { id: 'v-horn', action: 'horn', label: 'Horn', x: 0.1, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-lights', action: 'headlights', label: 'Lights', x: 0.4, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 52, mode: 'vehicle' },
+  { id: 'v-radio', action: 'radioWheel', label: 'Radio', x: 0.6, y: 0.1, size: 52, mode: 'vehicle' },
   { id: 'v-phone', action: 'phone', label: 'Phone', x: 0.7, y: 0.1, size: 52, mode: 'vehicle' },
 ];
 

@@ -108,6 +108,11 @@ export class AudioEngine {
     return this.ctx;
   }
 
+  /** The master bus (for the radio and other long-running synths). */
+  get output(): AudioNode | null {
+    return this.ctx ? this.master : null;
+  }
+
   /** Continuous sirens, city ambience and street music (null until the context exists). */
   createSiren(): SirenVoice | null {
     return this.ctx ? new SirenVoice(this.ctx, this.master) : null;

@@ -32,7 +32,7 @@ export interface SettingsData {
     /** Touch button centres as viewport fractions, keyed by button id. */
     touchLayout: Record<string, { x: number; y: number }>;
   };
-  audio: { master: number };
+  audio: { master: number; radio: number };
   accessibility: {
     reduceMotion: boolean;
     textScale: number;
@@ -71,7 +71,7 @@ export function defaultSettings(): SettingsData {
       bindings: defaultBindings(),
       touchLayout: {},
     },
-    audio: { master: 0.8 },
+    audio: { master: 0.8, radio: 0.7 },
     accessibility: { reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off', subtitles: true, subtitleScale: 1, spokenDialogue: false },
   };
 }
@@ -133,6 +133,7 @@ export class Settings extends Emitter<{ change: SettingsData }> {
     d.accessibility.textScale = c(d.accessibility.textScale, 0.85, 1.4);
     d.accessibility.subtitleScale = c(d.accessibility.subtitleScale, 0.8, 1.8);
     d.audio.master = c(d.audio.master, 0, 1);
+    d.audio.radio = c(d.audio.radio, 0, 1);
     return d;
   }
 

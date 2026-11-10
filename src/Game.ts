@@ -10,6 +10,7 @@ import { Commerce } from './economy/Commerce';
 import { mountSlots } from './economy/screens';
 import { Phone } from './ui/Phone';
 import { Story } from './story/Story';
+import { RadioControl } from './radio/RadioControl';
 import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
@@ -75,6 +76,7 @@ export class Game {
   commerce: Commerce | null = null;
   phone: Phone | null = null;
   story: Story | null = null;
+  radio: RadioControl | null = null;
   /** Suppresses the "Waypoint set" toast for story-driven waypoints. */
   silentWp = false;
   npcs: Npcs | null = null;
@@ -246,6 +248,7 @@ export class Game {
       this.phone = new Phone(document.getElementById('ui')!, cm);
       this.phone.onClose = () => this.closePhone();
       this.story = new Story(this);
+      this.radio = new RadioControl(this);
     }
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
@@ -576,6 +579,7 @@ export class Game {
     }
     this.commerce?.update(dt);
     this.story?.update(dt);
+    this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
     // vehicle sequencing and the chase camera run after the first-person pose is on the camera
     driving?.update(dt);

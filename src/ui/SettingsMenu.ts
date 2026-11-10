@@ -445,6 +445,7 @@ export class SettingsMenu {
     const page = h('div');
     page.append(
       this.group('Volume'),
+      this.slider('Radio volume', 0, 1, 0.05, () => this.settings.data.audio.radio, (v) => this.update((d) => (d.audio.radio = v)), (v) => `${Math.round(v * 100)}%`, 'Car radio and the phone speaker. Every station is generated live in the browser.'),
       this.slider('Master volume', 0, 1, 0.05, () => this.settings.data.audio.master, (v) => this.update((d) => (d.audio.master = v)), (v) => `${Math.round(v * 100)}%`,
         'All sound is synthesised in the browser: gunshots, footsteps, impacts and mechanics.'),
     );
