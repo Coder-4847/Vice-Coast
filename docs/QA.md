@@ -335,3 +335,10 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Casino (Gran Casino marker, Costa Merida): blackjack, roulette and slots move cash correctly (bet is taken on deal/spin, wins are paid, pushes return the bet).
 - [ ] Iron Hound bar (Cinder Flats): $25 buy-in, darts 301 against the house, pool in 20 shots; winner takes $100.
 - [ ] Phone → Toolkit: lock-picking (set pins in the green), hacking (memorise, then click), safe-cracking (turn the dial, lock in three numbers).
+
+
+## Act II — Crown of Glass (missions 13-27)
+- [ ] After the jeweller heist, Pruitt's message points you to Redline Customs: **Brandt's Law** appears there. Each following mission appears after the one before it; **Halloran** needs the bank heist, **Rosa** needs the convoy heist.
+- [ ] Missions 13-15 (Mack), 16 (Imani), 17-18 (Teddy), 19 (Imani), 20 (Teddy), 21 (Mack), 22 (Imani), 23 (all three: swap with `Z`), 24 (Imani), 25 (Mack), 26 (Teddy), 27 (all three).
+- [ ] Each has a cutscene or two, a retry-from-checkpoint on failure, and unlocks the next by message and map marker.
+- [ ] **High Water** brings a storm that clears when the mission ends. **Viral** needs a 40 m jump over four parked cars. **Press Pass** and **Halloran** use the Skylark and a stolen Newsbird.

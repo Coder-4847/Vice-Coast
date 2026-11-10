@@ -417,6 +417,7 @@ export const ACT2: MissionDef[] = [
     stages: [
       function* (m): Gen {
         m.s.g.world.setWeather('storm');
+        m.onCleanup(() => m.s.g.world.setWeather('clear'));
         m.vehicle('car', 'veloce', 'mack.door', { color: '#1d2a44' });
         yield* m.enter('car', 'Take the Veloce to Dusk Harbor');
         yield* m.goto('harbor', 'Get to Dusk Harbor', { vehicle: 'car', r: 40 });

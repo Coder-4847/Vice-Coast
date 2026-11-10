@@ -97,10 +97,26 @@ campaign has a plan; it will be built in later passes.
 | H5 ✓ | **Night Freight** | Cargo train, Cinder Flats siding | A long, narrow train interior. Built in Phase 12. |
 | H6 | **Aurelia** | Crane's private yacht | Planned. |
 
-### Act II — Crown of Glass (planned)
-13 *Brandt's Law* · 14 *Family Dinner* (Mack/Carmen) · 15 *Silas* · 16 *Press Pass* (Imani/Marisol) · 17 *Hot Lap* ·
-18 *Viral* (Teddy) · 19 *Halloran* · 20 *Cheap Seats* · 21 *Rosa* · 22 *Two Deals* · 23 *The Trade* · 24 *Smoke Signals* ·
-25 *High Water* · 26 *Mama Jo* · 27 *The Reveal*
+### Act II — Crown of Glass ✓ (built in Phase 15)
+| # | Mission | Who | What happens |
+|---|---|---|---|
+| 13 | **Brandt's Law** | Mack | Brandt searches Redline Customs. Fight out of the yard, then lose the Task Force. Needs the jeweller (H1) done. |
+| 14 | **Family Dinner** | Mack | Dinner with Carmen and Lola; Lazaro gunmen attack the flat; drive the family to safety with two cars on you. |
+| 15 | **Silas** | Mack | Meet the hacker, creep past four guards, plug the cable into the Task Force server and escape. |
+| 16 | **Press Pass** | Imani | Fly Marisol's mission to Isla Rojo, photograph Crane's meeting from the villa grounds, fly home. |
+| 17 | **Hot Lap** | Teddy | A timed six-point lap of Cinder Flats for a sponsor; gold under 90 s. |
+| 18 | **Viral** | Teddy | Jump a row of four cars, then deal with the Lazaro crew who saw the footage. |
+| 19 | **Halloran** | Imani | Sneak into Fort Halloran's motor pool, copy the contract, steal a Newsbird and fly out. Needs the bank (H2) done. |
+| 20 | **Cheap Seats** | Teddy | Wreck three of Crane's campaign vans on the plaza and lose the Task Force. |
+| 21 | **Rosa** | Mack | Coffee with Rosa Lazaro in Costa Merida, then Mateo's men. Needs the convoy (H3) done. |
+| 22 | **Two Deals** | Imani | Crane offers an airline; Imani meets Tomas at Dusk Harbor instead and gets him to Mama Jo's. |
+| 23 | **The Trade** | All | Switch between all three at the depot: rooftop rifle, blockade ram, getaway driver; Mateo's last stand. |
+| 24 | **Smoke Signals** | Imani | Shoot three fuel trucks from the ridge and escape in a helicopter. |
+| 25 | **High Water** | Mack | A storm at Dusk Harbor: clear the dock, rescue Benny, outrun two Task Force cars. |
+| 26 | **Mama Jo** | Teddy | Two waves against the taqueria. |
+| 27 | **The Reveal** | All | Defend Marisol's broadcast: block the street, cover from the roof, guard the studio. |
+
+Key scenes are full cutscenes; the rest is subtitled dialogue. Act III (28–38) is still to come.
 
 ### Act III — The Fall (planned)
 28 *Crane for Governor* · 29 *Tomas* · 30 *Grease Fire* · 31 *Last Flight* · 32 *Wild West* · 33 *Debate Night* · 34 *Lola* ·
