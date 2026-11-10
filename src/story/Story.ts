@@ -17,6 +17,10 @@ import { MissionRun, type MissionDef } from './Missions';
 import { PLACES } from './places';
 import { Protagonists } from './Protagonists';
 import { Heists } from './Heists';
+import { Crew } from '../crew/Crew';
+import { Robberies } from '../crime/Robberies';
+import { Allies, COMMANDS } from '../crew/Allies';
+import { CrewWheel } from '../ui/CrewWheel';
 import { HEIST_MISSIONS } from './content/heists';
 import { glyphFor } from '../input/Glyphs';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
@@ -37,6 +41,10 @@ export class Story {
   readonly speech: Speech;
   readonly protagonists: Protagonists;
   readonly heists: Heists;
+  readonly crew: Crew;
+  readonly robberies: Robberies;
+  readonly allies: Allies;
+  readonly crewWheel: CrewWheel;
   mission: MissionRun | null = null;
   /** The text for the interact prompt when a mission start or heist board is in reach. */
   prompt: string | null = null;
@@ -60,6 +68,12 @@ export class Story {
     this.cutscenes = new Cutscenes(this);
     this.protagonists = new Protagonists(this);
     this.heists = new Heists(this);
+    this.crew = new Crew(this);
+    this.robberies = new Robberies(g, this);
+    this.allies = new Allies(g, this.hostiles, this.crew);
+    this.crewWheel = new CrewWheel(root, g.ui.hudRoot);
+    this.crewWheel.onPick = (c) => this.allies.command(c);
+    this.crewWheel.onClose = () => { g.loop.timeScale = this.protagonists.timeScaleNow(); };
     g.world.scene.add(this.beacons.group);
     for (const m of this.beacons.materials) g.world.rig.register(m);
     this.hostiles.onKilled = (p, tag) => this.onKill(p, tag);
@@ -139,12 +153,14 @@ export class Story {
     this.mission = null;
     this.hostiles.clear();
     this.drivers.clear();
+    this.allies.clear();
     this.figures.clear();
     this.clearMarkers();
     this.hud.setObjective(null, null);
     this.hud.setTimer(null);
     this.protagonists.endAbility();
     this.cutscenes.end(true);
+    this.crewWheel.hide();
   }
 
   // ------------------------------------------------------------------------------------------------ helpers for scripts
@@ -509,6 +525,9 @@ export class Story {
 
   // ------------------------------------------------------------------------------------------------ per frame
 
+  /** A new in-game day began (the injured recover). */
+  onNewDay(): void { this.crew.onNewDay(this.g.commerce!.eco.p.day); this.robberies.onNewDay(); }
+
   fixedUpdate(dt: number): void {
     this.drivers.fixedUpdate(dt);
   }
@@ -521,6 +540,7 @@ export class Story {
     this.cutscenes.update(dt);
     this.protagonists.update(dt);
     this.protagonists.padNav();
+    this.updateCrew(dt);
     this.markerT -= dt;
     if (!this.mission && !this.cutscenes.active) {
       if (this.markerT <= 0) { this.markerT = 0.5; this.syncMarkers(); }
@@ -529,8 +549,32 @@ export class Story {
     this.queueT -= dt;
     if (this.queue.length && this.queueT <= 0 && g.state === 'playing' && !g.commerce!.modal.active && !this.cutscenes.active && !this.mission) { this.queue.shift()!(); this.queueT = 4.5; }
     this.heists.update(dt);
+    this.robberies.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();
+  }
+
+  private crewSyncT = 0;
+
+  private updateCrew(dt: number): void {
+    const g = this.g;
+    this.allies.update();
+    this.crewSyncT -= dt;
+    if (this.crewSyncT <= 0) { this.crewSyncT = 2; this.crew.sync(); }
+    const active = this.allies.active;
+    this.crewWheel.setChip(active ? `Crew: ${COMMANDS.find((c) => c.id === this.allies.mode)!.label}` : null);
+    if (this.crewWheel.open) {
+      if (!active || this.cutscenes.active) { this.crewWheel.hide(); return; }
+      const n = g.input.nav;
+      if (n.x) this.crewWheel.step(n.x > 0 ? 1 : -1);
+      if (n.confirm) this.crewWheel.confirm();
+      if (n.back) this.crewWheel.hide();
+      return;
+    }
+    if (active && g.state === 'playing' && !this.sceneBlocksInput() && g.driving?.mode === 'foot' && g.input.pressed('crew')) {
+      this.crewWheel.show(this.allies.mode);
+      g.loop.timeScale = 0.3;
+    }
   }
 
   /** The player's position for markers: their car if driving. */
@@ -558,6 +602,12 @@ export class Story {
       const hs = this.heists.nearBoard(pos.x, pos.z, car ? 7 : 3.4);
       if (hs) { this.near = { kind: 'heist', id: hs.id }; this.prompt = hs.prompt; }
     }
+    let rob: { text: string; go: () => void } | null = null;
+    if (!this.near) {
+      rob = this.robberies.offer();
+      if (rob) this.prompt = rob.text;
+    }
+    if (rob && g.input.pressed('interact')) { g.input.swallow('interact'); rob.go(); return; }
     if (this.near && g.input.pressed('interact')) {
       g.input.swallow('interact');
       if (this.near.kind === 'mission') this.startMission(this.near.def);

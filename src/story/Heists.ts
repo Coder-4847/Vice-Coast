@@ -1,7 +1,9 @@
 import { btn, row, section, type Page } from '../ui/Modal';
 import { money } from '../economy/Economy';
 import { h } from '../ui/dom';
-import { APPROACHES, CREW, HEISTS, PREPS, execMission, type Approach, type HeistDef } from './content/heists';
+import { APPROACHES, HEISTS, PREPS, execMission, type Approach, type HeistDef } from './content/heists';
+import { crewPage, crewSub } from '../crew/CrewUi';
+import { ROSTER } from '../crew/roster';
 import { Site, type SiteCfg } from './Sites';
 import type { Story } from './Story';
 import type { HeistRecord } from './types';
@@ -15,7 +17,7 @@ export class Heists {
   inside = false;
   private outside = { x: 0, z: 0, yaw: 0 };
   /** The last pay-out (for the result card). */
-  lastResult: { gross: number; perf: number; cuts: number; net: number; alarm: boolean } | null = null;
+  lastResult: { gross: number; perf: number; cuts: number; net: number; alarm: boolean; notes: string[] } | null = null;
   private boardId = -1;
   private boardPos = { x: 0, z: 0 };
 
@@ -34,24 +36,17 @@ export class Heists {
   list(): HeistDef[] { return HEISTS.filter((x) => this.unlocked(x.id)); }
 
   /** A heist just finished. */
-  onDone(hd: HeistDef, approach: Approach, crew: string[]): void {
+  finishJob(hd: HeistDef, approach: Approach, net: number): void {
     const rec = this.record(hd.id);
     rec.done = true;
     rec.plays++;
     rec.approach = approach;
-    rec.prep = [];
-    const net = this.lastResult?.net ?? 0;
     rec.take = Math.max(rec.take, net);
-    void crew;
-    if (hd.id === 'h1') { this.unlock('h2'); this.s.g.commerce?.eco.message('Pruitt', 'Two for two soon, I hope. Silas Quinn, a hacker I trust, has asked to join you. The bank is next.'); }
-    if (hd.id === 'h2') this.s.g.commerce?.eco.message('Pruitt', 'Crane has noticed. Good. The next jobs are bigger: convoy, casino, the railroad. (More heists arrive in a later update.)');
-  }
-
-  crewAvailable(id: string): boolean {
-    const c = CREW.find((x) => x.id === id)!;
-    if (c.needs.mission && !this.s.done(c.needs.mission)) return false;
-    if (c.needs.heist && !this.record(c.needs.heist).done) return false;
-    return true;
+    const next = HEISTS[HEISTS.findIndex((x) => x.id === hd.id) + 1];
+    if (next && !this.unlocked(next.id)) {
+      this.unlock(next.id);
+      this.s.g.commerce?.eco.message('Pruitt', next.id === 'h2' ? 'Two for two soon, I hope. Silas Quinn, a hacker I trust, has asked to join you. The bank is next.' : `${next.name}: the file is on the heist board.`);
+    }
   }
 
   prepDone(hd: HeistDef, a: Approach): boolean {
@@ -180,15 +175,18 @@ export class Heists {
             onClick: () => { rec.approach = ap; host.refresh(); },
           }));
         }
-        host.body.append(section('Crew'));
+        host.body.append(section('Crew (up to four)'));
         const picked = rec.crew;
-        for (const c of CREW) {
-          const ok = this.crewAvailable(c.id);
+        const hired = ROSTER.filter((d) => this.s.crew.hired().includes(d));
+        if (!hired.length) host.body.append(h('p', 'm-info', 'No crew yet: recruit people below.'));
+        for (const d of hired) {
+          const u = this.s.crew.usable(d.id);
           host.body.append(row({
-            label: `${c.name} · ${c.role}`, sub: ok ? c.effect : 'Not available yet', right: `${Math.round(c.cut * 100)}% cut`, selected: picked.includes(c.id), disabled: !ok,
-            onClick: () => { const i = picked.indexOf(c.id); if (i >= 0) picked.splice(i, 1); else picked.push(c.id); host.refresh(); },
+            label: d.name, sub: u.ok ? crewSub(this.s, d) : `${crewSub(this.s, d)} — ${u.why}`, right: `${Math.round(d.cut * 100)}%`, selected: picked.includes(d.id) && u.ok, disabled: !u.ok,
+            onClick: () => { const i = picked.indexOf(d.id); if (i >= 0) picked.splice(i, 1); else if (picked.filter((x) => this.s.crew.usable(x).ok).length < 4) picked.push(d.id); else host.toast('Four is a full crew'); host.refresh(); },
           }));
         }
+        host.body.append(row({ label: 'Recruit and manage crew', sub: 'Hire specialists, pay bonuses, see who is hurt', onClick: () => host.push(crewPage(this.s)) }));
         if (a) {
           host.body.append(section('Prep'));
           for (const id of hd.prep[a]) {
@@ -208,7 +206,8 @@ export class Heists {
           host.body.append(btn(ready ? `Start the job (${a})` : 'Finish the prep first', ready ? 'primary' : '', () => {
             if (!ready) return;
             host.close();
-            const def = execMission(hd, { approach: a, crew: this.chosenCrew(rec), prepDone: [...hd.prep[a]] });
+            const crew = this.chosenCrew(rec);
+            const def = execMission(hd, { approach: a, crew, prepDone: [...hd.prep[a]], fx: this.s.crew.effects(crew, a) });
             this.s.startMission(def);
           }));
         } else host.body.append(h('p', 'm-info', 'Choose an approach to see its prep jobs.'));
@@ -217,7 +216,7 @@ export class Heists {
   }
 
   private chosenCrew(rec: HeistRecord): string[] {
-    return rec.crew.filter((id) => this.crewAvailable(id));
+    return rec.crew.filter((id) => this.s.crew.usable(id).ok);
   }
 }
 

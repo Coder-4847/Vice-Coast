@@ -40,7 +40,7 @@ export function migrate(p: Partial<Profile>): Profile {
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,
     messages: p.messages ?? base.messages,
-    story: { ...base.story, ...(p.story ?? {}), meter: { ...base.story.meter, ...(p.story?.meter ?? {}) }, missions: p.story?.missions ?? {}, heists: p.story?.heists ?? {}, flags: p.story?.flags ?? {}, chars: p.story?.chars ?? {}, unlocked: p.story?.unlocked ?? base.story.unlocked },
+    story: { ...base.story, ...(p.story ?? {}), meter: { ...base.story.meter, ...(p.story?.meter ?? {}) }, missions: p.story?.missions ?? {}, heists: p.story?.heists ?? {}, flags: p.story?.flags ?? {}, chars: p.story?.chars ?? {}, unlocked: p.story?.unlocked ?? base.story.unlocked, crew: p.story?.crew ?? {}, rob: { ...base.story.rob, ...(p.story?.rob ?? {}), cooldown: p.story?.rob?.cooldown ?? {} } },
   };
 }
 
@@ -69,6 +69,9 @@ export class Economy extends Emitter<EconomyEvents> {
   get worth(): number { return this.p.cash + this.p.bank; }
 
   canAfford(n: number): boolean { return this.p.cash >= n; }
+
+  /** Cash plus the bank balance can cover it. */
+  canAffordTotal(n: number): boolean { return this.p.cash + this.p.bank >= n; }
 
   /** Pay from cash only (shops, street prices). Returns false (and changes nothing) when short. */
   spend(n: number, reason: string): boolean {

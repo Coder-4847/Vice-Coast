@@ -170,6 +170,9 @@ export class Points {
     return { x: nx, z: nz };
   }
 
+  /** True when no solid scenery lies within `m` metres of (x, z). */
+  free(x: number, z: number, m: number): boolean { return this.clear.free(x, z, m); }
+
   get materials(): THREE.Material[] { return [this.mat, this.ringMat]; }
 
   /** Property beams go green when owned. */

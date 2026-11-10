@@ -59,6 +59,15 @@ export const VOICES: Record<string, Voice> = {
   guard: v('Guard', '#9aa0ae', 0.8, 1.0, 'm'),
   thug: v('Gunman', '#ff7a59', 0.75, 1.05, 'm'),
   narrator: v('', '#eceef3', 1.0, 1.0, 'm'),
+  tilly: v('Tilly', '#ff9ac2', 1.1, 1.12, 'f'),
+  wren: v('Wren', '#9fe0b8', 1.08, 1.12, 'f'),
+  jinx: v('Jinx', '#c8a3ff', 1.15, 1.18, 'f'),
+  tank: v('Tank', '#b0b6c0', 0.65, 0.92, 'm'),
+  marco: v('Marco', '#ffcf7a', 0.85, 1.0, 'm'),
+  vera: v('Vera', '#ff7a7a', 0.95, 1.0, 'f'),
+  fuse: v('Fuse', '#ffb86a', 1.05, 1.2, 'm'),
+  ox: v('Ox', '#a0d0ff', 0.72, 0.95, 'm'),
+  clerk: v('Clerk', '#cfd3dc', 1.0, 1.05, 'm'),
 };
 
 const look = (skin: number, hair: number, shirt: number, pants: number, h = 1, w = 1): CastLook => ({ skin, hair, shirt, pants, shoe: 0x1a1a1c, h, w });
@@ -77,5 +86,14 @@ export const CAST: Record<string, CastDef> = {
   silas: { id: 'silas', voice: VOICES.silas!, look: look(0xf1c7a5, 0x2a1d14, 0x2c2c2f, 0x1e2230, 1.02, 0.9) },
   guard: { id: 'guard', voice: VOICES.guard!, look: look(0xe0ac86, 0x2a1d14, 0x2a2d33, 0x1b1d20, 1.04, 1.06) },
   guard2: { id: 'guard2', voice: VOICES.guard!, look: look(0xc68863, 0x16110d, 0x30343a, 0x1b1d20, 1.0, 1.0) },
+  tilly: { id: 'tilly', voice: VOICES.tilly!, look: look(0xe0ac86, 0xc9a45a, 0xc4202c, 0x1e2230, 0.97, 0.94) },
+  wren: { id: 'wren', voice: VOICES.wren!, look: look(0xc68863, 0x2a1d14, 0x2f8a8c, 0x2c2c2f, 0.95, 0.92) },
+  jinx: { id: 'jinx', voice: VOICES.jinx!, look: look(0xf1c7a5, 0x6a2a8c, 0x1b1d20, 0x1b1d20, 0.96, 0.9) },
+  tank: { id: 'tank', voice: VOICES.tank!, look: look(0x7a4a2b, 0x16110d, 0x3a4a3a, 0x2a2a2e, 1.1, 1.2) },
+  marco: { id: 'marco', voice: VOICES.marco!, look: look(0xc68863, 0x2a1d14, 0x1f2430, 0x1b1d20, 1.04, 1.04) },
+  vera: { id: 'vera', voice: VOICES.vera!, look: look(0xf1c7a5, 0xb08a52, 0x30363a, 0x202226, 1.0, 0.96) },
+  fuse: { id: 'fuse', voice: VOICES.fuse!, look: look(0xe0ac86, 0x8d8d8a, 0xd9743a, 0x4a4036, 1.0, 1.04) },
+  ox: { id: 'ox', voice: VOICES.ox!, look: look(0x5b3a22, 0x16110d, 0x4a4036, 0x2a2d33, 1.08, 1.16) },
+  clerk: { id: 'clerk', voice: VOICES.clerk!, look: look(0xe0ac86, 0x4b3322, 0xe8e8e4, 0x3b3f4a, 1.0, 1.0) },
   thug: { id: 'thug', voice: VOICES.thug!, look: look(0xc68863, 0x16110d, 0x8c2b2b, 0x1e2230, 1.02, 1.04) },
 };

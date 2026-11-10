@@ -77,7 +77,7 @@ export class PedNet {
 
 // ====================================================================================== appearances
 
-export type Role = 'civ' | 'cop' | 'swat' | 'fed' | 'sniper' | 'soldier' | 'thug' | 'actor';
+export type Role = 'civ' | 'cop' | 'swat' | 'fed' | 'sniper' | 'soldier' | 'thug' | 'actor' | 'clerk';
 export type Arch = 'cop' | 'swat' | 'fed' | 'soldier' | 'walker' | 'commuter' | 'jogger' | 'worker' | 'tourist' | 'party' | 'drunk' | 'kid' | 'musician' | 'listener' | 'protester' | 'sunbather' | 'stroller' | 'local';
 export type PedState = 'walk' | 'wait' | 'idle' | 'flee' | 'film' | 'down' | 'stand' | 'path' | 'lie';
 
@@ -172,6 +172,8 @@ export class Ped {
   ai: ((p: Ped, dt: number) => void) | null = null;
   /** Gun raised (renders the aiming pose with a weapon). */
   aim = false;
+  /** Actors, crew and clerks draw a gun in the aiming pose only when this is set. */
+  armed = false;
   fireT = 0;
   burstN = 0;
   /** Combat AI: currently has line of sight to its target. */
@@ -326,7 +328,7 @@ export class Pedestrians {
       for (const q of this.peds) if (q.active && q.role === 'civ' && !q.keep && q.dist > far) { far = q.dist; p = q; }
       if (!p || far < 40) return null;
     }
-    p.role = 'civ'; p.ai = null; p.aim = false; p.keep = false; p.armor = 0; p.sees = false; p.buddy = null;
+    p.role = 'civ'; p.ai = null; p.aim = false; p.armed = false; p.keep = false; p.armor = 0; p.sees = false; p.buddy = null;
     p.active = true;
     p.id = this.nextId++;
     this.outfit(p, arch, district ?? this.districtAt(x, z));
@@ -794,7 +796,7 @@ export class PedRenderer {
         nl++;
       }
       // accessories
-      if ((p.role !== 'civ' && p.role !== 'actor' || p.role === 'actor' && p.aim) && p.state !== 'down') {
+      if ((p.role !== 'civ' && p.role !== 'actor' && p.role !== 'clerk' || (p.role === 'actor' || p.role === 'clerk') && p.aim && p.armed) && p.state !== 'down') {
         const rifle = p.role !== 'cop' || p.look.h > 1.02;
         this.set(this.acc, nacc++, _qb, 0.06 * w, 1.3 * h, (rifle ? 0.5 : 0.36) * h, bx, by, bz, rifle ? 0.07 : 0.05, rifle ? 0.1 : 0.1, rifle ? 0.85 : 0.3, 0x15171a);
       } else if (p.state === 'film' || (p.accessory === 1 && p.state !== 'down' && p.state !== 'flee')) {

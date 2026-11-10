@@ -28,6 +28,7 @@ const BUTTONS: ButtonDef[] = [
   { id: 'map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 54 },
   { id: 'phone', action: 'phone', label: 'Phone', x: 0.3, y: 0.1, size: 54 },
   { id: 'switch', action: 'character', label: 'Switch', x: 0.2, y: 0.1, size: 50, mode: 'both' },
+  { id: 'crew', action: 'crew', label: 'Crew', x: 0.1, y: 0.38, size: 50, mode: 'foot' },
   { id: 'ability', action: 'ability', label: 'Power', x: 0.1, y: 0.24, size: 50, mode: 'both' },
   { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54, mode: 'both' },
   // ---- driving layout: steer with the left stick, pedals under the right thumb

@@ -312,7 +312,7 @@ export class Protagonists {
     c.craftScale = id === 'imani' ? 0.6 : 1;
   }
 
-  private timeScaleNow(): number {
+  timeScaleNow(): number {
     if (this.abilityT <= 0) return 1;
     const a = this.s.st.active;
     return a === 'mack' ? ABILITY.slipstream.scale : a === 'imani' ? ABILITY.overwatch.scale : ABILITY.rampage.scale;

@@ -6,6 +6,7 @@ import { h } from './dom';
 import { MenuNav } from './MenuNav';
 import { CHARS } from '../story/chars';
 import { Story } from '../story/Story';
+import { crewPage } from '../crew/CrewUi';
 import { CHAR_IDS } from '../story/types';
 import { row, section } from './Modal';
 
@@ -23,6 +24,7 @@ const APPS: App[] = [
   { id: 'insurance', name: 'Insure', glyph: '◉', color: '#ff6a6a' },
   { id: 'missions', name: 'Missions', glyph: '★', color: '#ffd166' },
   { id: 'switch', name: 'Switch', glyph: '⇄', color: '#4aa8ff' },
+  { id: 'crew', name: 'Crew', glyph: '☻', color: '#ff7a59' },
   { id: 'camera', name: 'Camera', glyph: '◐', color: '#e8e9ec' },
 ];
 
@@ -143,6 +145,7 @@ export class Phone {
       case 'insurance': this.push('Mors Mutual', (el) => this.insurance(el)); break;
       case 'missions': this.push('Missions', (el) => this.missions(el)); break;
       case 'switch': this.push('Characters', (el) => this.characters(el)); break;
+      case 'crew': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(crewPage(st)); }, 400); break;
       case 'camera': this.close(); setTimeout(() => this.c.photo(), 450); break;
       default:
     }

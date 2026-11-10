@@ -421,6 +421,8 @@ export class Commerce {
       else if (pt.kind === 'showroom' && this.test) { this.near = pt; this.prompt = 'End test drive'; }
     } else {
       if (p.state !== 'ground' || p.noclip || p.mantle) return;
+      // with a gun out an ATM is a target, not a bank: the robbery system takes over
+      if (pt.kind === 'atm' && g.weapon?.isDrawn) return;
       this.near = pt;
       this.prompt = pt.kind === 'atm' ? 'Use ATM'
         : pt.kind === 'property' ? (this.eco.owns(pt.ref) ? `Enter ${pt.name}` : `${pt.name} — for sale ${money(PROPERTY_BY_ID[pt.ref]!.price)}`)
@@ -441,6 +443,7 @@ export class Commerce {
   private newDay(): void {
     const notes = this.eco.newDay();
     this.game.ui.toast(`Day ${this.eco.p.day}${notes.length ? ' · ' + notes[0] : ''}`);
+    this.game.story?.onNewDay();
     this.autosave();
   }
 

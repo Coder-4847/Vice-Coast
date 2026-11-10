@@ -50,6 +50,7 @@ export class Figures {
     p.edge = -1;
     p.health = 100;
     p.aim = aim;
+    p.armed = aim;
     p.ai = (q, dt) => this.tick(q, dt);
     this.map.set(id, p);
     return p;
@@ -62,7 +63,7 @@ export class Figures {
 
   setAim(id: string, aim: boolean): void {
     const p = this.map.get(id);
-    if (p) p.aim = aim;
+    if (p) { p.aim = aim; p.armed = aim; }
   }
 
   walkTo(id: string, x: number, z: number, speed = 1.5, done?: () => void): void {

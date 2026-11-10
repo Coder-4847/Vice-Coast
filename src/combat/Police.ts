@@ -116,11 +116,11 @@ export class Police {
     const prevHooks = { ...hooks };
     hooks.hit = (p, byPlayer) => {
       if (!byPlayer || p.role === 'thug' || p.role === 'actor') return;
-      this.crime(p.role === 'civ' ? 7 : 10, p.x, p.z, { cop: p.role !== 'civ' });
+      this.crime(p.role === 'civ' || p.role === 'clerk' ? 7 : 10, p.x, p.z, { cop: p.role !== 'civ' && p.role !== 'clerk' });
     };
     hooks.killed = (p, byPlayer) => {
       if (!byPlayer || p.role === 'thug' || p.role === 'actor') return;
-      this.crime(p.role === 'civ' ? 28 : 85, p.x, p.z, { cop: p.role !== 'civ' });
+      this.crime(p.role === 'civ' || p.role === 'clerk' ? 28 : 85, p.x, p.z, { cop: p.role !== 'civ' && p.role !== 'clerk' });
     };
     void prevHooks;
     // vehicle crashes into traffic caused by the player

@@ -52,6 +52,9 @@ export class Hostiles {
   /** A guard saw you or heard a shot (stealth medals read this). */
   onAlert: ((p: Ped) => void) | null = null;
   stats = { shots: 0, hitsOnPlayer: 0, alerts: 0 };
+  /** Allied crew the gunmen may shoot at, and what happens when they land a hit. */
+  allies: (() => Ped[]) | null = null;
+  onHitAlly: ((p: Ped, dmg: number) => void) | null = null;
   /** Set while a cutscene plays: nobody shoots. */
   hold = false;
   /** Crew and prep work shrink how far unaware guards can see you (1 = normal). */
@@ -97,6 +100,9 @@ export class Hostiles {
     for (const [p, m] of this.meta) if ((tag === undefined || m.tag === tag) && p.active && p.state !== 'down' && p.health > 0) n++;
     return n;
   }
+
+  /** Is this gunman awake (not an unaware guard)? */
+  awake(p: Ped): boolean { const m = this.meta.get(p); return !!m && !m.unaware; }
 
   /** The nearest living hostile with this tag. */
   nearest(x: number, z: number, tag?: string): Ped | null {
@@ -156,12 +162,23 @@ export class Hostiles {
     const g = this.g;
     const pl = g.player!;
     const drv = g.driving;
-    const car = drv && drv.mode === 'driving' ? drv.vehicle : null;
-    const tx = car ? car.position.x : pl.pos.x, tz = car ? car.position.z : pl.pos.z;
-    const ty = car ? car.position.y + 0.8 : pl.pos.y + 1.0;
-    const dx = tx - p.x, dz = tz - p.z;
-    const d = Math.hypot(dx, dz);
+    let car = drv && drv.mode === 'driving' ? drv.vehicle : null;
+    let tx = car ? car.position.x : pl.pos.x, tz = car ? car.position.z : pl.pos.z;
+    let ty = car ? car.position.y + 0.8 : pl.pos.y + 1.0;
+    let d = Math.hypot(tx - p.x, tz - p.z);
     const spec = SPECS[m.kind];
+    // allied crew draw fire too: pick whoever is clearly closer
+    let ally: Ped | null = null;
+    if (this.allies && !m.unaware) {
+      let bd = d - 2;
+      for (const a of this.allies()) {
+        if (!a.active || a.state === 'down') continue;
+        const ad = Math.hypot(a.x - p.x, a.z - p.z);
+        if (ad < bd && ad < spec.sight) { bd = ad; ally = a; }
+      }
+      if (ally) { tx = ally.x; tz = ally.z; ty = ally.y + 1.0; d = bd; car = null; }
+    }
+    const dx = tx - p.x, dz = tz - p.z;
     m.fireT -= dt;
     p.stateT -= dt;
     if (p.stateT <= 0) {
@@ -183,7 +200,7 @@ export class Hostiles {
       p.yaw = turn(p.yaw, Math.atan2(dx, dz), dt * 9);
       p.speed = !m.hold && d > spec.range * 0.55 ? 1.5 : 0;
       if (p.speed > 0) this.step(p, p.yaw, p.speed, dt);
-      if (m.fireT <= 0) this.shoot(p, m, spec, d, tx, ty, tz, car !== null, car ? car.speedKmh / 3.6 : pl.vel.length());
+      if (m.fireT <= 0) this.shoot(p, m, spec, d, tx, ty, tz, car !== null, car ? car.speedKmh / 3.6 : ally ? 1 : pl.vel.length(), ally);
       return;
     }
     p.aim = false;
@@ -242,7 +259,7 @@ export class Hostiles {
     return !!this.g.physics!.raycast(_o, _d, len, undefined, GROUP.WORLD);
   }
 
-  private shoot(p: Ped, m: Meta, spec: Spec, d: number, tx: number, ty: number, tz: number, car: boolean, speed: number): void {
+  private shoot(p: Ped, m: Meta, spec: Spec, d: number, tx: number, ty: number, tz: number, car: boolean, speed: number, ally: Ped | null): void {
     m.burst++;
     if (m.burst >= spec.burst) { m.burst = 0; m.fireT = spec.pause * (0.8 + Math.random() * 0.5); } else m.fireT = spec.interval;
     this.stats.shots++;
@@ -264,7 +281,8 @@ export class Hostiles {
     }
     if (this.shotsThisFrame++ < 4) g.audio.gunshot(0.8, { x: mx, y: my, z: mz }, m.kind);
     if (hits > 0) {
-      g.combat?.hurtPlayer(spec.dmg * hits * m.power, p.x, p.z);
+      if (ally) this.onHitAlly?.(ally, spec.dmg * hits * 3);
+      else g.combat?.hurtPlayer(spec.dmg * hits * m.power, p.x, p.z);
       this.stats.hitsOnPlayer += hits;
     }
   }

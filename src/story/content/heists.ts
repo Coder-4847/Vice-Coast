@@ -2,26 +2,10 @@ import { HEAT } from '../../combat/Wanted';
 import { GOLD, type Gen, type MissionDef, type MissionRun } from '../Missions';
 import type { SiteCfg } from '../Sites';
 import type { Place } from '../types';
+import type { CrewFx } from '../../crew/Crew';
 
 export type Approach = 'loud' | 'quiet' | 'smart';
 export const APPROACHES: Approach[] = ['loud', 'quiet', 'smart'];
-
-export interface CrewDef {
-  id: string;
-  name: string;
-  role: string;
-  /** Share of the take. */
-  cut: number;
-  effect: string;
-  /** Story flag or mission that unlocks them. */
-  needs: { mission?: string; heist?: string };
-}
-
-export const CREW: CrewDef[] = [
-  { id: 'benny', name: 'Benny Okonkwo', role: 'Driver', cut: 0.08, effect: 'Knows every back road: one fewer wanted star when you leave.', needs: { mission: 'm02' } },
-  { id: 'dex', name: 'Dex Quill', role: 'Lookout', cut: 0.05, effect: 'Watches the floor: unaware guards notice you from 30% less distance.', needs: { mission: 'm09' } },
-  { id: 'silas', name: 'Silas Quinn', role: 'Hacker', cut: 0.1, effect: 'Loops the cameras (they see 60% less) and cuts vault times by a third.', needs: { heist: 'h1' } },
-];
 
 export interface PrepDef { id: string; title: string; blurb: string; approach: Approach }
 
@@ -170,19 +154,21 @@ export const HEIST_PREPS: MissionDef[] = [
 
 // ------------------------------------------------------------------------------------------------ the heist itself
 
-export interface ExecOpts { approach: Approach; crew: string[]; prepDone: string[] }
+export interface ExecOpts { approach: Approach; crew: string[]; prepDone: string[]; fx: CrewFx }
 
 /** Build the mission for one heist run with the chosen approach, crew and finished prep. */
 export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
   const { approach, crew } = o;
   const has = (p: string): boolean => o.prepDone.includes(p);
-  const hack = crew.includes('silas');
-  const ctx = { alarm: false, pending: 0, take: 0, bags: 0, cases: 0, policeT: 0, spotted: 0 };
+  const fx = o.fx;
+  const ctx = { alarm: false, pending: 0, take: 0, bags: 0, cases: 0, policeT: 0, spotted: 0, downed: new Set<string>() };
   const total = h.site.cases * h.caseValue + 3 * h.bagValue;
-  const camScale = (has('h1_codes') || has('h2_hack') ? 0 : 1) * (hack ? 0.4 : 1);
-  const vaultScale = (hack ? 0.67 : 1) * (approach === 'loud' && (has('h1_van') || has('h2_charges')) ? 0.6 : 1);
-  const seeScale = (crew.includes('dex') ? 0.7 : 1) * ((has('h1_uniforms') || has('h2_pass') || has('h2_scout')) ? 0.6 : 1);
-  const starsOff = crew.includes('benny') ? 1 : 0;
+  const smartPrep = h.prep.smart.some(has);
+  const camScale = (smartPrep ? 0 : 1) * fx.camScale;
+  const vaultScale = fx.vaultScale * (approach === 'loud' && h.prep.loud.some(has) ? 0.6 : 1);
+  const lockScale = fx.lockScale;
+  const seeScale = h.prep.quiet.some(has) ? 0.6 : 1;
+  const starsOff = fx.starsOff;
 
   return {
     id: `${h.id}_${approach}`, title: `${h.name}`, char: 'any', act: 2, giver: 'pruitt', start: 'home.mack', hidden: true,
@@ -193,7 +179,6 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
       approach === 'loud' ? GOLD.flawless(70) : GOLD.stealth(),
       { id: 'all', label: 'Take everything', test: (s) => (s.extra.take ?? 0) >= total },
     ],
-    unlock: (s) => s.heists.onDone(h, approach, crew),
     stages: [
       function* (m): Gen { yield* m.cutscene(h.intro); },
       // ---- travel ---------------------------------------------------------------------------------------------
@@ -241,6 +226,14 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
             if (ctx.policeT <= 0) { ctx.pending = Math.max(ctx.pending, 4); s.hud.setTimer(null); }
           }
         });
+        // crew gunmen come in with you
+        const A = s.allies;
+        A.clear();
+        A.mode = approach === 'loud' ? 'follow' : 'hold';
+        A.onDowned = (def) => { ctx.downed.add(def.id); s.hud.showTip(`${def.name} is down!`, 4); };
+        fx.gunmen.forEach((def, i) => { const pt = site.at(site.spots.door[0] + (i - (fx.gunmen.length - 1) / 2) * 1.6, site.spots.door[1] + 2.2); A.spawn(def, pt.x, pt.z); });
+        m.onCleanup(() => A.clear());
+        if (A.active) s.hud.showTip(`Crew gunmen with you: press ${s.g.input.activeDevice === 'gamepad' ? 'D-pad →' : 'B'} to give orders`, 7);
         if (approach === 'loud') {
           raise('Armed robbery');
           m.say('guard', 'Everybody down! Hit the alarm!');
@@ -255,7 +248,7 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
         // display cases
         for (let i = 0; i < site.cases.length; i++) {
           const c = site.cases[i]!;
-          yield* m.hold({ x: c.x, z: c.z }, approach === 'loud' ? 'Smash the display case' : 'Pick the display case lock', approach === 'loud' ? 2.2 : 3.8, { key: 'case', glyph: '◆' });
+          yield* m.hold({ x: c.x, z: c.z }, approach === 'loud' ? 'Smash the display case' : 'Pick the display case lock', (approach === 'loud' ? 2.2 : 3.8) * lockScale, { key: 'case', glyph: '◆' });
           site.takeCase(i);
           ctx.take += h.caseValue; ctx.cases++;
           m.stats.extra.take = ctx.take;
@@ -268,8 +261,8 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
           yield* m.hold(vv, 'Drill the vault door', 26 * vaultScale, { key: 'vault' });
         } else if (approach === 'quiet') {
           const o = site.spots.office, oo = site.at(o[0], o[1]);
-          yield* m.hold(oo, 'Take the manager\'s keycard', 4, { key: 'card' });
-          yield* m.hold(vv, 'Swipe the keycard at the vault', 3 * vaultScale, { key: 'vault' });
+          yield* m.hold(oo, 'Take the manager\'s keycard', 4 * lockScale, { key: 'card' });
+          yield* m.hold(vv, 'Swipe the keycard at the vault', 3 * vaultScale * lockScale, { key: 'vault' });
         } else {
           const pn = site.spots.panel, pp = site.at(pn[0], pn[1]);
           yield* m.hold(pp, 'Hack the security terminal', 7 * vaultScale, { key: 'term', glyph: '▣' });
@@ -316,14 +309,18 @@ export function execMission(h: HeistDef, o: ExecOpts): MissionDef {
         const getaway = m.hasVeh('getaway') ? m.veh('getaway') : null;
         if (getaway && !m.playerIn('getaway')) yield* m.enter('getaway', 'Get back into the getaway car');
         yield* m.goto('home.mack', 'Take the money to the Boardwalk Studio', { r: 25 });
-        // the split
-        const cuts = crew.reduce((a, id) => a + (CREW.find((c) => c.id === id)?.cut ?? 0), 0);
+        // the split: crew cuts, anyone who is skimming, then what happened to them
+        const cuts = fx.cuts + m.s.crew.skim(crew);
         const perf = ctx.alarm ? 0.9 : 1.1;
-        const net = Math.round(ctx.take * perf * (1 - cuts));
+        const gross = ctx.take;
+        const net = Math.round(gross * perf * (1 - cuts));
         m.stats.extra.payout = net;
-        m.stats.extra.gross = ctx.take;
-        m.stats.extra.cuts = Math.round(ctx.take * perf * cuts);
-        m.s.heists.lastResult = { gross: ctx.take, perf, cuts: Math.round(ctx.take * perf * cuts), net, alarm: ctx.alarm };
+        m.stats.extra.gross = gross;
+        m.stats.extra.cuts = Math.round(gross * perf * cuts);
+        const notes = m.s.crew.settle(crew, { approach, alarm: ctx.alarm, success: true, downed: ctx.downed });
+        m.s.heists.lastResult = { gross, perf, cuts: Math.round(gross * perf * cuts), net, alarm: ctx.alarm, notes };
+        m.s.heists.finishJob(h, approach, net);
+        m.s.allies.clear();
         yield* m.cutscene(h.done);
       },
     ],

@@ -530,3 +530,14 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .ability-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.35s var(--ease); z-index: 20; }
 .ability-fx.on { opacity: 1; }
 .hud.cin > * { opacity: 0 !important; visibility: hidden; }
+
+/* crew command wheel */
+.crew-wheel { position: absolute; left: 50%; bottom: calc(var(--sp-6) + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); display: flex; gap: var(--sp-2); opacity: 0; pointer-events: none; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); z-index: 45; }
+.crew-wheel.open { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.cw-card { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 118px; padding: 10px 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--glass-strong); color: inherit; font: inherit; cursor: pointer; }
+.cw-card.sel { border-color: var(--accent); transform: translateY(-4px); }
+.cw-card b { color: var(--accent); font-size: var(--fs-sm); }
+.cw-label { font-weight: 600; } .cw-hint { font-size: var(--fs-xs); color: var(--muted); text-align: center; }
+.crew-chip { position: absolute; left: calc(var(--sp-4) + env(safe-area-inset-left)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom) + 124px); padding: 2px 10px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--line); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+.crew-chip.is-hidden { display: none; }
+@media (max-width: 640px) { .crew-wheel { flex-wrap: wrap; justify-content: center; width: 92vw; } .cw-card { width: 44%; } }

@@ -43,7 +43,7 @@ export interface BindingSource {
 
 const TOUCH_LABELS: Partial<Record<Action, string>> = {
   jump: 'Jump', sprint: 'Sprint', crouch: 'Crouch', interact: 'Use', fire: 'Fire', aim: 'Aim', reload: 'Reload',
-  weaponWheel: 'Weapons', radioWheel: 'Radio', character: 'Switch', ability: 'Power', phone: 'Phone', map: 'Map', pause: 'Menu',
+  weaponWheel: 'Weapons', radioWheel: 'Radio', character: 'Switch', ability: 'Power', crew: 'Crew', phone: 'Phone', map: 'Map', pause: 'Menu',
 };
 
 /** Human-readable glyph text for an action on the given device. */

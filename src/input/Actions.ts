@@ -4,7 +4,7 @@ export type Action =
   | 'moveForward' | 'moveBack' | 'moveLeft' | 'moveRight'
   | 'jump' | 'sprint' | 'crouch' | 'interact'
   | 'fire' | 'aim' | 'reload'
-  | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause' | 'character' | 'ability'
+  | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause' | 'character' | 'ability' | 'crew'
   | 'holster' | 'inspect'
   | 'horn' | 'headlights' | 'cameraMode';
 
@@ -50,6 +50,7 @@ export const ACTION_DEFS: ActionDef[] = [
   { id: 'weaponWheel', label: 'Weapon wheel', group: 'Menus', kbm: ['Tab'], pad: [PAD.LB], rebindable: true },
   { id: 'radioWheel', label: 'Radio wheel', group: 'Menus', kbm: ['KeyQ'], pad: [PAD.RB], rebindable: true },
   { id: 'character', label: 'Switch character', group: 'Menus', kbm: ['KeyZ'], pad: [PAD.LEFT], rebindable: true },
+  { id: 'crew', label: 'Crew commands', group: 'Combat', kbm: ['KeyB'], pad: [PAD.RIGHT], rebindable: true },
   { id: 'ability', label: 'Special ability', group: 'Combat', kbm: ['KeyX'], pad: [PAD.RB], rebindable: true },
   { id: 'phone', label: 'Phone', group: 'Menus', kbm: ['KeyT'], pad: [PAD.UP], rebindable: true },
   { id: 'map', label: 'Map', group: 'Menus', kbm: ['KeyM'], pad: [PAD.BACK], rebindable: true },

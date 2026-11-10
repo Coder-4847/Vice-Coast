@@ -53,6 +53,30 @@ export interface HeistRecord {
   plays: number;
 }
 
+export type CrewStatus = 'ok' | 'hurt' | 'dead' | 'quit';
+
+/** What the player has done with one crew member. */
+export interface CrewRec {
+  hired: boolean;
+  /** 0–100. Low loyalty means skimming, then walking away. */
+  loyalty: number;
+  status: CrewStatus;
+  /** Day the member is fit again (status 'hurt'). */
+  healDay: number;
+  jobs: number;
+  /** Skill gained through experience (added to the roster skill, up to 5). */
+  xp: number;
+}
+
+export interface RobberyStats {
+  count: number;
+  take: number;
+  /** Store / ATM id → the day it can be robbed again. */
+  cooldown: Record<string, number>;
+  /** Clerks shot, alarms tripped (for the summary). */
+  shootouts: number;
+}
+
 export interface StoryState {
   active: CharId;
   unlocked: CharId[];
@@ -63,6 +87,8 @@ export interface StoryState {
   introSeen: boolean;
   /** Special-ability meters (0–1). */
   meter: Record<CharId, number>;
+  crew: Record<string, CrewRec>;
+  rob: RobberyStats;
 }
 
 export const newStory = (): StoryState => ({
@@ -74,6 +100,8 @@ export const newStory = (): StoryState => ({
   flags: {},
   introSeen: false,
   meter: { mack: 1, imani: 1, teddy: 1 },
+  crew: {},
+  rob: { count: 0, take: 0, cooldown: {}, shootouts: 0 },
 });
 
 // ------------------------------------------------------------------------------------------------ cutscenes
