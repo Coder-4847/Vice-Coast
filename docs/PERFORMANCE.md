@@ -215,3 +215,10 @@ the game with the FPS counter on (Esc → Graphics) and record numbers here:
   emissive standard materials and no extra lights, so no shaders are recompiled.
 - Headless SwiftShader tests that step thousands of frames can crawl when the page's canvas and overlays are visible (the software
   compositor repaints them each call); the story smoke tests hide both and run in a few minutes. Real GPUs are unaffected.
+
+## Phase 13 additions
+
+- **Radio**: one gain chain and a look-ahead scheduler (28 ms of notes at a time); nodes are short-lived oscillators and noise bursts. It runs only while you are in a vehicle and the game is not paused.
+- **Collectibles**: 107 items, snapped onto open ground ≤ 3 ms per frame at start-up; meshes, graffiti textures (512 px canvases) and physics slabs exist only within 280 m and are disposed beyond 350 m. Ramps are built and removed on approach.
+- **Activities**: no per-frame cost when idle beyond a 0.5 s marker check (activity start markers within 900 m, sharing the 40-beacon pool). Races add 2–3 AI cars using the existing pure-pursuit drivers.
+- Headless-browser note: a Chromium running software GL in this sandbox can be killed by the container's memory limit while stepping the game without rendering. The Phase 12 build does the same, so it is a test-harness limit and not a Phase 13 regression; the harness now flushes the GL queue every few frames.
