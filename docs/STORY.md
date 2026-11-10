@@ -95,7 +95,7 @@ campaign has a plan; it will be built in later passes.
 | H3 ✓ | **The Long Haul** | Armored convoy, East Highway | Loud: ram and fight; quiet: spike strip; smart: spoof the tracker. Built in Phase 12. |
 | H4 ✓ | **Lucky Seven** | Costa Merida casino vault | Nine guards, six cameras. Built in Phase 12. |
 | H5 ✓ | **Night Freight** | Cargo train, Cinder Flats siding | A long, narrow train interior. Built in Phase 12. |
-| H6 | **Aurelia** | Crane's private yacht | Planned. |
+| H6 ✓ | **Aurelia** | Crane's private yacht, Dusk Harbor | Built in Phase 16. Unlocked by *The Crown, Part II*. Loud: hull charges; quiet: steward uniforms; smart: satellite uplink. |
 
 ### Act II — Crown of Glass ✓ (built in Phase 15)
 | # | Mission | Who | What happens |
@@ -118,9 +118,30 @@ campaign has a plan; it will be built in later passes.
 
 Key scenes are full cutscenes; the rest is subtitled dialogue. Act III (28–38) is still to come.
 
-### Act III — The Fall (planned)
-28 *Crane for Governor* · 29 *Tomas* · 30 *Grease Fire* · 31 *Last Flight* · 32 *Wild West* · 33 *Debate Night* · 34 *Lola* ·
-35 *The Crown (Part I)* · 36 *The Crown (Part II)* · 37 *Aurelia* (final heist) · 38 **Three Ways Out** (branching finale, three endings)
+### Act III — The Fall ✓ (built in Phase 16)
+| # | Mission | Who | What happens |
+|---|---|---|---|
+| 28 | **Crane for Governor** | Mack | Follow Crane's motorcade to Dusk Harbor and plant a tracker on his limo. |
+| 29 | **Tomas** | Imani | Cinder Flats safe house: two waves of mercenaries, open the safe, outrun a chaser. |
+| 30 | **Grease Fire** | Teddy | Wreck four fuel tankers at the depot with the red truck, then lose a four-star response. |
+| 31 | **Last Flight** | Imani | Clear snipers off the airport roofs, then fly a witness to Isla Rojo. |
+| 32 | **Wild West** | Teddy | Mercenaries on the dunes, a three-car chase to the rail siding, and a last stand. |
+| 33 | **Debate Night** | Mack | Sneak into the studio, swap the teleprompter script, and escape the building. |
+| 34 | **Lola** | Mack | Stop the men taking Lola at the night market, then run their van off the road. |
+| 35 | **The Crown, Part I** | All | Plaza assault: Teddy rams the gate, Imani clears the plaza, Mack takes the lobby and Brandt. |
+| 36 | **The Crown, Part II** | All | Chase Crane's limo to the harbor; unlocks the Aurelia heist. |
+| H6 | **Aurelia** | Heist | The yacht heist (needs 36). |
+| 38 | **Three Ways Out** | All | The finale: choose Mack's, Imani's or Teddy's ending, play it, and the whole city opens up. Needs the Aurelia heist done. |
+
+(Mission 37 is the Aurelia heist itself.)
+
+#### The three endings
+A choice screen opens at the start of the last mission. Each ending is its own short sequence and cutscene:
+1. **Clean Slate** — Mack drives the ledgers to the courthouse and walks in.
+2. **Clear Skies** — Imani flies the Skylark to Isla Rojo and lands for good.
+3. **Big Finish** — Teddy takes a longer ramp and a 45 m jump with the cameras rolling.
+
+After the credits scene the free-roam flag is set (`flags.freeroam`, `flags.ending`); every mission stays replayable from the phone, and replaying the finale lets you pick another ending.
 
 ## Mission rules (what the engine provides)
 

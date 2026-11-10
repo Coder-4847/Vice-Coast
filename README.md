@@ -248,7 +248,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 11. **Mission framework and story** ✅ — mission engine, cutscenes, three switchable protagonists, 12 missions, 2 heists (the other 26 missions and 4 heists are outlined in docs/STORY.md; crew injuries and the full crew system arrive in Phase 12)
 12. **Robberies and crew** ✅ — 14 robbery kiosks plus ATMs, a 12-person crew that fights, gets hurt and has loyalty, and three more heists (museum and yacht heists, and the full 38-mission campaign, are still to come)
 13. **Side activities, radio, collectibles** ✅ (this build) — 6 synthesized radio stations, 15 races, 5 job types, flight school and stunt course, casino / darts / pool / toolkit mini-games, 107 collectibles and a completion tracker (the long tail of sports, fishing, hunting, diving and similar activities is deferred, see docs/ACTIVITIES.md)
-14. **Campaign: Act II** ✅ (this build) — missions 13–27, *Crown of Glass*, with 18 new cutscenes (Act III, the Aurelia heist and the three-ending finale are next)
-15. Polish (last)
+14. **Campaign: Act II** ✅ — missions 13–27, *Crown of Glass*, with 18 new cutscenes (Act III, the Aurelia heist and the three-ending finale are next)
+15. **Campaign: Act III and the finale** ✅ (this build) — missions 28–36, the Aurelia yacht heist, and the three-ending finale with free roam
+16. Polish (last)
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

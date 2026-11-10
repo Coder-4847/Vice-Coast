@@ -1,6 +1,7 @@
 import { CHARS } from '../chars';
 import type { ActorDef, CutsceneDef, Line, Shot } from '../types';
 import { ACT2_SCENES } from './act2Scenes';
+import { ACT3_SCENES } from './act3Scenes';
 
 // ----------------------------------------------------------------------------------------------- helpers
 
@@ -283,4 +284,4 @@ const ACT1_SCENES: Record<string, CutsceneDef> = {
   },
 };
 
-export const CUTSCENES: Record<string, CutsceneDef> = { ...ACT1_SCENES, ...ACT2_SCENES };
+export const CUTSCENES: Record<string, CutsceneDef> = { ...ACT1_SCENES, ...ACT2_SCENES, ...ACT3_SCENES };

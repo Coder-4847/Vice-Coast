@@ -342,3 +342,11 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Missions 13-15 (Mack), 16 (Imani), 17-18 (Teddy), 19 (Imani), 20 (Teddy), 21 (Mack), 22 (Imani), 23 (all three: swap with `Z`), 24 (Imani), 25 (Mack), 26 (Teddy), 27 (all three).
 - [ ] Each has a cutscene or two, a retry-from-checkpoint on failure, and unlocks the next by message and map marker.
 - [ ] **High Water** brings a storm that clears when the mission ends. **Viral** needs a 40 m jump over four parked cars. **Press Pass** and **Halloran** use the Skylark and a stolen Newsbird.
+
+
+## Act III — The Fall (missions 28-38) and the Aurelia heist
+- [ ] After *The Reveal*, *Crane for Governor* appears at Mack's flat; each of 29-36 appears after the one before it.
+- [ ] 28 Mack · 29 Imani · 30 Teddy · 31 Imani · 32 Teddy · 33 Mack · 34 Mack · 35 all three (switch with `Z`) · 36 all three.
+- [ ] Finishing *The Crown, Part II* unlocks **Aurelia** on the heist board (Boardwalk Studio): loud / quiet / smart, three prep missions, crew effects as before.
+- [ ] After the yacht heist, *Three Ways Out* appears. A choice screen offers Clean Slate, Clear Skies and Big Finish; each plays its own short sequence and cutscene, then the credits scene, a "Free roam" banner, a Pruitt message and a $15,000 reward.
+- [ ] Replaying the finale from the phone (Missions → Completed) lets you pick a different ending.

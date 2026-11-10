@@ -51,6 +51,7 @@ export const PLACES: Record<string, PlaceDef> = {
   'fort.gate': { x: GEO.fort.x - 520, z: GEO.fort.z - 20, label: 'Fort Halloran gate', car: true },
   'costa.cafe': { x: 520, z: 3150, label: 'Costa Merida cafe', car: true },
   'tower.top': { x: 1010, z: -60, label: 'Meridian Tower plaza', car: true },
+  'court': { x: 1060, z: 90, label: 'Valeria Courthouse', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

@@ -108,6 +108,21 @@ export const HEISTS: HeistDef[] = [
     prep: { loud: ['h5_breacher'], quiet: ['h5_signal'], smart: ['h5_manifest'] },
     par: { loud: 420, quiet: 540, smart: 480 },
   },
+  {
+    id: 'h6', name: 'Aurelia', blurb: 'Crane\'s private yacht at the Dusk Harbor moorings: ten guards, five cameras, a vault in the stern and every ledger he has not burned yet.',
+    door: 'harbor',
+    site: { id: 'yacht', name: 'The Aurelia', w: 14, d: 44, vault: { w: 8, d: 7 }, cases: 5, cameras: 5, at: { x: SALT.x + 330, z: SALT.z }, tint: 0x3a6a9a },
+    caseValue: 12000, bagValue: 200000, guards: 10,
+    hour: { loud: 22, quiet: 1, smart: 20 },
+    intro: 'h6_board', done: 'h6_done',
+    approachText: {
+      loud: 'Come alongside in the dark with charges and an assault crew. Take the decks, blow the stern vault, and leave before the harbor police wake up.',
+      quiet: 'Go aboard as extra stewards. Stay in the galley corridors, keep the guests calm and let the cameras see only staff.',
+      smart: 'Patch into the yacht\'s satellite link, learn the watch pattern and open the vault from the bridge terminal.',
+    },
+    prep: { loud: ['h6_charges'], quiet: ['h6_stewards'], smart: ['h6_uplink'] },
+    par: { loud: 540, quiet: 660, smart: 600 },
+  },
 ];
 
 export const HEIST_BY_ID = Object.fromEntries(HEISTS.map((h) => [h.id, h])) as Record<string, HeistDef>;
@@ -138,6 +153,9 @@ export const PREPS: PrepDef[] = [
   { id: 'h5_breacher', title: 'Breaching gear', blurb: 'Pick up heavy breaching gear at Brass & Barrel.', approach: 'loud' },
   { id: 'h5_signal', title: 'Cut the signal wire', blurb: 'Cut the trackside signal wire at the Cinder siding.', approach: 'quiet' },
   { id: 'h5_manifest', title: 'Freight manifest', blurb: 'Copy the manifest from the depot office.', approach: 'smart' },
+  { id: 'h6_charges', title: 'Hull charges', blurb: 'Collect heavy hull charges from the contractor at the Industrial Depot.', approach: 'loud' },
+  { id: 'h6_stewards', title: 'Steward uniforms', blurb: 'Lift steward uniforms from the laundry behind the Valeria Sun.', approach: 'quiet' },
+  { id: 'h6_uplink', title: 'Satellite uplink', blurb: 'Tap the yacht\'s satellite link at the Dusk Harbor marina.', approach: 'smart' },
 ];
 
 export const HEIST_PREPS: MissionDef[] = [
@@ -261,6 +279,26 @@ export const HEIST_PREPS: MissionDef[] = [
       yield* m.hold({ x: r.x + 14, z: r.z + 10 }, 'Cut the trackside signal wire', 6);
     },
   ], [GOLD.time(400), GOLD.clean()]),
+  prep('h6_charges', 'Hull charges', 'Collect heavy hull charges.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x - 24, z: d.z + 14 }, 'Meet the contractor at the Industrial Depot', { r: 6 });
+      yield* m.hold({ x: d.x - 24, z: d.z + 14 }, 'Collect the hull charges', 5);
+    },
+  ]),
+  prep('h6_stewards', 'Steward uniforms', 'Lift two sets of steward uniforms.', [
+    function* (m): Gen {
+      yield* m.goto('newsroom', 'Go to the laundry behind the Valeria Sun', { onFoot: true, r: 4 });
+      yield* m.hold(off(m, 'newsroom', -3, 4), 'Take the steward uniforms', 6);
+    },
+  ], [GOLD.time(150), GOLD.clean()]),
+  prep('h6_uplink', 'Satellite uplink', 'Tap the yacht\'s satellite link.', [
+    function* (m): Gen {
+      const h = m.at('harbor');
+      yield* m.goto({ x: h.x - 30, z: h.z - 14 }, 'Reach the marina junction box', { onFoot: true, r: 5 });
+      yield* m.hold({ x: h.x - 30, z: h.z - 14 }, 'Tap the satellite link', 9);
+    },
+  ], [GOLD.time(240), GOLD.stealth()]),
   prep('h5_manifest', 'Freight manifest', 'Copy the manifest.', [
     function* (m): Gen {
       const d = m.at('depot');

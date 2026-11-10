@@ -44,7 +44,7 @@ export class Heists {
     rec.take = Math.max(rec.take, net);
     if (hd.id === 'h1') this.s.g.commerce?.eco.message('Pruitt', 'The jeweller made the news. Brandt is asking questions. Stop by Redline Customs: she is already there.');
     const next = HEISTS[HEISTS.findIndex((x) => x.id === hd.id) + 1];
-    if (next && !this.unlocked(next.id)) {
+    if (next && next.id !== 'h6' && !this.unlocked(next.id)) {
       this.unlock(next.id);
       this.s.g.commerce?.eco.message('Pruitt', next.id === 'h2' ? 'Two for two soon, I hope. Silas Quinn, a hacker I trust, has asked to join you. The bank is next.' : `${next.name}: the file is on the heist board.`);
     }

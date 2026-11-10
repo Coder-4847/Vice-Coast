@@ -4,21 +4,21 @@ import type { HostileOpts } from '../Hostiles';
 import type { Place } from '../types';
 
 /** A point near a place. */
-const off = (m: MissionRun, p: Place, dx = 0, dz = 0): { x: number; z: number } => { const w = m.at(p); return { x: w.x + dx, z: w.z + dz }; };
-type Gun = HostileOpts['kind'];
-const gm = (m: MissionRun, p: Place, dx: number, dz: number, kind: Gun = 'pistol', more: Partial<HostileOpts> = {}): HostileOpts => ({ ...off(m, p, dx, dz), kind, ...more });
-const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number => Math.hypot(a.x - b.x, a.z - b.z);
-const send = (s: import('../Story').Story, from: string, text: string): void => s.g.commerce!.eco.message(from, text);
-const heistDone = (id: string) => (s: import('../Story').Story): boolean => !!s.st.heists[id]?.done;
-const TF = { look: 'guard' } as const;
+export const off = (m: MissionRun, p: Place, dx = 0, dz = 0): { x: number; z: number } => { const w = m.at(p); return { x: w.x + dx, z: w.z + dz }; };
+export type Gun = HostileOpts['kind'];
+export const gm = (m: MissionRun, p: Place, dx: number, dz: number, kind: Gun = 'pistol', more: Partial<HostileOpts> = {}): HostileOpts => ({ ...off(m, p, dx, dz), kind, ...more });
+export const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number => Math.hypot(a.x - b.x, a.z - b.z);
+export const send = (s: import('../Story').Story, from: string, text: string): void => s.g.commerce!.eco.message(from, text);
+export const heistDone = (id: string) => (s: import('../Story').Story): boolean => !!s.st.heists[id]?.done;
+export const TF = { look: 'guard' } as const;
 
 /** Spawn a squad around a place and wait until it is dead. */
-function* squad(m: MissionRun, tag: string, at: Place, men: [number, number, Gun?][], text: string, more: Partial<HostileOpts> = {}): Gen {
+export function* squad(m: MissionRun, tag: string, at: Place, men: [number, number, Gun?][], text: string, more: Partial<HostileOpts> = {}): Gen {
   yield* m.kill(tag, men.map(([dx, dz, k]) => gm(m, at, dx, dz, k ?? 'pistol', more)), text);
 }
 
 /** Cars that chase the player until they are wrecked or the stage ends. */
-function chasers(m: MissionRun, names: string[], at: Place, spec = 'barrage', kmh = 112): void {
+export function chasers(m: MissionRun, names: string[], at: Place, spec = 'barrage', kmh = 112): void {
   const w = m.at(at);
   names.forEach((n, i) => {
     m.vehicle(n, spec, { x: w.x + (i % 2 ? 14 : -14), z: w.z + 10 + i * 12 }, { color: '#2a2a30', blip: false });
