@@ -17,6 +17,9 @@ import type { Combat } from './Combat';
 import { STAR_NAMES, type Wanted } from './Wanted';
 
 const G: number = CITY.height;
+/** Half-angles of the officers' and patrol cars' vision cones (as cosines). */
+const COS_FOOT = Math.cos((65 * Math.PI) / 180);
+const COS_CAR = Math.cos((55 * Math.PI) / 180);
 const TYPE = Object.fromEntries(CAR_TYPES.map((t) => [t.id, t])) as Record<string, CarType>;
 
 interface Tier {
@@ -236,15 +239,22 @@ export class Police {
       let seen = false;
       const t = this.tgt;
       if (stars > 0) {
+        // officers see in a cone ahead of them (and hear anything right beside them); a chase that is already
+        // on you keeps its eyes on you, so the cones matter once you have broken line of sight
+        const hot = this.lastSeen;
         for (const p of this.foot) {
           if (p.state === 'down') continue;
           const d = Math.hypot(p.x - t.x, p.z - t.z);
-          if (d < 85 && this.los(p.x, p.y + 1.5, p.z, t.x, t.y, t.z)) { seen = true; break; }
+          if (d >= 85) continue;
+          const inCone = hot || d < 14 || Math.cos(Math.atan2(t.x - p.x, t.z - p.z) - p.yaw) > COS_FOOT;
+          if (inCone && this.los(p.x, p.y + 1.5, p.z, t.x, t.y, t.z)) { seen = true; break; }
         }
         if (!seen) for (const c of this.cars) {
           if (c.state === 'wreck') continue;
           const d = Math.hypot(c.x - t.x, c.z - t.z);
-          if (d < 70 && this.los(c.x, 6.2, c.z, t.x, t.y, t.z)) { seen = true; break; }
+          if (d >= 70) continue;
+          const inCone = hot || d < 18 || ((t.x - c.x) * c.fx + (t.z - c.z) * c.fz) / Math.max(1, d) > COS_CAR;
+          if (inCone && this.los(c.x, 6.2, c.z, t.x, t.y, t.z)) { seen = true; break; }
         }
         if (!seen) for (const h of this.helis) {
           const d = Math.hypot(h.pos.x - t.x, h.pos.z - t.z);
@@ -255,7 +265,11 @@ export class Police {
       this.lastSeen = seen;
     }
     const hiding = this.d.player.state === 'swim';
-    wanted.update(dt, this.lastSeen, this.tgt.x, this.tgt.z, hiding);
+    // outside the search zone around where you were last seen, the police lose the trail much faster
+    const outside = stars > 0 && !this.lastSeen && Math.hypot(this.tgt.x - wanted.lastX, this.tgt.z - wanted.lastZ) > wanted.searchRadius;
+    wanted.update(dt * (outside ? 2.6 : 1), this.lastSeen, this.tgt.x, this.tgt.z, hiding);
+    if (outside && !this.wasOutside) hud.say('Suspect may have left the area. Widen the search.', 2.5);
+    this.wasOutside = outside;
     if (this.lastSeen && wanted.stars > 0 && !this.wasSeen) hud.say('Eyes on the suspect.', 2.5);
     this.wasSeen = this.lastSeen;
 
@@ -303,6 +317,15 @@ export class Police {
   }
 
   private wasSeen = false;
+  private wasOutside = false;
+
+  /** For the minimap: officers and cars with their facing, and whether they are looking for you. */
+  blips(out: { x: number; z: number; yaw: number; car: boolean }[]): void {
+    out.length = 0;
+    for (const p of this.foot) if (p.state !== 'down') out.push({ x: p.x, z: p.z, yaw: p.yaw, car: false });
+    for (const c of this.cars) if (c.state !== 'wreck') out.push({ x: c.x, z: c.z, yaw: Math.atan2(c.fx, c.fz), car: true });
+    for (const h of this.helis) out.push({ x: h.pos.x, z: h.pos.z, yaw: 0, car: true });
+  }
 
   // ------------------------------------------------------------------------------------------ spawning
 

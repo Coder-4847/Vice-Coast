@@ -19,6 +19,16 @@ export class AudioEngine {
   private wetCanyon!: GainNode;
   private sendBus!: GainNode;
   volume = 0.8;
+  /** Bus levels (0…1) and options; call applyMix() after changing them. */
+  readonly mix = { sfx: 0.9, music: 0.7, ui: 0.7, mono: false, night: false };
+  private main!: GainNode;
+  private musicBus!: GainNode;
+  private uiBus!: GainNode;
+  private comp!: DynamicsCompressorNode;
+  private fold!: GainNode;
+  private duckAmt = 0;
+  private muffle: BiquadFilterNode | null = null;
+  private muffled = false;
   private readonly fwd = new THREE.Vector3();
 
   /** Call from a user-gesture handler. Safe to call repeatedly. */
@@ -32,12 +42,22 @@ export class AudioEngine {
     const ctx = new AC({ latencyHint: 'interactive' });
     this.ctx = ctx;
 
+    // Mix: sfx / music / ui buses → main (master volume) → under-water low-pass → compressor → mono fold → out.
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -14;
-    comp.ratio.value = 5;
+    this.comp = comp;
+    this.main = ctx.createGain();
+    this.main.gain.value = this.volume;
     this.master = ctx.createGain();
-    this.master.gain.value = this.volume;
-    this.master.connect(comp).connect(ctx.destination);
+    this.musicBus = ctx.createGain();
+    this.uiBus = ctx.createGain();
+    for (const b of [this.master, this.musicBus, this.uiBus]) b.connect(this.main);
+    // a low-pass that closes while the listener is under water
+    this.muffle = ctx.createBiquadFilter();
+    this.muffle.type = 'lowpass';
+    this.muffle.frequency.value = 20000;
+    this.fold = ctx.createGain();
+    this.main.connect(this.muffle).connect(comp).connect(this.fold).connect(ctx.destination);
+    this.applyMix();
 
     // 2 s of white noise, reused by every noise-based sound.
     this.noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -58,7 +78,40 @@ export class AudioEngine {
 
   setVolume(v: number): void {
     this.volume = v;
-    if (this.master) this.master.gain.value = v;
+    if (this.main) this.main.gain.value = v;
+  }
+
+  /** Push bus levels, mono and dynamic range to the graph. */
+  applyMix(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.main) return;
+    const t = ctx.currentTime;
+    this.master.gain.setTargetAtTime(this.mix.sfx, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(this.mix.music * (1 - this.duckAmt), t, 0.12);
+    this.uiBus.gain.setTargetAtTime(this.mix.ui, t, 0.05);
+    const c = this.comp;
+    if (this.mix.night) { c.threshold.value = -32; c.ratio.value = 10; c.knee.value = 12; c.attack.value = 0.004; c.release.value = 0.2; this.fold.gain.value = 1.9; }
+    else { c.threshold.value = -14; c.ratio.value = 5; c.knee.value = 30; c.attack.value = 0.003; c.release.value = 0.25; this.fold.gain.value = 1; }
+    this.fold.channelCount = this.mix.mono ? 1 : 2;
+    this.fold.channelCountMode = 'explicit';
+    this.fold.channelInterpretation = 'speakers';
+  }
+
+  /** Music dips (0…1) while someone is talking. */
+  duck(amount: number): void {
+    if (Math.abs(amount - this.duckAmt) < 0.01) return;
+    this.duckAmt = amount;
+    if (this.ctx && this.musicBus) this.musicBus.gain.setTargetAtTime(this.mix.music * (1 - amount), this.ctx.currentTime, 0.25);
+  }
+
+  /** Called with a position whenever a loud, directional sound plays (for on-screen sound cues). */
+  onCue: ((kind: 'gunshot' | 'explosion' | 'horn' | 'scream', pos: Node3) => void) | null = null;
+
+  /** Muffle everything while the camera is under water. */
+  setUnderwater(on: boolean): void {
+    if (on === this.muffled || !this.ctx || !this.muffle) return;
+    this.muffled = on;
+    this.muffle.frequency.setTargetAtTime(on ? 520 : 20000, this.ctx.currentTime, 0.08);
   }
 
   setListener(camera: THREE.Camera): void {
@@ -108,9 +161,9 @@ export class AudioEngine {
     return this.ctx;
   }
 
-  /** The master bus (for the radio and other long-running synths). */
+  /** The music bus (the radio and other long-running music synths). */
   get output(): AudioNode | null {
-    return this.ctx ? this.master : null;
+    return this.ctx ? this.musicBus : null;
   }
 
   /** Continuous sirens, city ambience and street music (null until the context exists). */
@@ -131,7 +184,7 @@ export class AudioEngine {
     return this.ctx ? new AirVoice(this.ctx, this.master, this.noise, kind) : null;
   }
   createMusic(): StreetMusic | null {
-    return this.ctx ? new StreetMusic(this.ctx, this.master) : null;
+    return this.ctx ? new StreetMusic(this.ctx, this.musicBus) : null;
   }
 
   /** Seagull cry: two falling whistles with a breathy edge. */
@@ -224,6 +277,7 @@ export class AudioEngine {
 
   /** 9 mm pistol shot. `openness` 0 (canyon / indoors) … 1 (open field) picks the reverb tail. */
   gunshot(openness: number, pos?: Node3, kind: 'pistol' | 'smg' | 'shotgun' | 'rifle' = 'pistol', level = 1): void {
+    if (pos) this.onCue?.('gunshot', pos);
     if (!this.ready()) return;
     const t = this.now();
     const o = this.out(pos, 20);
@@ -242,6 +296,7 @@ export class AudioEngine {
 
   /** Car horn: two detuned sawtooth voices (a minor third apart), slightly different per call. */
   honk(pos?: Node3, long = false): void {
+    if (pos) this.onCue?.('horn', pos);
     if (!this.ready()) return;
     const t = this.now();
     const o = this.out(pos, 14);
@@ -268,6 +323,7 @@ export class AudioEngine {
 
   /** A startled shout: a voiced sawtooth through two vowel-like formants, rising and wavering. */
   scream(pos: Node3): void {
+    this.onCue?.('scream', pos);
     if (!this.ready()) return;
     const ctx = this.ctx!;
     const t = this.now();
@@ -308,10 +364,34 @@ export class AudioEngine {
   uiBlip(kind: 'move' | 'ok' | 'back'): void {
     if (!this.ready()) return;
     const t = this.now();
-    const o = this.master;
+    const o = this.uiBus;
     if (kind === 'move') this.tone(o, t, { freq: 1480, peak: 0.018, decay: 0.03, type: 'sine' });
     else if (kind === 'ok') { this.tone(o, t, { freq: 880, peak: 0.04, decay: 0.07, type: 'triangle' }); this.tone(o, t + 0.055, { freq: 1320, peak: 0.035, decay: 0.09, type: 'triangle' }); }
     else this.tone(o, t, { freq: 660, to: 520, peak: 0.035, decay: 0.08, type: 'triangle' });
+  }
+
+  /** Small sounds for the sports and pastimes: club and racket hits, bounces, pins, a net swish, a crowd, reels. */
+  sport(kind: 'hit' | 'thwack' | 'bounce' | 'pins' | 'swish' | 'rim' | 'cheer' | 'groan' | 'whistle' | 'plop' | 'bite' | 'reel' | 'snap' | 'roll', level = 1, pos?: Node3): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.out(pos, 8);
+    const L = level;
+    switch (kind) {
+      case 'hit': this.burst(o, t, { type: 'bandpass', freq: 2600, q: 2.5, peak: 0.35 * L, decay: 0.05 }); this.tone(o, t, { freq: 520, to: 300, peak: 0.12 * L, decay: 0.06 }); break;
+      case 'thwack': this.burst(o, t, { type: 'bandpass', freq: 1400, q: 1.4, peak: 0.45 * L, decay: 0.08, send: 0.2 }); this.tone(o, t, { freq: 240, to: 120, peak: 0.25 * L, decay: 0.09 }); break;
+      case 'bounce': this.tone(o, t, { freq: 180, to: 90, peak: 0.18 * L, decay: 0.06 }); this.burst(o, t, { type: 'lowpass', freq: 900, peak: 0.12 * L, decay: 0.04 }); break;
+      case 'pins': for (let k = 0; k < 7; k++) { const tk = t + Math.random() * 0.25; this.burst(o, tk, { type: 'bandpass', freq: 1200 + Math.random() * 1800, q: 4, peak: 0.16 * L, decay: 0.07, send: 0.25 }); this.tone(o, tk, { freq: 700 + Math.random() * 600, peak: 0.05 * L, decay: 0.12, type: 'triangle' }); } break;
+      case 'roll': this.burst(o, t, { type: 'lowpass', freq: 260, q: 0.7, peak: 0.25 * L, attack: 0.2, decay: 1.6 }); break;
+      case 'swish': this.burst(o, t, { type: 'highpass', freq: 3000, sweepTo: 1200, peak: 0.16 * L, attack: 0.02, decay: 0.22 }); break;
+      case 'rim': this.tone(o, t, { freq: 980, peak: 0.12 * L, decay: 0.35, type: 'triangle', send: 0.2 }); this.tone(o, t, { freq: 1470, peak: 0.05 * L, decay: 0.25 }); break;
+      case 'cheer': for (let k = 0; k < 4; k++) this.burst(o, t + k * 0.05, { type: 'bandpass', freq: 900 + k * 400, q: 0.9, peak: 0.1 * L, attack: 0.15, decay: 1.4, send: 0.4 }); break;
+      case 'groan': this.burst(o, t, { type: 'bandpass', freq: 420, sweepTo: 260, q: 1.2, peak: 0.16 * L, attack: 0.12, decay: 0.9, send: 0.3 }); break;
+      case 'whistle': this.tone(o, t, { freq: 2650, peak: 0.08 * L, decay: 0.32, type: 'square' }); this.tone(o, t + 0.36, { freq: 2650, peak: 0.08 * L, decay: 0.5, type: 'square' }); break;
+      case 'plop': this.tone(o, t, { freq: 900, to: 220, peak: 0.16 * L, decay: 0.12 }); this.burst(o, t, { type: 'bandpass', freq: 1600, q: 1.5, peak: 0.12 * L, decay: 0.15 }); break;
+      case 'bite': this.tone(o, t, { freq: 420, to: 160, peak: 0.2 * L, decay: 0.18 }); this.burst(o, t, { type: 'bandpass', freq: 900, q: 2, peak: 0.2 * L, decay: 0.25 }); break;
+      case 'reel': this.burst(o, t, { type: 'bandpass', freq: 4200, q: 6, peak: 0.08 * L, decay: 0.03 }); break;
+      case 'snap': this.burst(o, t, { type: 'highpass', freq: 3500, peak: 0.4 * L, decay: 0.04 }); this.tone(o, t, { freq: 1800, to: 400, peak: 0.1 * L, decay: 0.1 }); break;
+    }
   }
 
   /** Short radio squelch + beeps (dispatch chatter, wanted-level changes). */
@@ -326,6 +406,7 @@ export class AudioEngine {
 
   /** Explosion: a low thump, a wide noise burst and a long rumbling tail. `size` 1 ≈ a car. */
   explosion(pos: Node3, size = 1): void {
+    this.onCue?.('explosion', pos);
     if (!this.ready()) return;
     const t = this.now();
     const o = this.out(pos, 28 * size);

@@ -451,25 +451,43 @@ export class SettingsMenu {
     const cb: [ColorBlindMode, string][] = [['off', 'Off'], ['protanopia', 'Protan'], ['deuteranopia', 'Deutan'], ['tritanopia', 'Tritan']];
     page.append(
       this.group('Motion & text'),
-      this.toggle('Reduce motion', () => this.settings.data.accessibility.reduceMotion, (v) => this.update((d) => (d.accessibility.reduceMotion = v)), 'Removes UI animation. Camera effects follow this setting as they are added.'),
+      this.toggle('Reduce motion', () => this.settings.data.accessibility.reduceMotion, (v) => this.update((d) => (d.accessibility.reduceMotion = v)), 'Removes UI animation, skips slow camera moves and softens camera shake.'),
       this.slider('Text size', 0.85, 1.4, 0.05, () => this.settings.data.accessibility.textScale, (v) => this.update((d) => (d.accessibility.textScale = v)), (v) => `${Math.round(v * 100)}%`),
       this.group('Story dialogue'),
       this.toggle('Subtitles', () => this.settings.data.accessibility.subtitles, (v) => this.update((d) => (d.accessibility.subtitles = v)), 'Shows who is speaking and what they say in cutscenes and while playing.'),
       this.slider('Subtitle size', 0.8, 1.8, 0.1, () => this.settings.data.accessibility.subtitleScale, (v) => this.update((d) => (d.accessibility.subtitleScale = v)), (v) => `${Math.round(v * 100)}%`),
       this.toggle('Spoken dialogue', () => this.settings.data.accessibility.spokenDialogue, (v) => this.update((d) => (d.accessibility.spokenDialogue = v)), 'Reads lines aloud with your browser\'s text-to-speech, each character in a different pitch and speed. Off by default.'),
       this.group('Colour'),
-      this.segmented('Colour-blind accent', cb, () => this.settings.data.accessibility.colorBlind, (v) => this.update((d) => (d.accessibility.colorBlind = v)), 'Swaps the UI accent for a colour-safe one. World colour filters arrive with post-processing.'),
+      this.segmented('Colour-blind accent', cb, () => this.settings.data.accessibility.colorBlind, (v) => this.update((d) => (d.accessibility.colorBlind = v)), 'Swaps the UI accent for a colour-safe one.'),
+      this.group('HUD'),
+      this.slider('HUD size', 0.75, 1.5, 0.05, () => this.settings.data.accessibility.hudScale, (v) => this.update((d) => (d.accessibility.hudScale = v)), (v) => `${Math.round(v * 100)}%`, 'Minimap, health, ammo, prompts and objectives.'),
+      this.toggle('High-contrast HUD', () => this.settings.data.accessibility.highContrast, (v) => this.update((d) => (d.accessibility.highContrast = v)), 'Solid black plates with white outlines behind HUD text.'),
+      this.toggle('Readable font', () => this.settings.data.accessibility.readableFont, (v) => this.update((d) => (d.accessibility.readableFont = v)), 'Replaces the tall condensed headings with a plain, wider font.'),
+      this.toggle('Sound cues', () => this.settings.data.accessibility.soundCues, (v) => this.update((d) => (d.accessibility.soundCues = v)), 'Arrows around the crosshair point at gunshots, explosions, horns and screams.'),
+      this.group('Camera & effects'),
+      this.slider('Camera shake', 0, 1, 0.05, () => this.settings.data.accessibility.cameraShake, (v) => this.update((d) => (d.accessibility.cameraShake = v)), (v) => `${Math.round(v * 100)}%`, 'Explosions, crashes and turbulence.'),
+      this.toggle('Reduce flashes', () => this.settings.data.accessibility.reduceFlashes, (v) => this.update((d) => (d.accessibility.reduceFlashes = v)), 'Dims lightning and the red damage flash.'),
+      this.group('Assists'),
+      this.segmented('Aim assist', [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']], () => this.settings.data.accessibility.aimAssist, (v) => this.update((d) => (d.accessibility.aimAssist = v)), 'Controller and touch: aiming down sights eases onto nearby enemies.'),
+      this.toggle('Hold instead of tapping', () => this.settings.data.accessibility.holdToMash, (v) => this.update((d) => (d.accessibility.holdToMash = v)), 'Arm wrestling and other button-mashing moments accept a held button.'),
     );
     return page;
   }
 
   private audioPage(): HTMLElement {
     const page = h('div');
+    const pct = (v: number): string => `${Math.round(v * 100)}%`;
+    const au = () => this.settings.data.audio;
     page.append(
-      this.group('Volume'),
-      this.slider('Radio volume', 0, 1, 0.05, () => this.settings.data.audio.radio, (v) => this.update((d) => (d.audio.radio = v)), (v) => `${Math.round(v * 100)}%`, 'Car radio and the phone speaker. Every station is generated live in the browser.'),
-      this.slider('Master volume', 0, 1, 0.05, () => this.settings.data.audio.master, (v) => this.update((d) => (d.audio.master = v)), (v) => `${Math.round(v * 100)}%`,
-        'All sound is synthesised in the browser: gunshots, footsteps, impacts and mechanics.'),
+      this.group('Mix'),
+      this.slider('Master volume', 0, 1, 0.05, () => au().master, (v) => this.update((d) => (d.audio.master = v)), pct, 'Everything. All sound is synthesised in the browser.'),
+      this.slider('Sound effects', 0, 1, 0.05, () => au().sfx, (v) => this.update((d) => (d.audio.sfx = v)), pct, 'Gunfire, engines, footsteps, the city.'),
+      this.slider('Music & radio', 0, 1, 0.05, () => au().radio, (v) => this.update((d) => (d.audio.radio = v)), pct, 'The car radio, the phone speaker and street musicians. Ducks under dialogue.'),
+      this.slider('Dialogue', 0, 1, 0.05, () => au().dialogue, (v) => this.update((d) => (d.audio.dialogue = v)), pct, 'Spoken dialogue (turn it on under Accessibility).'),
+      this.slider('Menu sounds', 0, 1, 0.05, () => au().ui, (v) => this.update((d) => (d.audio.ui = v)), pct),
+      this.group('Output'),
+      this.segmented('Dynamic range', [['wide', 'Wide'], ['night', 'Night mode']], () => au().range, (v) => this.update((d) => (d.audio.range = v)), 'Night mode squashes loud bangs and lifts quiet sounds: good for late play or small speakers.'),
+      this.toggle('Mono audio', () => au().mono, (v) => this.update((d) => (d.audio.mono = v)), 'Plays the same mix in both ears.'),
     );
     return page;
   }

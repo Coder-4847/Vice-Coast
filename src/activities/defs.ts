@@ -1,5 +1,5 @@
 /** The side activities the completion tracker counts. `goal` is how many wins / completions fill the bar. */
-export type ActGroup = 'Races' | 'Jobs' | 'Skills' | 'Games';
+export type ActGroup = 'Races' | 'Jobs' | 'Skills' | 'Games' | 'Sports' | 'Outdoors';
 
 export interface ActDef {
   id: string;
@@ -38,7 +38,15 @@ export const ACTS: ActDef[] = [
   a('mini.lockpick', 'Lockpicking', 'Games', 6, 'locks', 'Steady hands. Set the pins in order.', '⚿', '#7ad7e0'),
   a('mini.hack', 'Hacking', 'Games', 6, 'breaches', 'Match the sequence before the trace finishes.', '⌗', '#7ad7e0'),
   a('mini.safe', 'Safe-cracking', 'Games', 4, 'safes', 'Listen for the click.', '⛁', '#7ad7e0'),
+  a('sport.golf', 'Golf', 'Sports', 3, 'rounds won', 'Vista Verde Links: beat the club pro\'s card.', '⛳', '#7be28f'),
+  a('sport.tennis', 'Tennis', 'Sports', 3, 'matches won', 'Costa Merida Tennis Club, from friendlies to the pro-am.', '◐', '#d7f25a'),
+  a('sport.bowling', 'Bowling', 'Sports', 2, 'games won', 'Ten frames at Starlite Lanes.', '●', '#8fb8ff'),
+  a('sport.hoops', 'Hoops', 'Sports', 3, 'shootouts won', 'Sixty seconds, five racks, Seaside courts.', '◍', '#ff9a4a'),
+  a('sport.arm', 'Arm wrestling', 'Sports', 3, 'champions beaten', 'Muscle Beach has three champions. Beat them all.', '✊', '#ff7a7a'),
+  a('pastime.fish', 'Fishing', 'Outdoors', 15, 'fish caught', 'Piers, the harbor, the lake and the canals. Strike when the float dips.', '≈', '#5ac8ff'),
+  a('pastime.hunt', 'Hunting', 'Outdoors', 10, 'pelts', 'The Kestrel grounds: deer, boar, coyotes and the odd mountain lion.', '⌖', '#c49a5a'),
+  a('pastime.dive', 'Diving', 'Outdoors', 20, 'relics', 'Five wrecks off the coast, four relics each.', '◒', '#3ad0c0'),
 ];
 
 export const ACT_BY_ID: Record<string, ActDef> = Object.fromEntries(ACTS.map((d) => [d.id, d]));
-export const ACT_GROUPS: ActGroup[] = ['Races', 'Jobs', 'Skills', 'Games'];
+export const ACT_GROUPS: ActGroup[] = ['Races', 'Jobs', 'Skills', 'Games', 'Sports', 'Outdoors'];

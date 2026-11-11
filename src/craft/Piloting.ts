@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { a11y } from '../core/a11y';
 import type { AudioEngine, CraftEngine } from '../audio/AudioEngine';
 import { clamp, damp, easeInOutCubic, Spring } from '../core/math';
 import type { InputManager } from '../input/InputManager';
@@ -485,7 +486,7 @@ export class Piloting {
     this.shake = Math.max(0, this.shake - dt * 2);
     if (c.impact > 0) this.shake = Math.min(1, this.shake + c.impact * 0.05);
     if (this.shake > 0.01) {
-      const a = this.shake * 0.25;
+      const a = this.shake * 0.25 * a11y.shake;
       this.chasePos.x += (Math.random() - 0.5) * a; this.chasePos.y += (Math.random() - 0.5) * a; this.chasePos.z += (Math.random() - 0.5) * a;
     }
     this.fov = damp(this.fov, fov, 4, dt);

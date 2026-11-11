@@ -27,6 +27,8 @@ import { glyphFor } from '../input/Glyphs';
 import { Collectibles } from '../collect/Collectibles';
 import { Completion } from '../collect/Completion';
 import { Venues } from '../minigames/Venues';
+import { Pastimes } from '../pastimes/Pastimes';
+import { SprayShops } from '../combat/SprayShops';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
 
 import { ACT_BY_ID } from '../activities/defs';
@@ -53,6 +55,8 @@ export class Story {
   readonly collect: Collectibles;
   readonly completion: Completion;
   readonly venues: Venues;
+  readonly pastimes: Pastimes;
+  readonly spray: SprayShops;
   readonly crewWheel: CrewWheel;
   mission: MissionRun | null = null;
   /** The text for the interact prompt when a mission start or heist board is in reach. */
@@ -73,7 +77,7 @@ export class Story {
     this.figures = new Figures(g);
     this.hostiles = new Hostiles(g);
     this.drivers = new Drivers(g);
-    this.speech = new Speech(() => g.settings.data.accessibility.spokenDialogue);
+    this.speech = new Speech(() => g.settings.data.accessibility.spokenDialogue, () => g.settings.data.audio.dialogue);
     this.cutscenes = new Cutscenes(this);
     this.protagonists = new Protagonists(this);
     this.heists = new Heists(this);
@@ -83,6 +87,8 @@ export class Story {
     this.collect = new Collectibles(this);
     this.completion = new Completion(this);
     this.venues = new Venues(this);
+    this.pastimes = new Pastimes(this);
+    this.spray = new SprayShops(this);
     this.crewWheel = new CrewWheel(root, g.ui.hudRoot);
     this.crewWheel.onPick = (c) => this.allies.command(c);
     this.crewWheel.onClose = () => { g.loop.timeScale = this.protagonists.timeScaleNow(); };
@@ -452,6 +458,7 @@ export class Story {
     const first = !rec.done;
     const medals = run.earned();
     const allGold = medals.length === def.gold.length && def.gold.length > 0;
+    rec.day ??= this.g.commerce!.eco.p.day;
     rec.done = true;
     rec.skipped = false;
     const t = Math.round(run.stats.time);
@@ -566,6 +573,7 @@ export class Story {
     const def = run.def;
     const rec = this.record(def.id);
     const first = !rec.done;
+    rec.day ??= this.g.commerce!.eco.p.day;
     rec.done = true;
     rec.skipped = true;
     this.hostiles.hold = false;
@@ -646,6 +654,8 @@ export class Story {
     this.heists.update(dt);
     this.robberies.update(dt);
     this.collect.update(dt);
+    this.pastimes.update(dt);
+    this.spray.update(dt);
     this.completion.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();
@@ -679,7 +689,7 @@ export class Story {
     const g = this.g;
     this.prompt = null;
     this.near = null;
-    if (this.mission || this.cutscenes.active || this.protagonists.busy || g.combat?.flow || g.piloting?.busy || g.skydive?.active) return;
+    if (this.mission || this.cutscenes.active || this.protagonists.busy || this.pastimes.busy || g.combat?.flow || g.piloting?.busy || g.skydive?.active) return;
     const drv = g.driving;
     const car = drv && drv.mode === 'driving' ? drv.vehicle : null;
     if (drv && (drv.mode === 'entering' || drv.mode === 'exiting')) return;
@@ -706,7 +716,7 @@ export class Story {
     }
     let col: { text: string; go: () => void } | null = null;
     if (!this.near && !rob) {
-      col = this.collect.offer() ?? this.venues.offer();
+      col = this.collect.offer() ?? this.venues.offer() ?? this.pastimes.offer();
       if (col) this.prompt = col.text;
     }
     if (rob && g.input.pressed('interact')) { g.input.swallow('interact'); rob.go(); return; }

@@ -33,6 +33,8 @@ export interface CharState { x: number; z: number; yaw: number; health: number; 
 
 export interface MissionRecord {
   done: boolean;
+  /** In-game day it was first completed (moves the stock market). */
+  day?: number;
   skipped: boolean;
   /** Ids of the gold objectives completed on the best run(s). */
   medals: string[];

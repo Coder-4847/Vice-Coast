@@ -42,25 +42,25 @@ export interface QualityPreset {
 export const PRESETS: Record<PresetName, QualityPreset> = {
   low: {
     name: 'low', label: 'Low', pixelRatioCap: 1, antialias: false,
-    shadows: false, shadowMapSize: 512, drawDistance: 700, streamRadius: 520, traffic: 22, peds: 45,
+    shadows: false, shadowMapSize: 512, drawDistance: 700, streamRadius: 520, traffic: 30, peds: 70,
     cascades: 0, shadowDistance: 0, msaa: 0, ao: false, bloom: false, smaa: false, cinematic: false,
     cloudOctaves: 3, envSize: 64, envInterval: 4, terrainSegments: 160, rain: 1800, snow: 1500, dust: 120, lamps: false,
   },
   medium: {
     name: 'medium', label: 'Medium', pixelRatioCap: 1.25, antialias: false,
-    shadows: true, shadowMapSize: 1024, drawDistance: 1100, streamRadius: 760, traffic: 36, peds: 80,
+    shadows: true, shadowMapSize: 1024, drawDistance: 1100, streamRadius: 760, traffic: 54, peds: 130,
     cascades: 2, shadowDistance: 260, msaa: 0, ao: false, bloom: true, smaa: true, cinematic: true,
     cloudOctaves: 4, envSize: 128, envInterval: 3, terrainSegments: 224, rain: 4500, snow: 3500, dust: 260, lamps: true,
   },
   high: {
     name: 'high', label: 'High', pixelRatioCap: 1.5, antialias: true,
-    shadows: true, shadowMapSize: 2048, drawDistance: 1800, streamRadius: 1000, traffic: 52, peds: 120,
+    shadows: true, shadowMapSize: 2048, drawDistance: 1800, streamRadius: 1000, traffic: 82, peds: 200,
     cascades: 3, shadowDistance: 460, msaa: 4, ao: true, bloom: true, smaa: false, cinematic: true,
     cloudOctaves: 5, envSize: 256, envInterval: 2, terrainSegments: 300, rain: 8000, snow: 6000, dust: 420, lamps: true,
   },
   ultra: {
     name: 'ultra', label: 'Ultra', pixelRatioCap: 2, antialias: true,
-    shadows: true, shadowMapSize: 2048, drawDistance: 2800, streamRadius: 1300, traffic: 70, peds: 160,
+    shadows: true, shadowMapSize: 4096, drawDistance: 2800, streamRadius: 1300, traffic: 110, peds: 270,
     cascades: 4, shadowDistance: 760, msaa: 4, ao: true, bloom: true, smaa: true, cinematic: true,
     cloudOctaves: 6, envSize: 256, envInterval: 1.2, terrainSegments: 400, rain: 14000, snow: 10000, dust: 700, lamps: true,
   },

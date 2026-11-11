@@ -204,7 +204,7 @@ const _axisY = new THREE.Vector3(0, 1, 0);
 /** Time-of-day crowd size (relative). */
 export function pedDensity(hour: number): number {
   const bump = (c: number, w: number) => Math.exp(-(((hour - c) / w) ** 2));
-  return Math.min(1, 0.12 + 0.5 * bump(8.5, 1.6) + 0.75 * bump(13, 3.6) + 0.7 * bump(18, 2.2) + 0.55 * bump(23, 2.2));
+  return Math.min(1, 0.2 + 0.5 * bump(8.5, 1.6) + 0.75 * bump(13, 3.6) + 0.7 * bump(18, 2.2) + 0.55 * bump(23, 2.2));
 }
 
 /**

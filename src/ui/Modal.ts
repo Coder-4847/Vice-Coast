@@ -26,6 +26,8 @@ export interface Page {
   /** Footer hints. */
   hints?: string;
   onClose?: () => void;
+  /** A game page takes the gamepad itself: stick / d-pad and A go here instead of moving the menu focus. */
+  pad?: { move(dx: number, dy: number): void; confirm(): void };
 }
 
 export interface PageHost {
@@ -159,8 +161,8 @@ export class Modal {
 
   refresh(): void { this.render(false); }
 
-  navigate(dx: number, dy: number): void { this.nav.move(dx, dy); }
-  confirm(): void { this.nav.confirm(); }
+  navigate(dx: number, dy: number): void { const p = this.top?.pad; if (p) p.move(dx, dy); else this.nav.move(dx, dy); }
+  confirm(): void { const p = this.top?.pad; if (p) p.confirm(); else this.nav.confirm(); }
 
   /** Called whenever cash changes; counts the number up or down. */
   setCash(n: number): void {

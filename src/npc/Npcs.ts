@@ -14,7 +14,7 @@ import { PedRenderer, Pedestrians, pedDensity, type Ped, type VehicleHit } from 
 /** Relative traffic volume through the day: rush hours at ~8 and ~17:30, quiet from midnight to 5. */
 export function trafficDensity(hour: number): number {
   const bump = (c: number, w: number) => Math.exp(-(((hour - c) / w) ** 2));
-  return Math.min(1, 0.32 + 0.5 * bump(8.2, 1.8) + 0.55 * bump(17.6, 2.2) + 0.28 * bump(13, 3.5));
+  return Math.min(1, 0.45 + 0.45 * bump(8.2, 1.8) + 0.55 * bump(17.6, 2.2) + 0.28 * bump(13, 3.5));
 }
 
 export interface NpcContext {
@@ -46,14 +46,14 @@ export class Npcs {
 
   constructor(private readonly world: World, physics: Physics, private readonly audio: AudioEngine, preset: QualityPreset) {
     this.preset = preset;
-    this.traffic = new Traffic(world.city.plan, world.signals, 96);
+    this.traffic = new Traffic(world.city.plan, world.signals, 150);
     this.traffic.attachPhysics(physics);
     this.trafficView = new TrafficRenderer(96, radialTexture());
     for (const m of this.trafficView.materials) world.rig.register(m);
     world.rig.register(this.trafficView.lightMat, World.glow);
     world.scene.add(this.trafficView.group);
     world.pipeline.hideForAO.push(this.trafficView.poolMesh);
-    this.peds = new Pedestrians(world.city.plan, world.signals, 210);
+    this.peds = new Pedestrians(world.city.plan, world.signals, 330);
     this.pedView = new PedRenderer(210);
     for (const m of this.pedView.materials) world.rig.register(m);
     world.scene.add(this.pedView.group);

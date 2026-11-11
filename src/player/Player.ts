@@ -78,6 +78,10 @@ export class Player {
   noclip = false;
   /** While true the controller doesn't move or read look input (vehicle enter/exit sequences). */
   frozen = false;
+  /** Fishing and the like: the player can look around but not walk. */
+  rooted = false;
+  /** Wearing scuba gear: hold depth underwater instead of floating back up. */
+  scuba = false;
   /** True while a controller (skydive / parachute) owns the player's air velocity: no steering or gravity is applied here. */
   externalFlight = false;
 
@@ -187,7 +191,7 @@ export class Player {
       return;
     }
     const inp = this.input;
-    if (inp.pressed('jump')) this.jumpBuffer = 0.14;
+    if (inp.pressed('jump') && !this.rooted) this.jumpBuffer = 0.14;
     this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
     if (this.noclip) {
@@ -214,8 +218,8 @@ export class Player {
     // --- wish velocity -----------------------------------------------------------------
     _fwd.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     _right.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const mx = inp.move.x;
-    const my = inp.move.y;
+    const mx = this.rooted ? 0 : inp.move.x;
+    const my = this.rooted ? 0 : inp.move.y;
     const hasInput = Math.hypot(mx, my) > 0.05;
 
     const wantsSprint = inp.active('sprint') && my > 0.35 && this.crouchBlend < 0.4 && !this.aiming && this.sprintAllowed && !swimming;
@@ -252,11 +256,20 @@ export class Player {
       const sz = hasInput ? (_tmp.z * my + _right.z * mx) * speed : 0;
       this.vel.x = damp(this.vel.x, sx, 3.2, dt);
       this.vel.z = damp(this.vel.z, sz, 3.2, dt);
-      let ty = wl + SWIM_FEET_Y;
-      if (inp.active('crouch')) ty = wl + SWIM_FEET_Y - 1.6; // dive
-      if (hasInput && my > 0.1) ty += -_tmp.y * 1.4;
-      if (inp.down('jump')) ty = wl + SWIM_FEET_Y + 0.5;
-      this.vel.y = damp(this.vel.y, clamp((ty - this.pos.y) * 3, -2.6, 2.6), 9, dt);
+      const surfaceY = wl + SWIM_FEET_Y;
+      const deep = this.pos.y < surfaceY - 1.2;
+      let vy: number;
+      if (inp.active('crouch')) vy = -(this.scuba ? 2.2 : 1.8); // dive down
+      else if (inp.down('jump')) vy = deep ? 2.4 : clamp((surfaceY + 0.5 - this.pos.y) * 3, -2.6, 2.6);
+      else if (deep) {
+        // underwater: swim where you look; scuba divers hold their depth, free divers drift up slowly
+        vy = (hasInput && my > 0.1 ? _tmp.y * speed * my : 0) + (this.scuba ? 0 : 0.35);
+      } else {
+        let ty = surfaceY;
+        if (hasInput && my > 0.1) ty += -_tmp.y * 1.4;
+        vy = clamp((ty - this.pos.y) * 3, -2.6, 2.6);
+      }
+      this.vel.y = damp(this.vel.y, clamp(vy, -3.2, 3.2), 6, dt);
       this.swimTimer -= dt;
       if (hasInput && this.swimTimer <= 0) {
         this.audio.swim();

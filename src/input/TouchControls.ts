@@ -3,46 +3,60 @@ import { clamp } from '../core/math';
 import type { Action } from './Actions';
 import type { InputManager } from './InputManager';
 
+type Anchor = 'bl' | 'br' | 'tc';
+
 interface ButtonDef {
   id: string;
   action: Action;
   label: string;
-  x: number; // default centre, viewport fraction
-  y: number;
+  /** Default placement: px (at a 420 px-tall reference screen) from a corner, or from the top centre. */
+  at: Anchor;
+  dx: number; // bl: from the left · br: from the right · tc: offset from the centre line
+  dy: number; // bl/br: from the bottom · tc: from the top
   size: number; // px
   /** Latches on tap instead of tracking the finger (sprint on touch is easier as a toggle). */
   latch?: boolean;
   /** Which control layout shows this button (default: on foot). */
   mode?: 'foot' | 'vehicle' | 'both';
+  /** Small, secondary button style. */
+  small?: boolean;
 }
 
+/**
+ * Two thumb clusters and a slim top bar. Right thumb: fire with aim, jump, reload, crouch and use around it.
+ * Left thumb: the floating move stick, with sprint, the special ability and crew just above it. Menus sit in a row
+ * across the top. Driving swaps the right cluster for gas, brake, drift and exit and the left for horn and camera.
+ */
 const BUTTONS: ButtonDef[] = [
-  { id: 'fire', action: 'fire', label: 'Fire', x: 0.88, y: 0.66, size: 88 },
-  { id: 'aim', action: 'aim', label: 'Aim', x: 0.76, y: 0.5, size: 60 },
-  { id: 'jump', action: 'jump', label: 'Jump', x: 0.79, y: 0.82, size: 64 },
-  { id: 'interact', action: 'interact', label: 'Use', x: 0.94, y: 0.42, size: 58 },
-  { id: 'reload', action: 'reload', label: 'Reload', x: 0.94, y: 0.86, size: 58 },
-  { id: 'crouch', action: 'crouch', label: 'Crouch', x: 0.67, y: 0.86, size: 58, latch: true },
-  { id: 'sprint', action: 'sprint', label: 'Sprint', x: 0.3, y: 0.8, size: 62, latch: true },
-  { id: 'weapons', action: 'weaponWheel', label: 'Arms', x: 0.4, y: 0.1, size: 54 },
-  { id: 'map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 54 },
-  { id: 'phone', action: 'phone', label: 'Phone', x: 0.3, y: 0.1, size: 54 },
-  { id: 'switch', action: 'character', label: 'Switch', x: 0.2, y: 0.1, size: 50, mode: 'both' },
-  { id: 'crew', action: 'crew', label: 'Crew', x: 0.1, y: 0.38, size: 50, mode: 'foot' },
-  { id: 'ability', action: 'ability', label: 'Power', x: 0.1, y: 0.24, size: 50, mode: 'both' },
-  { id: 'menu', action: 'pause', label: 'Menu', x: 0.6, y: 0.1, size: 54, mode: 'both' },
-  // ---- driving layout: steer with the left stick, pedals under the right thumb
-  { id: 'v-gas', action: 'fire', label: 'Gas', x: 0.9, y: 0.68, size: 96, mode: 'vehicle' },
-  { id: 'v-brake', action: 'aim', label: 'Brake', x: 0.76, y: 0.76, size: 76, mode: 'vehicle' },
-  { id: 'v-hand', action: 'jump', label: 'Drift', x: 0.77, y: 0.5, size: 62, mode: 'vehicle' },
-  { id: 'v-exit', action: 'interact', label: 'Exit', x: 0.94, y: 0.4, size: 56, mode: 'vehicle' },
-  { id: 'v-cam', action: 'cameraMode', label: 'Cam', x: 0.2, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-back', action: 'crouch', label: 'Look back', x: 0.3, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-horn', action: 'horn', label: 'Horn', x: 0.1, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-lights', action: 'headlights', label: 'Lights', x: 0.4, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-map', action: 'map', label: 'Map', x: 0.5, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-radio', action: 'radioWheel', label: 'Radio', x: 0.6, y: 0.1, size: 52, mode: 'vehicle' },
-  { id: 'v-phone', action: 'phone', label: 'Phone', x: 0.7, y: 0.1, size: 52, mode: 'vehicle' },
+  // ---- on foot, right thumb
+  { id: 'fire', action: 'fire', label: 'Fire', at: 'br', dx: 96, dy: 118, size: 86 },
+  { id: 'aim', action: 'aim', label: 'Aim', at: 'br', dx: 200, dy: 150, size: 64 },
+  { id: 'jump', action: 'jump', label: 'Jump', at: 'br', dx: 196, dy: 56, size: 58 },
+  { id: 'reload', action: 'reload', label: 'Reload', at: 'br', dx: 44, dy: 194, size: 50 },
+  { id: 'interact', action: 'interact', label: 'Use', at: 'br', dx: 128, dy: 210, size: 56 },
+  { id: 'crouch', action: 'crouch', label: 'Crouch', at: 'br', dx: 290, dy: 52, size: 52, latch: true },
+  // ---- on foot, left thumb (the stick floats wherever the thumb lands below these)
+  { id: 'sprint', action: 'sprint', label: 'Sprint', at: 'bl', dx: 52, dy: 176, size: 58, latch: true },
+  { id: 'ability', action: 'ability', label: 'Power', at: 'bl', dx: 52, dy: 250, size: 48, mode: 'both', small: true },
+  { id: 'crew', action: 'crew', label: 'Crew', at: 'bl', dx: 118, dy: 214, size: 48, mode: 'foot', small: true },
+  // ---- top bar
+  { id: 'menu', action: 'pause', label: 'Menu', at: 'tc', dx: -160, dy: 30, size: 44, mode: 'both', small: true },
+  { id: 'map', action: 'map', label: 'Map', at: 'tc', dx: -106, dy: 30, size: 44, small: true },
+  { id: 'phone', action: 'phone', label: 'Phone', at: 'tc', dx: -52, dy: 30, size: 44, small: true },
+  { id: 'weapons', action: 'weaponWheel', label: 'Arms', at: 'tc', dx: 2, dy: 30, size: 44, small: true },
+  { id: 'switch', action: 'character', label: 'Switch', at: 'tc', dx: 56, dy: 30, size: 44, mode: 'both', small: true },
+  // ---- driving: steer with the left stick, pedals under the right thumb
+  { id: 'v-gas', action: 'fire', label: 'Gas', at: 'br', dx: 92, dy: 112, size: 96, mode: 'vehicle' },
+  { id: 'v-brake', action: 'aim', label: 'Brake', at: 'br', dx: 206, dy: 70, size: 74, mode: 'vehicle' },
+  { id: 'v-hand', action: 'jump', label: 'Drift', at: 'br', dx: 200, dy: 172, size: 58, mode: 'vehicle' },
+  { id: 'v-exit', action: 'interact', label: 'Exit', at: 'br', dx: 50, dy: 206, size: 52, mode: 'vehicle' },
+  { id: 'v-horn', action: 'horn', label: 'Horn', at: 'bl', dx: 52, dy: 176, size: 54, mode: 'vehicle' },
+  { id: 'v-back', action: 'crouch', label: 'Look back', at: 'bl', dx: 118, dy: 214, size: 48, mode: 'vehicle', small: true },
+  { id: 'v-cam', action: 'cameraMode', label: 'Cam', at: 'bl', dx: 184, dy: 250, size: 48, mode: 'vehicle', small: true },
+  { id: 'v-map', action: 'map', label: 'Map', at: 'tc', dx: -106, dy: 30, size: 44, mode: 'vehicle', small: true },
+  { id: 'v-radio', action: 'radioWheel', label: 'Radio', at: 'tc', dx: -52, dy: 30, size: 44, mode: 'vehicle', small: true },
+  { id: 'v-phone', action: 'phone', label: 'Phone', at: 'tc', dx: 2, dy: 30, size: 44, mode: 'vehicle', small: true },
+  { id: 'v-lights', action: 'headlights', label: 'Lights', at: 'tc', dx: 110, dy: 30, size: 44, mode: 'vehicle', small: true },
 ];
 
 const STICK_RADIUS = 58;
@@ -171,18 +185,31 @@ export class TouchControls {
     return m === 'both' || (m === 'vehicle') === this.vehicleMode;
   }
 
+  /** Default centre of a button in px for the current screen. */
+  private defaultPos(def: ButtonDef, w: number, h: number, scale: number): { x: number; y: number } {
+    switch (def.at) {
+      case 'bl': return { x: def.dx * scale, y: h - def.dy * scale };
+      case 'br': return { x: w - def.dx * scale, y: h - def.dy * scale };
+      case 'tc': return { x: w / 2 + def.dx * scale, y: def.dy * scale };
+    }
+  }
+
   private layout(): void {
     const w = window.innerWidth;
     const h = window.innerHeight;
     const lay = this.settings.data.controls.touchLayout;
-    const scale = clamp(Math.min(w, h) / 420, 0.8, 1.4);
+    // phones in landscape are ~360-430 px tall; tablets get bigger buttons, tiny screens slightly smaller ones
+    const scale = clamp(Math.min(w, h) / 420, 0.78, 1.35);
     this.root.style.setProperty('--touch-opacity', String(this.settings.data.controls.touchOpacity));
     for (const { def, el } of this.buttons.values()) {
-      const p = lay[def.id] ?? { x: def.x, y: def.y };
+      const saved = lay[def.id];
+      const p = saved ? { x: saved.x * w, y: saved.y * h } : this.defaultPos(def, w, h, scale);
       const size = def.size * scale;
       el.style.display = this.shows(def) ? '' : 'none';
       el.style.width = el.style.height = `${size}px`;
-      el.style.transform = `translate(${p.x * w - size / 2}px, ${p.y * h - size / 2}px)`;
+      el.style.transform = `translate(${p.x - size / 2}px, ${p.y - size / 2}px)`;
+      el.classList.toggle('small', !!def.small);
+      el.classList.toggle('primary', def.id === 'fire' || def.id === 'v-gas');
     }
   }
 

@@ -40,6 +40,13 @@ const FINAL_SHADER = {
     uSunColor: { value: new THREE.Color(1, 1, 1) },
     uAspect: { value: 1.7 },
     uFlare: { value: 1 },
+    uRes: { value: new THREE.Vector2(1920, 1080) },
+    /** Sun shafts strength, sharpening, chromatic aberration, split-tone grade. */
+    uRays: { value: 0 },
+    uRayThr: { value: 2 },
+    uSharp: { value: 0 },
+    uCA: { value: 0 },
+    uSplit: { value: 0 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -47,8 +54,9 @@ const FINAL_SHADER = {
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse;
     uniform float uExposure, uSat, uVignette, uGrain, uTime, uFlash, uSunVis, uAspect, uFlare;
+    uniform float uRays, uRayThr, uSharp, uCA, uSplit;
     uniform vec3 uTint, uSunColor;
-    uniform vec2 uSunUv;
+    uniform vec2 uSunUv, uRes;
     varying vec2 vUv;
 
     vec3 aces(vec3 x) {                         // Narkowicz ACES fit
@@ -65,6 +73,44 @@ const FINAL_SHADER = {
 
     void main() {
       vec3 c = texture2D(tDiffuse, vUv).rgb;
+      vec2 px = 1.0 / uRes;
+
+      // lens: a touch of chromatic aberration toward the frame edges
+      if (uCA > 0.0) {
+        vec2 q0 = vUv - 0.5;
+        vec2 off = q0 * dot(q0, q0) * uCA;
+        c.r = texture2D(tDiffuse, vUv - off).r;
+        c.b = texture2D(tDiffuse, vUv + off).b;
+      }
+
+      // sharpen: unsharp mask clamped to the neighbourhood so edges crisp up without halos
+      if (uSharp > 0.0) {
+        vec3 n = texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb;
+        vec3 s = texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb;
+        vec3 e = texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb;
+        vec3 w = texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb;
+        vec3 mn = min(min(min(n, s), min(e, w)), c), mx = max(max(max(n, s), max(e, w)), c);
+        vec3 sh = c + (c - (n + s + e + w) * 0.25) * uSharp;
+        c = clamp(sh, mn, mx);
+      }
+
+      // sun shafts: march toward the sun gathering bright sky, so light pours past buildings and trees
+      if (uRays > 0.0 && uSunVis > 0.001) {
+        vec2 toSun = uSunUv - vUv;
+        float sd = length(toSun * vec2(uAspect, 1.0));
+        vec2 stp = toSun / 26.0;
+        vec2 suv = vUv + stp * hash(vUv * uRes + uTime);
+        vec3 acc = vec3(0.0);
+        float decay = 1.0;
+        for (int i = 0; i < 26; i++) {
+          suv += stp;
+          vec3 sc = texture2D(tDiffuse, clamp(suv, 0.001, 0.999)).rgb;
+          float sl = dot(sc, vec3(0.2126, 0.7152, 0.0722));
+          acc += sc * smoothstep(uRayThr, uRayThr * 2.5, sl) * decay;
+          decay *= 0.95;
+        }
+        c += acc * (1.0 / 26.0) * uRays * uSunVis * (1.0 - smoothstep(0.0, 1.25, sd)) * mix(vec3(1.0), uSunColor, 0.6);
+      }
 
       // Cinematic sun flare: glow, anamorphic streak and a few ghosts, only while the sun is visible.
       if (uSunVis > 0.001) {
@@ -97,6 +143,13 @@ const FINAL_SHADER = {
       c *= 1.0 - uVignette * pow(length(q * vec2(1.0, 0.9)) * 1.45, 2.4);
 
       c = aces(c);
+      // grade: cool shadows, warm highlights and a gentle S-curve (the sunny crime-drama look)
+      if (uSplit > 0.0) {
+        float L = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        c = mix(c, c * vec3(0.93, 1.0, 1.09), (1.0 - L) * 0.4 * uSplit);
+        c = mix(c, c * vec3(1.06, 1.01, 0.92), L * 0.35 * uSplit);
+        c = mix(c, c * c * (3.0 - 2.0 * c), 0.2 * uSplit);
+      }
       c = toSrgb(c);
       // Film grain, strongest in the mid-tones, animated at ~24 fps.
       float g = hash(vUv * vec2(1920.0, 1080.0) + floor(uTime * 24.0) * 17.0) - 0.5;
@@ -128,6 +181,9 @@ export class RenderPipeline {
   filterSat = 1;
   readonly filterTint = new THREE.Color(1, 1, 1);
   filterContrast = 0;
+  /** Sun-shaft strength (medium and up) and sharpening amount. */
+  rays = 0.55;
+  sharpen = 0.45;
   /** Optional second pass drawn over the world with its own camera (the first-person viewmodel). */
   overlayCamera: THREE.Camera | null = null;
 
@@ -226,6 +282,13 @@ export class RenderPipeline {
     u.uSunVis!.value = p.sunVisibility;
     u.uSunColor!.value.copy(p.sunColor);
     u.uAspect!.value = this.w / this.h;
+    u.uRes!.value.set(this.w, this.h);
+    const cine = this.preset.cinematic;
+    u.uRays!.value = this.preset.bloom ? this.rays : 0;
+    u.uRayThr!.value = 2.4 / Math.max(0.2, p.exposure);
+    u.uSharp!.value = this.sharpen;
+    u.uCA!.value = cine ? 0.012 : 0;
+    u.uSplit!.value = cine ? 1 : 0.6;
 
     if (this.smaa) {
       this.final.renderToScreen = false;

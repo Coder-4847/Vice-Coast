@@ -77,6 +77,9 @@ export class Wanted {
     if (prev !== 0) this.onChange?.(0, prev);
   }
 
+  /** Radius (m) of the search zone around the last sighting; leave it to lose the police faster. */
+  get searchRadius(): number { return 70 + this.stars * 35; }
+
   /** 0–1 remaining search time for the HUD. */
   get searchFrac(): number {
     return this.stars > 0 ? Math.max(0, Math.min(1, this.searchT / SEARCH[this.stars]!)) : 0;

@@ -21,6 +21,9 @@ import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
 import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPreset } from './core/Quality';
+import { a11y } from './core/a11y';
+import { AimAssist } from './combat/AimAssist';
+import { SoundCues } from './ui/SoundCues';
 import { Settings } from './core/Settings';
 import { InputManager } from './input/InputManager';
 import { TouchControls } from './input/TouchControls';
@@ -233,6 +236,7 @@ export class Game {
     });
 
     this.audio.volume = this.settings.data.audio.master;
+    this.applyMixAndA11y();
     this.bindEvents();
   }
 
@@ -314,6 +318,8 @@ export class Game {
       this.story = new Story(this);
       this.radio = new RadioControl(this);
     }
+    this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
+    this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
     this.ui.setProgress(0.2);
     this.placeTitleCamera(0);
     this.world.update(0, false);
@@ -723,13 +729,40 @@ export class Game {
     });
   }
 
+  private readonly aimAssist = new AimAssist();
+  private soundCues: SoundCues | null = null;
+
+  /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
+  private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
+    const wanted = (this.wanted?.stars ?? 0) > 0;
+    const pt = { x: 0, y: 0, z: 0 };
+    for (const p of this.npcs?.peds.peds ?? []) {
+      if (!p.active || p.state === 'down' || p.state === 'lie' || p.health <= 0) continue;
+      const r = p.role;
+      const hostile = r === 'thug' || ((r === 'actor' || r === 'clerk') && p.armed && p.aim) || (wanted && (r === 'cop' || r === 'swat' || r === 'fed' || r === 'sniper' || r === 'soldier'));
+      if (!hostile) continue;
+      pt.x = p.x; pt.y = p.y + 1.35 * p.look.h; pt.z = p.z;
+      yield pt;
+    }
+    for (const a of this.story?.pastimes.hunting.animals ?? []) {
+      if (a.state === 'dead') continue;
+      pt.x = a.x; pt.y = a.y + 0.9 * a.sp.s; pt.z = a.z;
+      yield pt;
+    }
+  }
+
   private updatePlaying(dt: number, alpha: number): void {
     const player = this.player;
     if (!player) return;
     const driving = this.driving;
     const piloting = this.piloting;
     const inCar = driving?.mode === 'driving' || !!piloting?.active;
+    if (!inCar && this.weapon?.isDrawn && a11y.aimAssist > 0 && this.input.activeDevice !== 'kbm') this.aimAssist.update(dt, player, a11y.aimAssist, this.assistTargets());
     if (!inCar) player.update(dt, alpha, this.camera);
+    this.soundCues?.update(dt, a11y.soundCues);
+    // music ducks under dialogue and cutscenes
+    const talking = typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking;
+    this.audio.duck(talking ? 0.6 : this.story?.cutscenes.active ? 0.35 : 0);
     if (this.crafts) { this.crafts.night = this.world.tod.look.night; this.crafts.update(alpha, this.camera); }
     this.world.props?.update(alpha);
     if (this.vehicles) {
@@ -988,6 +1021,14 @@ export class Game {
       const f = this.mapFwd.set(0, 0, -1).applyQuaternion(cam.quaternion);
       yaw = Math.atan2(-f.x, -f.z);
     }
+    // police on the map while wanted
+    if (this.police && this.wanted && this.wanted.stars > 0) {
+      const w = this.wanted;
+      const pm = (this.map.police ??= { cops: [], search: null, seen: false });
+      this.police.blips(pm.cops);
+      pm.seen = w.seen;
+      pm.search = w.seen ? null : { x: w.lastX, z: w.lastZ, r: w.searchRadius };
+    } else this.map.police = null;
     this.map.update(dt, {
       x, z, yaw, speedKmh: v ? v.speedKmh : 0,
       vehicles: this.vehicles ? this.vehicles.vehicles.map((c) => ({ x: c.position.x, z: c.position.z })) : [],
@@ -1030,7 +1071,24 @@ export class Game {
   }
 
   private applySettings(): void {
-    this.audio.setVolume(this.settings.data.audio.master);
+    this.applyMixAndA11y();
+    this.applyGraphicsSettings();
+  }
+
+  /** Audio buses and the live accessibility switches. */
+  private applyMixAndA11y(): void {
+    const au = this.settings.data.audio, ac = this.settings.data.accessibility;
+    this.audio.setVolume(au.master);
+    Object.assign(this.audio.mix, { sfx: au.sfx, music: au.radio, ui: au.ui, mono: au.mono, night: au.range === 'night' });
+    this.audio.applyMix();
+    a11y.shake = ac.reduceMotion ? Math.min(ac.cameraShake, 0.35) : ac.cameraShake;
+    a11y.flashes = ac.reduceFlashes ? 0.15 : 1;
+    a11y.aimAssist = ac.aimAssist === 'off' ? 0 : ac.aimAssist === 'light' ? 0.5 : 1;
+    a11y.holdToMash = ac.holdToMash;
+    a11y.soundCues = ac.soundCues;
+  }
+
+  private applyGraphicsSettings(): void {
     const preset = this.resolvePreset();
     if (preset.name !== this.gfx.preset.name) {
       this.gfx.applyQuality(preset);

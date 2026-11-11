@@ -32,7 +32,19 @@ export interface SettingsData {
     /** Touch button centres as viewport fractions, keyed by button id. */
     touchLayout: Record<string, { x: number; y: number }>;
   };
-  audio: { master: number; radio: number };
+  audio: {
+    master: number;
+    /** Music: the car radio, the phone speaker and street musicians. */
+    radio: number;
+    sfx: number;
+    /** Spoken dialogue (text-to-speech) and how far music ducks under it. */
+    dialogue: number;
+    ui: number;
+    /** Fold everything to one channel (single-sided hearing, one earbud). */
+    mono: boolean;
+    /** 'wide' keeps the full punch; 'night' compresses loud sounds so quiet ones are easier to hear. */
+    range: 'wide' | 'night';
+  };
   accessibility: {
     reduceMotion: boolean;
     textScale: number;
@@ -41,6 +53,19 @@ export interface SettingsData {
     subtitles: boolean;
     subtitleScale: number;
     spokenDialogue: boolean;
+    /** HUD size multiplier. */
+    hudScale: number;
+    /** Solid backgrounds and outlines behind HUD text. */
+    highContrast: boolean;
+    /** A plainer, wider-spaced font in place of the condensed display font. */
+    readableFont: boolean;
+    /** Camera shake, 0…1. */
+    cameraShake: number;
+    reduceFlashes: boolean;
+    aimAssist: 'off' | 'light' | 'strong';
+    holdToMash: boolean;
+    /** Arrows that show where gunshots, explosions, horns and screams come from. */
+    soundCues: boolean;
   };
 }
 
@@ -71,8 +96,11 @@ export function defaultSettings(): SettingsData {
       bindings: defaultBindings(),
       touchLayout: {},
     },
-    audio: { master: 0.8, radio: 0.7 },
-    accessibility: { reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off', subtitles: true, subtitleScale: 1, spokenDialogue: false },
+    audio: { master: 0.8, radio: 0.7, sfx: 0.9, dialogue: 1, ui: 0.7, mono: false, range: 'wide' },
+    accessibility: {
+      reduceMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches, textScale: 1, colorBlind: 'off', subtitles: true, subtitleScale: 1, spokenDialogue: false,
+      hudScale: 1, highContrast: false, readableFont: false, cameraShake: 1, reduceFlashes: false, aimAssist: 'light', holdToMash: false, soundCues: false,
+    },
   };
 }
 
@@ -134,6 +162,11 @@ export class Settings extends Emitter<{ change: SettingsData }> {
     d.accessibility.subtitleScale = c(d.accessibility.subtitleScale, 0.8, 1.8);
     d.audio.master = c(d.audio.master, 0, 1);
     d.audio.radio = c(d.audio.radio, 0, 1);
+    for (const k of ['sfx', 'dialogue', 'ui'] as const) d.audio[k] = c(d.audio[k], 0, 1);
+    if (d.audio.range !== 'night') d.audio.range = 'wide';
+    d.accessibility.hudScale = c(d.accessibility.hudScale, 0.75, 1.5);
+    d.accessibility.cameraShake = c(d.accessibility.cameraShake, 0, 1);
+    if (!['off', 'light', 'strong'].includes(d.accessibility.aimAssist)) d.accessibility.aimAssist = 'light';
     return d;
   }
 

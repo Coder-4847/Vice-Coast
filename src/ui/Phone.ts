@@ -1,3 +1,4 @@
+import { stocksApp } from '../economy/stocks';
 import type { Commerce } from '../economy/Commerce';
 import { PROPERTIES, SHOWROOM } from '../economy/catalog';
 import { money } from '../economy/Economy';
@@ -27,6 +28,7 @@ const APPS: App[] = [
   { id: 'switch', name: 'Switch', glyph: '⇄', color: '#4aa8ff' },
   { id: 'crew', name: 'Crew', glyph: '☻', color: '#ff7a59' },
   { id: 'progress', name: 'Progress', glyph: '%', color: '#ffb347' },
+  { id: 'stocks', name: 'Stocks', glyph: '↗', color: '#38d39f' },
   { id: 'toolkit', name: 'Toolkit', glyph: '⚿', color: '#7ad7e0' },
   { id: 'camera', name: 'Camera', glyph: '◐', color: '#e8e9ec' },
 ];
@@ -151,6 +153,7 @@ export class Phone {
       case 'progress': this.push('Progress', (el) => { const st = this.c.game.story; if (st) st.completion.render(el, { onMark: (k) => { const p = this.c.game.player!; const it = st.collect.nearest(k as import('../collect/defs').CKind, p.pos.x, p.pos.z); if (it) { this.c.game.map.setWaypoint({ x: it.x, z: it.z }); this.c.game.ui.toast('Waypoint set'); } } }); }); break;
       case 'toolkit': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(toolkitPage(st)); }, 400); break;
       case 'crew': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(crewPage(st)); }, 400); break;
+      case 'stocks': { const st = this.c.game.story; if (st) { const open = (): void => { this.stack.pop(); this.push('Verano Exchange', (el) => stocksApp(st, el, open)); }; this.push('Verano Exchange', (el) => stocksApp(st, el, open)); } break; }
       case 'camera': this.close(); setTimeout(() => this.c.photo(), 450); break;
       default:
     }

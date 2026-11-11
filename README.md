@@ -258,6 +258,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 13. **Side activities, radio, collectibles** ✅ (this build) — 6 synthesized radio stations, 15 races, 5 job types, flight school and stunt course, casino / darts / pool / toolkit mini-games, 107 collectibles and a completion tracker (the long tail of sports, fishing, hunting, diving and similar activities is deferred, see docs/ACTIVITIES.md)
 14. **Campaign: Act II** ✅ — missions 13–27, *Crown of Glass*, with 18 new cutscenes (Act III, the Aurelia heist and the three-ending finale are next)
 15. **Campaign: Act III and the finale** ✅ — missions 28–36, the Aurelia yacht heist, and the three-ending finale with free roam
-16. **Polish** ✅ (this build) — main menu, pause menu and photo mode, the prologue, spawn in the city, see-through gun and viewmodel shadow fixes, long-gun support-hand pose, queued saves, a UI restyle
+16. **Polish** ✅ — main menu, pause menu and photo mode, the prologue, spawn in the city, see-through gun and viewmodel shadow fixes, long-gun support-hand pose, queued saves, a UI restyle
+
+17. **Pastimes, accessibility and the living city** ✅ (this build) — golf, tennis, bowling, hoops and arm wrestling; fishing, hunting and scuba diving; a mixer with music/effects/dialogue/menu buses, ducking, mono and night mode; HUD size, high contrast, readable font, camera-shake and flash controls, aim assist, hold-to-mash and on-screen sound cues; a two-thumb touch layout; denser traffic and crowds; sun shafts, sharpening and a new grade; police vision cones, search zones and Spray Shacks; a stock market (see docs/ACTIVITIES.md). Still not built: triathlon, base-jumping courses, a treasure hunt, in-game TV and a social feed.
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

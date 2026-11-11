@@ -38,6 +38,8 @@ export class MapUI {
   waypoint: { x: number; z: number } | null = null;
   route: Route | null = null;
   onWaypoint: ((wp: { x: number; z: number } | null) => void) | null = null;
+  /** Set each frame while wanted: police blips with vision cones and the search zone. */
+  police: { cops: { x: number; z: number; yaw: number; car: boolean }[]; search: { x: number; z: number; r: number } | null; seen: boolean } | null = null;
 
   private readonly mini: HTMLCanvasElement;
   private readonly miniCtx: CanvasRenderingContext2D;
@@ -375,6 +377,41 @@ export class MapUI {
       else { ctx.moveTo(sx, sy); ctx.lineTo(sx - 6, sy - 13); ctx.arc(sx, sy - 16, 7, Math.PI * 0.8, Math.PI * 0.2, false); ctx.lineTo(sx, sy); }
       ctx.fill();
       ctx.stroke();
+    }
+    // police: the search zone (flashing red/blue), vision cones and blips
+    const pol = this.police;
+    if (pol) {
+      const blink = Math.floor(performance.now() / 380) % 2 === 0;
+      if (pol.search) {
+        const [sx, sy] = toScreen(pol.search.x, pol.search.z);
+        const pr = pol.search.r * v.scale;
+        ctx.save();
+        ctx.fillStyle = blink ? 'rgba(220,50,50,0.16)' : 'rgba(60,110,240,0.16)';
+        ctx.strokeStyle = blink ? 'rgba(255,80,70,0.85)' : 'rgba(90,150,255,0.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, sy, pr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+      const c = Math.cos(v.rot), s2 = Math.sin(v.rot);
+      for (const cop of pol.cops) {
+        const [sx, sy] = toScreen(cop.x, cop.z);
+        if (sx < -40 || sy < -40 || sx > v.w + 40 || sy > v.h + 40) continue;
+        if (!pol.seen) {
+          // facing (sin yaw, cos yaw) in world → screen angle
+          const fx = Math.sin(cop.yaw), fz = Math.cos(cop.yaw);
+          const ang = Math.atan2(fx * s2 + fz * c, fx * c - fz * s2);
+          const half = cop.car ? 0.96 : 1.13, rad = (cop.car ? 70 : 85) * v.scale;
+          const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rad);
+          g.addColorStop(0, 'rgba(255,255,255,0.28)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.arc(sx, sy, rad, ang - half, ang + half); ctx.closePath(); ctx.fill();
+        }
+        const red = blink !== (Math.round(cop.x + cop.z) % 2 === 0);
+        ctx.fillStyle = red ? '#ff4a4a' : '#4a8cff';
+        ctx.strokeStyle = '#0a0c11';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(sx, sy, cop.car ? 4.2 : 3.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
     }
     // player arrow (screen space; the map rotation is already applied to its position)
     {

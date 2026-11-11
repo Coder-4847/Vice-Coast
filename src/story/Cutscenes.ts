@@ -13,7 +13,7 @@ export class Speech {
   private voices: SpeechSynthesisVoice[] = [];
   private cache = new Map<string, SpeechSynthesisVoice | null>();
 
-  constructor(private readonly on: () => boolean) {
+  constructor(private readonly on: () => boolean, private readonly vol: () => number = () => 1) {
     if (typeof speechSynthesis !== 'undefined') {
       const load = (): void => { this.voices = speechSynthesis.getVoices(); this.cache.clear(); };
       load();
@@ -40,7 +40,7 @@ export class Speech {
       const u = new SpeechSynthesisUtterance(text);
       u.pitch = v.pitch;
       u.rate = v.rate;
-      u.volume = 0.9;
+      u.volume = Math.max(0, Math.min(1, 0.9 * this.vol()));
       const voice = this.pick(v.prefer);
       if (voice) u.voice = voice;
       speechSynthesis.speak(u);

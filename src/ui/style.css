@@ -780,3 +780,88 @@ html.photo-clean #ui > *:not(.photomode):not(.toasts) { visibility: hidden !impo
 .pm-panel { text-align: left; }
 .pm-rowtop { width: 100%; display: flex; justify-content: space-between; gap: var(--sp-3); }
 .pm-rowtop output { margin-left: auto; }
+
+/* ---------------------------------------------------------------------------------------- pastimes */
+.cg-canvas.sport { width: auto; height: auto; max-width: 100%; max-height: min(50vh, 440px); touch-action: none; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+.sport-score { margin-bottom: 4px; }
+.sport-pad { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0 4px; user-select: none; -webkit-user-select: none; }
+.sport-btn { min-width: 72px; min-height: 52px; font-size: 1.05rem; touch-action: none; }
+.sport-btn.primary { min-width: 120px; }
+.sport-leave { margin-top: 6px; }
+@media (pointer: fine) { .sport-btn { min-height: 40px; min-width: 60px; font-size: 0.95rem; } }
+
+.ps-hud { position: absolute; left: 50%; bottom: max(150px, 24vh); transform: translateX(-50%); width: min(380px, 86vw); padding: 10px 14px 12px;
+  border-radius: 14px; background: rgba(8,10,16,0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12); color: #e9eef7; text-align: center; pointer-events: none; }
+.ps-hud.hunt { left: auto; right: 18px; bottom: auto; top: 262px; transform: none; width: 260px; text-align: left; }
+.ps-title { font-family: var(--display, 'Bebas Neue', sans-serif); letter-spacing: 0.08em; font-size: 1.2rem; color: #5ac8ff; }
+.ps-hud.hunt .ps-title { color: #e0b26a; }
+.ps-info { font-size: 0.92rem; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+.ps-hint { font-size: 0.8rem; opacity: 0.8; margin-top: 6px; }
+.ps-bar { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.ps-bar > i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #5ac8ff, #7be28f); transition: transform 60ms linear; }
+.ps-bar.fight > i { background: linear-gradient(90deg, #7be28f 0%, #ffd166 65%, #ff5a4a 100%); background-size: 100% 100%; }
+.ps-bar .ps-zone { position: absolute; top: 0; bottom: 0; left: 80%; right: 0; background: rgba(255,60,60,0.25); display: none; }
+.ps-bar.fight .ps-zone { display: block; }
+.ps-bar.danger { animation: ps-shake 0.12s infinite; }
+@keyframes ps-shake { 50% { transform: translateX(2px); } }
+.ps-breath { position: absolute; left: 50%; top: 86px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+  border-radius: 999px; background: rgba(4,18,26,0.6); color: #bff3ff; font-size: 0.85rem; pointer-events: none; font-variant-numeric: tabular-nums; }
+.ps-breath .ps-bar { width: 160px; height: 8px; }
+.ps-breath .ps-bar > i { background: linear-gradient(90deg, #3ad0c0, #8ff3ff); }
+.ps-breath.low .ps-bar > i { background: #ff5a4a; }
+.ps-breath.low { animation: ps-pulse 0.8s infinite; }
+@keyframes ps-pulse { 50% { opacity: 0.55; } }
+.ps-o2 { font-weight: 700; }
+#ui::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.35s;
+  background: radial-gradient(ellipse at 50% 30%, rgba(40,140,150,0.10), rgba(0,30,40,0.55) 85%), linear-gradient(180deg, rgba(60,170,190,0.18), rgba(0,20,30,0.35)); }
+#ui.uw::before { opacity: 1; }
+
+/* ------------------------------------------------------------------------------------ accessibility */
+/* HUD scale: corner widgets grow or shrink together (the full-screen layers stay put) */
+.hud .vitals, .hud .ammo, .hud .stars, .hud .wanted, .hud .speedo, .hud .prompt, .hud .objective, .hud .obj-timer,
+.hud .story-tip, .hud .ability, .hud .ps-hud, .hud .ps-breath, .hud .dispatch, .hud .minimap, .hud .toasts, .hud .reload-prompt { zoom: var(--hud-scale, 1); }
+/* high contrast: solid dark plates and outlines behind HUD text */
+html[data-contrast="high"] .panel-glass, html[data-contrast="high"] .ps-hud, html[data-contrast="high"] .subtitle,
+html[data-contrast="high"] .story-tip, html[data-contrast="high"] .objective, html[data-contrast="high"] .prompt {
+  background: rgba(0,0,0,0.92) !important; backdrop-filter: none !important; border: 2px solid #fff !important; color: #fff !important; }
+html[data-contrast="high"] .hud { text-shadow: 0 0 3px #000, 0 0 2px #000; }
+html[data-contrast="high"] .cross, html[data-contrast="high"] .hitmarker { filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000); }
+/* readable font: no condensed display face, a little more letter spacing */
+html[data-font="readable"] { --display: "Inter", system-ui, sans-serif; }
+html[data-font="readable"] body { letter-spacing: 0.015em; }
+/* sound cues */
+.sound-cues { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 12; }
+.sc-cue { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; transition: opacity 0.2s; }
+.sc-cue i { position: absolute; left: -22px; top: calc(-1 * min(24vh, 200px)); width: 44px; height: 14px; border-radius: 50% 50% 0 0;
+  border-top: 5px solid var(--c); transform: scale(var(--s)); filter: drop-shadow(0 0 4px var(--c)); }
+.sc-cue span { position: absolute; left: -50px; width: 100px; top: calc(-1 * min(24vh, 200px) + 12px); text-align: center; font-size: 0.72rem;
+  font-weight: 700; color: var(--c); text-shadow: 0 1px 2px #000; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* pastime panels are fully removed when not in use */
+.ps-hud.is-hidden, .ps-breath.is-hidden { display: none; }
+
+/* ------------------------------------------------------------------------------- touch layout (phones) */
+/* Thumb clusters own the bottom corners, so on touch the HUD moves to the top edge. */
+.touch-btn.small .touch-face { font-size: 0.56rem; background: rgba(14,16,23,0.55); }
+.touch-btn.primary .touch-face { font-size: 0.8rem; font-weight: 700; border-width: 2px; border-color: rgba(255,255,255,0.6); background: rgba(255,90,60,0.28); }
+html[data-device="touch"] .hud .minimap { width: 120px; top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
+html[data-device="touch"] .hud .minimap-disc { width: 120px; height: 120px; }
+html[data-device="touch"] .hud .minimap-label { font-size: 0.6rem; letter-spacing: 0.12em; margin-top: 3px; }
+html[data-device="touch"] .hud .minimap-sub { display: none; }
+html[data-device="touch"] .hud .wanted { top: calc(8px + env(safe-area-inset-top) + 152px); right: calc(10px + env(safe-area-inset-right)); width: 120px; }
+html[data-device="touch"] .hud .stars { font-size: 15px; }
+html[data-device="touch"] .hud .ammo { top: calc(8px + env(safe-area-inset-top)); bottom: auto; right: calc(140px + env(safe-area-inset-right)); padding: 6px 10px; }
+html[data-device="touch"] .hud .ammo-num { font-size: 1.5rem; }
+html[data-device="touch"] .hud .ammo-name { font-size: 0.55rem; letter-spacing: 0.16em; }
+html[data-device="touch"] .hud .speedo { top: calc(8px + env(safe-area-inset-top)); bottom: auto; right: calc(140px + env(safe-area-inset-right)); width: 168px; padding: 6px 10px; }
+html[data-device="touch"] .hud .vitals { top: calc(48px + env(safe-area-inset-top)); bottom: auto; left: calc(12px + env(safe-area-inset-left)); width: 150px; }
+html[data-device="touch"] .hud .ability { top: calc(84px + env(safe-area-inset-top)); bottom: auto; left: calc(12px + env(safe-area-inset-left)); width: 150px; }
+html[data-device="touch"] .hud .money-hud b { font-size: 1.2rem; }
+html[data-device="touch"] .hud .prompt { top: 38%; }
+html[data-device="touch"] .hud .ps-hud { bottom: calc(10px + env(safe-area-inset-bottom)); width: min(300px, 40vw); padding: 6px 10px 8px; }
+html[data-device="touch"] .hud .ps-hud.hunt { top: calc(110px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); right: auto; bottom: auto; width: 170px; }
+html[data-device="touch"] .hud .ps-breath { top: 64px; }
+html[data-device="touch"] .hud .objective { max-width: 44vw; }
+html[data-device="touch"] .hud .speedo { width: 190px; transform: scale(0.68); transform-origin: top right; }
+html[data-device="touch"] .toasts { top: calc(62px + env(safe-area-inset-top)); }

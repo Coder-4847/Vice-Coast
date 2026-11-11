@@ -12,7 +12,8 @@ export class RadioControl {
 
   constructor(private readonly g: Game) {
     this.radio = new Radio(() => g.audio.context, () => g.audio.output);
-    this.radio.volume = g.settings.data.audio.radio;
+    // the music bus applies the Music & radio level; the radio itself plays at unity
+    this.radio.volume = 1;
     this.radio.onAir = (a) => {
       if (g.settings.data.accessibility.subtitles) g.story?.hud.say(`${a.station.name} · ${a.who}`, a.station.color, a.text, a.secs);
       g.story?.speech.say(a.voice, a.text);
@@ -25,7 +26,6 @@ export class RadioControl {
     STATIONS.forEach((s, i) => this.cards.push(this.card(i, s.name, s.color, s.freq)));
     for (const c of this.cards) this.strip.append(c);
     document.getElementById('ui')!.append(this.strip);
-    g.settings.on('change', (d) => { this.radio.volume = d.audio.radio; });
     // the last station is remembered and comes back on the first time the player gets into a vehicle
     try { const v = Number(localStorage.getItem('vicecoast.radio')); if (Number.isFinite(v) && v >= -1 && v < STATIONS.length) this.saved = v; } catch { /* ignore */ }
   }

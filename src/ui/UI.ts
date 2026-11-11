@@ -408,10 +408,13 @@ export class UI {
     window.setTimeout(() => o.remove(), 400);
   }
 
-  private applyAccessibility(a: { reduceMotion: boolean; textScale: number; colorBlind: string }): void {
+  private applyAccessibility(a: { reduceMotion: boolean; textScale: number; colorBlind: string; hudScale: number; highContrast: boolean; readableFont: boolean }): void {
     const html = document.documentElement;
     html.dataset.reduceMotion = String(a.reduceMotion);
     html.dataset.cb = a.colorBlind;
     html.style.setProperty('--text-scale', String(a.textScale));
+    html.style.setProperty('--hud-scale', String(a.hudScale));
+    html.dataset.contrast = a.highContrast ? 'high' : 'normal';
+    html.dataset.font = a.readableFont ? 'readable' : 'display';
   }
 }

@@ -99,3 +99,33 @@ Tennis, golf, basketball, boxing/MMA, bowling, arm-wrestling and stadium events;
 hunting, fishing, scuba and shipwreck diving, treasure hunt, hiking, rock climbing, triathlon, base jumping, horse
 racing, aircraft/jet combat training, crop-dusting, air-taxi and smuggling runs, in-game TV and the Snapstream feed.
 The mini-games (lock-pick, hack, safe) are practice rigs in the phone's Toolkit; they are not yet wired into heists.
+
+## Sports and outdoor pastimes (`src/pastimes/`, Phase 15)
+
+Every pastime is on the map, has a floating sign within 140 m, and counts toward 100 % (**Sports** and **Outdoors**
+groups in the Progress tab).
+
+| Pastime | Where | How it plays | Pays |
+|---|---|---|---|
+| Golf | Vista Verde Links (hills east of downtown) | 3 or 9 seeded holes, top-down; aim, pick a club, three-press swing (power then accuracy); wind, bunkers, water, trees, sloped greens; beat the pro's card | $150 / $600 |
+| Tennis | Costa Merida Tennis Club | pseudo-3D court; move ←/→, swing timing pulls or pushes, holding a direction aims, Shift = power shot; real scoring (15/30/40/deuce), serves with a toss meter; three opponents | $100–$800 |
+| Bowling | Starlite Lanes (downtown) | ten frames with real strike/spare scoring; position, angle, power and hook; 2D pin physics | $150 |
+| Hoops | Seaside courts (boardwalk) | 60-second shootout, five racks, gold money ball; hold and release in the green | $80 |
+| Arm wrestling | Muscle Beach | three champions in a row; tap (or alternate ←/→) against surges | $60–$450 |
+| Fishing | Del Sol Pier, Dusk Harbor, Kestrel Lake, Pinecrest Marina, Costa canal | hold Use to cast, strike when the float dips, then hold to reel and let go when the fish runs (tension bar); sea and freshwater species, junk, personal bests; sold when you stop | per kg |
+| Hunting | Kestrel Hunting Lodge, grounds in the Kestrel foothills | the lodge lends a rifle; deer, bucks, boar, rabbits, coyotes and rare mountain lions with sight and hearing (crouch!), flee/charge AI; skin for pelts, clean kills pay +30 %; gunfire there is not a crime | per pelt |
+| Diving | Neptune Dive Shop (Spawn Beach) | rent scuba ($60) or free-dive on one breath; crouch dives, jump rises; five wrecks 12–20 m down with four relics each; murky underwater fog, muffled sound, oxygen meter | per relic |
+
+The mini-games are canvas pages inside the shop modal (`arena.ts` gives them keyboard capture, held-stick gamepad
+polling, big touch buttons and a Leave button). Fishing, hunting and diving run in the world.
+
+## Police, escape and the stock market (Phase 15)
+
+* **Vision cones.** Once the police lose sight of you, officers only spot you inside a 130° cone ahead of them (cars
+  110°) or within a few metres. The minimap shows every unit as a flashing red/blue blip with its cone.
+* **Search zone.** A flashing circle marks where you were last seen (70 m + 35 m per star). Leave it unseen and the
+  search timer runs 2.6× faster.
+* **Spray Shacks** (Redline, Cinder Flats, Dusk Harbor, Costa Merida): drive in while unseen, pay $150 per star, and
+  the car comes out a new colour with your wanted level cleared.
+* **Stocks** phone app: seven fictional companies on the Verano Exchange move once a day; some story missions crash
+  or lift particular stocks the next day.

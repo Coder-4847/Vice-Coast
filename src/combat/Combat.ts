@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { a11y } from '../core/a11y';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { Physics } from '../physics/Physics';
 import type { Craft } from '../craft/Craft';
@@ -295,7 +296,7 @@ export class Combat {
       _q.setFromAxisAngle(_axisZ, 1.25 * t);
       camera.quaternion.multiply(_q);
     } else if (this.shake > 0.01) {
-      const s = this.shake * this.shake * 0.35;
+      const s = this.shake * this.shake * 0.35 * a11y.shake;
       camera.position.x += (Math.random() - 0.5) * s;
       camera.position.y += (Math.random() - 0.5) * s;
       camera.position.z += (Math.random() - 0.5) * s;

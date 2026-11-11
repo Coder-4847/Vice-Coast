@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { a11y } from '../core/a11y';
 import { clamp } from '../core/math';
 import { FOG_FRAGMENT, FOG_PARS_FRAGMENT, SKY_RADIANCE_GLSL, WORLD_UNIFORMS_GLSL } from './skyGlsl';
 import { sunTransmittance, type TimeOfDay } from './TimeOfDay';
@@ -157,6 +158,8 @@ function makeShared() {
     uWet: { value: 0 },
     uTime: { value: 0 },
     uFlash: { value: 0 },
+    /** 0 above water … 1 with the camera under the sea (diving). */
+    uUnder: { value: 0 },
   };
 }
 export type SharedUniforms = ReturnType<typeof makeShared>;
@@ -292,7 +295,7 @@ export class Atmosphere {
     shared.uFogFalloff.value = cur.fogFalloff;
     shared.uWet.value = weather.wetness;
     shared.uTime.value += dt;
-    shared.uFlash.value = flash;
+    shared.uFlash.value = flash * a11y.flashes;
 
     // --- direct light colours -------------------------------------------------------------------
     sunTransmittance(tod.sunElev, turb, this.sunColor);
@@ -331,6 +334,12 @@ export class Atmosphere {
     }
     this.scene.environmentIntensity = look.envIntensity * (1 - 0.15 * cur.overcast);
     void this.tmpColor;
+  }
+
+  /** Diving: murky fog and no sky dome while the camera is under the surface. */
+  setUnderwater(k: number): void {
+    shared.uUnder.value = k;
+    this.dome.visible = k < 0.5;
   }
 
   private captureEnv(): void {

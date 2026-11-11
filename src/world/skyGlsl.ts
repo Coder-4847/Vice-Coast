@@ -82,6 +82,12 @@ export const FOG_FRAGMENT = /* glsl */ `
     float optical = fogDensity * vFogDepth * exp(-avgY * uFogFalloff);
     float fogFactor = 1.0 - exp(-optical * optical);
     vec3 fogCol = skyRadiance(fogOff);
+    if (uUnder > 0.0) {
+      // under the sea: thick blue-green murk that swallows everything past ~25 m
+      float u = 1.0 - exp(-vFogDepth * 0.09);
+      fogFactor = mix(fogFactor, u, uUnder);
+      fogCol = mix(fogCol, vec3(0.010, 0.055, 0.07) * (1.0 - 0.85 * uNight), uUnder);
+    }
     gl_FragColor.rgb = mix(gl_FragColor.rgb, fogCol, fogFactor);
   }
 #endif
@@ -91,6 +97,7 @@ export const FOG_FRAGMENT = /* glsl */ `
 export const WORLD_UNIFORMS_GLSL = /* glsl */ `
 uniform float uWet;
 uniform float uTime;
+uniform float uUnder;
 `;
 
 /** Small value-noise toolkit for procedural materials (prefixed n_ to avoid clashes). */

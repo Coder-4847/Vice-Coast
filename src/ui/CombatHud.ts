@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { a11y } from '../core/a11y';
 
 export interface CombatHudState {
   health: number;
@@ -53,7 +54,7 @@ export class CombatHud {
     this.hp.parentElement!.classList.toggle('low', s.health < 30);
     this.ap.style.transform = `scaleX(${Math.max(0, s.armour / 100).toFixed(3)})`;
     this.ap.parentElement!.classList.toggle('is-hidden', s.armour <= 0.5);
-    this.hurt.style.opacity = String(Math.min(0.9, s.hurt * 0.9 + (s.health < 25 ? 0.18 : 0)));
+    this.hurt.style.opacity = String(Math.min(0.9, s.hurt * 0.9 * a11y.flashes + (s.health < 25 ? 0.18 : 0)));
     if (s.stars !== this.lastStars) {
       this.lastStars = s.stars;
       this.starEls.forEach((e, i) => e.classList.toggle('on', i < s.stars));

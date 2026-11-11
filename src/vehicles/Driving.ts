@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { a11y } from '../core/a11y';
 import type { AudioEngine } from '../audio/AudioEngine';
 import { clamp, damp, easeInOutCubic, Spring } from '../core/math';
 import type { InputManager } from '../input/InputManager';
@@ -461,7 +462,7 @@ export class Driving {
     // ---- shake from impacts and speed ---------------------------------------------------------------------------------------
     this.shake = Math.max(0, this.shake - dt * 2.2);
     if (v.impact > 0) this.shake = Math.min(1, this.shake + v.impact * 0.045);
-    const amp = this.shake * 0.12 + clamp((kmh - 130) / 600, 0, 0.12) * 0.01;
+    const amp = (this.shake * 0.12 + clamp((kmh - 130) / 600, 0, 0.12) * 0.01) * a11y.shake;
     if (amp > 0.0005) {
       this.chasePos.x += (Math.random() - 0.5) * amp;
       this.chasePos.y += (Math.random() - 0.5) * amp;
