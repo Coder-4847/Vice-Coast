@@ -64,6 +64,12 @@ export interface MissionDef {
   noReward?: boolean;
   /** A repeatable side activity (see activities/defs.ts): never "done", pays out every time, counts toward the tracker. */
   activity?: string;
+  /** Banner kicker instead of "Act N". */
+  kicker?: string;
+  /** No "mission passed" banner or summary card (the prologue cuts straight on). */
+  noSummary?: boolean;
+  /** Runs when the player abandons the mission from the failure screen. */
+  onQuit?: (s: Story) => void;
   /** Extra availability test (e.g. a heist must be finished first). */
   gate?: (s: Story) => boolean;
   /** Data the activity wants to keep with the definition (race course, job parameters). */
@@ -135,7 +141,7 @@ export class MissionRun {
     this.goldNow = this.def.gold.map(() => true);
     g.wanted?.clear();
     this.startStage(0);
-    s.hud.showBanner(`Act ${this.def.act}`, this.def.title.toUpperCase(), CHARS[this.def.char === 'any' ? this.active : this.def.char].name, 'neutral', 3.2);
+    s.hud.showBanner(this.def.kicker ?? (this.def.activity ? 'Side activity' : `Act ${this.def.act}`), this.def.title.toUpperCase(), CHARS[this.def.char === 'any' ? this.active : this.def.char].name, 'neutral', 3.2);
   }
 
   private startStage(i: number): void {

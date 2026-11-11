@@ -10,10 +10,10 @@ export interface PlaceDef { x: number; z: number; ref?: string; /** Offset from 
 const A = GEO.airport, I = GEO.island, C = GEO.cinder;
 
 export const PLACES: Record<string, PlaceDef> = {
-  'home.mack': { x: 150, z: 70, ref: 'boardwalk', label: 'Boardwalk Studio' },
+  'home.mack': { x: 312, z: 62, ref: 'boardwalk', label: 'Boardwalk Studio' },
   'home.imani': { x: A.x + 100, z: A.apronZ - 40, ref: 'hangar', label: 'Hangar 3' },
   'home.teddy': { x: C.x - 20, z: C.z + 50, ref: 'trailer', label: 'Cinder Flats Trailer' },
-  'mack.door': { x: 150, z: 70, ref: 'boardwalk', off: [7, 5], label: 'Boardwalk Studio' },
+  'mack.door': { x: 312, z: 62, ref: 'boardwalk', off: [7, 5], label: 'Boardwalk Studio' },
   'imani.door': { x: A.x + 100, z: A.apronZ - 40, ref: 'hangar', off: [8, 6], label: 'Hangar 3' },
   'teddy.door': { x: C.x - 20, z: C.z + 50, ref: 'trailer', off: [7, 5], label: 'Cinder Flats Trailer' },
   'redline.yard': { x: 830, z: 140, ref: 'redline', off: [-16, 14], label: 'Redline Customs yard', car: true },
@@ -52,6 +52,9 @@ export const PLACES: Record<string, PlaceDef> = {
   'costa.cafe': { x: 520, z: 3150, label: 'Costa Merida cafe', car: true },
   'tower.top': { x: 1010, z: -60, label: 'Meridian Tower plaza', car: true },
   'court': { x: 1060, z: 90, label: 'Valeria Courthouse', car: true },
+  'pro.mill': { x: 960, z: -2255, label: 'Pinecrest sawmill', car: true },
+  'pro.office': { x: 992, z: -2236, label: 'Sawmill payroll office' },
+  'pro.light': { x: 80, z: -2585, label: 'Lighthouse road', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

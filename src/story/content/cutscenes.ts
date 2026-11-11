@@ -2,6 +2,7 @@ import { CHARS } from '../chars';
 import type { ActorDef, CutsceneDef, Line, Shot } from '../types';
 import { ACT2_SCENES } from './act2Scenes';
 import { ACT3_SCENES } from './act3Scenes';
+import { PROLOGUE_SCENES } from './prologue';
 
 // ----------------------------------------------------------------------------------------------- helpers
 
@@ -45,7 +46,7 @@ const ACT1_SCENES: Record<string, CutsceneDef> = {
     shots: [
       wide([L('crane', 'Not a scratch. Steady hands, Marcus. I remember that kind of thing.'), L('mack', 'Enjoy your dinner, sir.')]),
       { from: [-6, 1.7, -2], to: [-5.2, 1.7, -1.4], look: [-4.5, 1.6, 3.5], fov: 34, lines: [L('pruitt', 'Mr. Delgado. Walk with me. You parked that car like a man who used to do something more exciting.')] },
-      close(-1.2, [L('mack', 'I don\'t know you.'), L('pruitt', 'Walter Pruitt. State Bureau of Investigation. I know Port Costa, 2011. I know the three jobs after it. I know you were never charged.')]),
+      close(-1.2, [L('mack', 'I don\'t know you.'), L('pruitt', 'Walter Pruitt. State Bureau of Investigation. I know Pinecrest, the winter of 2011. I know the three jobs after it. I know you were never charged.')]),
       close(-4.5, [L('pruitt', 'I can make that file thick or I can make it vanish. All I need is a driver\'s eyes tonight. Follow Mr. Crane\'s car. See where a candidate for governor spends his evening.'), L('mack', 'And if I say no?'), L('pruitt', 'Then you keep parking cars. For a while.')], { look: [-4.5, 1.6, 3.5], from: [-3.2, 1.62, -2.4], to: [-3.4, 1.64, -2.0] }),
     ],
   },
@@ -284,4 +285,4 @@ const ACT1_SCENES: Record<string, CutsceneDef> = {
   },
 };
 
-export const CUTSCENES: Record<string, CutsceneDef> = { ...ACT1_SCENES, ...ACT2_SCENES, ...ACT3_SCENES };
+export const CUTSCENES: Record<string, CutsceneDef> = { ...PROLOGUE_SCENES, ...ACT1_SCENES, ...ACT2_SCENES, ...ACT3_SCENES };

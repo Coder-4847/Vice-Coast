@@ -24,7 +24,11 @@ export class Wanted {
   response = 0;
   onChange: ((stars: number, previous: number) => void) | null = null;
 
+  /** Scripted scenes (the prologue) switch the real police response off. */
+  muted = false;
+
   report(weight: number, x: number, z: number, witnessed: boolean): void {
+    if (this.muted) return;
     if (weight <= 0) return;
     const prev = this.stars;
     this.heat += weight * (witnessed ? 1 : 0.15);

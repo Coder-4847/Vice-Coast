@@ -136,9 +136,11 @@ export class Story {
       g.commerce!.eco.p.home = mack.home;
       st.chars.mack = undefined;
       if (!debug) {
-        const home = this.place(mack.start);
-        g.player!.teleport(home.x, home.z + 5, 0);
-        g.world.city.warm(home.x, home.z);
+        // a new game opens nine years earlier, in the snow; the flat comes afterwards
+        const def = BY_ID.m00;
+        const at = def && !this.done('m00') ? this.place(def.start) : this.place(mack.start);
+        g.player!.teleport(at.x, at.z + 5, 0);
+        g.world.city.warm(at.x, at.z);
       }
     } else {
       // the active character's looks come from the profile; the others from the story
@@ -151,14 +153,54 @@ export class Story {
     this.collect.onBegin();
     this.ready = true;
     g.commerce!.refreshMarkers();
-    if (isNew && !debug && !st.introSeen) {
-      st.introSeen = true;
-      setTimeout(() => this.playCutscene('intro', () => {
-        this.hud.showTip('Your first job is marked on the map (M). Phone: Missions app.', 10);
-        const w = this.place('gala');
-        this.setWaypoint(w.x, w.z);
-      }), 1800);
+    this.prologueEnding = false;
+    if (!isNew && !debug && !st.introSeen && this.done('m00')) {
+      const home = this.place(CHARS.mack.start);
+      g.player!.teleport(home.x, home.z + 5, 0);
+      g.world.city.warm(home.x, home.z);
+      setTimeout(() => this.playIntro(), 1800);
     }
+    if (isNew && !debug && !st.introSeen) {
+      const pro = BY_ID.m00;
+      if (pro && !this.done('m00')) setTimeout(() => { if (!this.mission && !this.startMission(pro)) this.afterPrologue(); }, 1500);
+      else setTimeout(() => this.playIntro(), 1800);
+    }
+  }
+
+  /** The opening monologue at Mack's flat, then the first job on the map. */
+  private playIntro(): void {
+    this.st.introSeen = true;
+    this.playCutscene('intro', () => {
+      this.hud.showTip('Your first job is marked on the map (M). Phone: Missions app.', 10);
+      const w = this.place('gala');
+      this.setWaypoint(w.x, w.z);
+    });
+  }
+
+  private prologueEnding = false;
+  private cutWas = false;
+
+  /** The prologue is over (finished, skipped or abandoned): nine years later, outside Mack's flat. */
+  afterPrologue(): void {
+    const g = this.g;
+    if (this.st.introSeen || this.prologueEnding) return;
+    this.prologueEnding = true;
+    this.record('m00').done = true;
+    this.fadeThrough(() => {
+      if (g.wanted) g.wanted.muted = false;
+      g.wanted?.clear();
+      if (g.driving && g.driving.mode !== 'foot') g.driving.abort();
+      this.hostiles.clear();
+      this.drivers.clear();
+      g.world.setWeather('clear', true);
+      g.world.setHour(18.2);
+      const home = this.place(CHARS.mack.start);
+      g.player!.teleport(home.x, home.z + 5, 0);
+      g.world.city.warm(home.x, home.z);
+      g.combat?.vitals.reset();
+    }, 1500);
+    setTimeout(() => this.hud.showBanner('Port Valeria', 'NINE YEARS LATER', '', 'neutral', 3.2), 2600);
+    setTimeout(() => { this.prologueEnding = false; this.playIntro(); void g.commerce!.save(g.commerce!.slot ?? 1, true); }, 5600);
   }
 
   private endEverything(): void {
@@ -424,13 +466,13 @@ export class Story {
     g.wanted?.clear();
     this.protagonists.applyPassives();
     cm.refreshMarkers();
-    this.hud.showBanner(def.activity ? (run.stats.extra.win === 0 ? 'Finished' : 'Won') : 'Mission passed', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
+    if (!def.noSummary) this.hud.showBanner(def.activity ? (run.stats.extra.win === 0 ? 'Finished' : 'Won') : 'Mission passed', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
     void cm.save(cm.slot ?? 1, true);
     // a summary card
     const goldRows = def.gold.map((d) => ({ d, ok: medals.includes(d.id) }));
     const best = def.gold.length && goldRows.every((r) => rec.medals.includes(r.d.id));
     void allGold; void best;
-    setTimeout(() => { if (!this.mission) cm.open(this.summaryPage(def, run, pay, goldRows.map((r) => ({ label: r.d.label, ok: r.ok })))); }, 1200);
+    if (!def.noSummary) setTimeout(() => { if (!this.mission) cm.open(this.summaryPage(def, run, pay, goldRows.map((r) => ({ label: r.d.label, ok: r.ok })))); }, 1200);
   }
 
   private summaryPage(def: MissionDef, run: MissionRun, pay: number, gold: { label: string; ok: boolean }[]): Page {
@@ -517,6 +559,7 @@ export class Story {
     this.finishRun(run);
     this.g.wanted?.clear();
     this.hud.showBanner('', 'Mission abandoned', run.def.title, 'neutral', 2.5);
+    run.def.onQuit?.(this);
   }
 
   private skipMission(run: MissionRun): void {
@@ -582,6 +625,14 @@ export class Story {
     this.hud.update(dt);
     this.hostiles.update();
     this.cutscenes.update(dt);
+    // marker beams would fill a cutscene shot that stands inside one
+    const cut = this.cutscenes.active;
+    if (cut !== this.cutWas) {
+      this.cutWas = cut;
+      this.beacons.group.visible = !cut;
+      g.commerce!.points.group.visible = !cut;
+      if (cut) this.hud.hideTip();
+    }
     this.protagonists.update(dt);
     this.protagonists.padNav();
     this.updateCrew(dt);

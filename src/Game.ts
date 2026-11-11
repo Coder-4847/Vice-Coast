@@ -66,6 +66,7 @@ export class Game {
   player: Player | null = null;
   weapon: WeaponSystem | null = null;
   viewmodel: Viewmodel | null = null;
+  private vmHidden = false;
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
@@ -442,6 +443,11 @@ export class Game {
 
   private update(dt: number, alpha: number): void {
     const input = this.input;
+    // the first-person arms belong to the game, not to the title or loading screens
+    if (this.viewmodel) {
+      if (this.state === 'title' || this.state === 'loading') { this.viewmodel.group.visible = false; this.vmHidden = true; }
+      else if (this.vmHidden) { this.viewmodel.group.visible = true; this.vmHidden = false; }
+    }
 
     switch (this.state) {
       case 'loading':

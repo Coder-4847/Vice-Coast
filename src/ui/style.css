@@ -118,7 +118,7 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .rpm i { display: block; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); transform-origin: left; transition: background-color 120ms linear; will-change: transform; }
 .rpm i.hot { background: var(--accent); }
 .speed-foot { display: flex; justify-content: space-between; font-size: var(--fs-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.prompt { position: absolute; left: 50%; top: 62%; transform: translate(-50%, 0); padding: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); letter-spacing: 0.06em; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.prompt { position: absolute; left: 50%; top: 57%; transform: translate(-50%, 0); padding: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); letter-spacing: 0.06em; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
 .prompt.is-hidden { opacity: 0; transform: translate(-50%, 6px); }
 .crosshair { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
 .panel-glass { background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(12px) saturate(1.1); -webkit-backdrop-filter: blur(12px) saturate(1.1); }
@@ -486,7 +486,8 @@ html[data-device="touch"] .touch, .touch.editing { display: block; }
 .sb-sub { font-size: var(--fs-md); color: var(--text); opacity: 0.85; }
 .story-banner[data-tone="good"] .sb-title { color: #ffd166; }
 .story-banner[data-tone="bad"] .sb-title { color: #ff6a5a; }
-.story-tip { position: absolute; left: 50%; bottom: calc(var(--sp-7) + 56px); transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--line); font-size: var(--fs-sm); transition: opacity var(--dur-3) var(--ease); }
+.subtitle:not(.is-hidden) ~ .story-tip { bottom: calc(var(--sp-7) + 104px); }
+.story-tip { position: absolute; left: 50%; bottom: calc(var(--sp-7) + 22px); max-width: min(620px, 86vw); text-align: center; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--line); font-size: var(--fs-sm); transition: opacity var(--dur-3) var(--ease); }
 .objective { position: absolute; top: calc(var(--sp-4) + env(safe-area-inset-top) + 40px); left: calc(var(--sp-4) + env(safe-area-inset-left)); max-width: min(360px, 56vw); display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-left: 3px solid var(--accent); background: linear-gradient(90deg, rgba(8, 10, 15, 0.62), rgba(8, 10, 15, 0)); text-shadow: 0 1px 6px #000; transition: opacity var(--dur-3) var(--ease); }
 .objective.is-hidden, .obj-timer.is-hidden, .ability.is-hidden, .cin-hidden { opacity: 0; visibility: hidden; }
 .obj-kicker { font-size: var(--fs-xs); letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }

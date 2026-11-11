@@ -24,7 +24,7 @@ export interface PropertyDef {
 }
 
 export const PROPERTIES: PropertyDef[] = [
-  { id: 'boardwalk', name: 'Boardwalk Studio', kind: 'apartment', region: 'Port Valeria', blurb: 'A small flat over the beachfront arcade. Cheap, noisy, and you can hear the surf.', price: 18000, upkeep: 60, near: { x: 150, z: 70 }, slots: 1, bays: 'car' },
+  { id: 'boardwalk', name: 'Boardwalk Studio', kind: 'apartment', region: 'Port Valeria', blurb: 'A small flat over the beachfront arcade. Cheap, noisy, and you can hear the surf.', price: 18000, upkeep: 60, near: { x: 312, z: 62 }, slots: 1, bays: 'car' },
   { id: 'downtown', name: 'Meridian Tower Penthouse', kind: 'penthouse', region: 'Port Valeria', blurb: 'The top floor of the tallest building downtown, with a six-car garage under it.', price: 420000, upkeep: 900, near: { x: 1010, z: -50 }, slots: 6, bays: 'car' },
   { id: 'crestview', name: 'Crestview Villa', kind: 'mansion', region: 'Crestview Hills', blurb: 'White walls, a pool and the whole city laid out below the terrace.', price: 760000, upkeep: 1400, near: { x: 1060, z: -1000 }, slots: 8, bays: 'car' },
   { id: 'trailer', name: 'Cinder Flats Trailer', kind: 'trailer', region: 'Cinder Flats', blurb: 'A single-wide in the desert. Nobody asks questions out here.', price: 6500, upkeep: 20, near: { x: 3330, z: 610 }, slots: 2, bays: 'car' },
