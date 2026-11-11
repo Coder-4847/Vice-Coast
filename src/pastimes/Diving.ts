@@ -44,10 +44,17 @@ export class Diving {
     s.g.ui.hudRoot.append(this.hud);
   }
 
+  private readonly matCache = new Map<string, THREE.MeshStandardMaterial>();
+
+  /** Shared materials: every distinct material is its own shader program, so wrecks reuse a small palette. */
   private mat(color: number, emissive = 0, rough = 0.85, metal = 0.1): THREE.MeshStandardMaterial {
-    const m = new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, emissive, emissiveIntensity: emissive ? 0.6 : 0 });
+    const key = `${color}|${emissive}|${rough}|${metal}`;
+    let m = this.matCache.get(key);
+    if (m) return m;
+    m = new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, emissive, emissiveIntensity: emissive ? 0.6 : 0 });
     this.s.g.world.rig.register(m);
     this.mats.push(m);
+    this.matCache.set(key, m);
     return m;
   }
 
