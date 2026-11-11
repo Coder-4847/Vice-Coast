@@ -61,7 +61,7 @@ export class SettingsMenu {
     private readonly gfx: GameRenderer,
     private readonly hooks: MenuHooks,
   ) {
-    const title = h('h2', '', 'Paused');
+    const title = h('h2', '', 'Settings');
     const head = h('div', 'panel-head', title, h('span', 'kicker', 'San Verano'));
 
     const tabs = h('div', 'tabs');
@@ -134,6 +134,12 @@ export class SettingsMenu {
   tick(): void {
     if (this.current === TEST_TAB) this.tester.tick();
     if (this.current === ENV_TAB) for (const f of this.envSyncs) f();
+  }
+
+  /** Jump to a tab by name (the pause menu's Progress and Save shortcuts). */
+  openTab(name: string): void {
+    const i = (TABS as readonly string[]).indexOf(name);
+    if (i >= 0) { this.selectTab(i); (this.tabButtons[i] as HTMLElement).focus({ preventScroll: true }); }
   }
 
   private selectTab(i: number): void {

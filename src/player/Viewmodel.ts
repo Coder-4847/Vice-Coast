@@ -199,7 +199,8 @@ export class Viewmodel {
     this.group.traverse((o) => {
       o.layers.set(VIEWMODEL_LAYER);
       o.frustumCulled = false;
-      if (o instanceof THREE.Mesh && o.material !== this.flash.children[0]?.['material' as keyof THREE.Object3D]) o.receiveShadow = true;
+      // the viewmodel lives in its own camera space near the origin: world shadow lookups there are garbage
+      if (o instanceof THREE.Mesh) { o.receiveShadow = false; o.castShadow = false; }
     });
     this.camera.layers.set(VIEWMODEL_LAYER);
   }

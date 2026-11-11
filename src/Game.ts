@@ -11,6 +11,12 @@ import { mountSlots } from './economy/screens';
 import { Phone } from './ui/Phone';
 import { Story } from './story/Story';
 import { RadioControl } from './radio/RadioControl';
+import { MainMenu } from './ui/MainMenu';
+import { PauseHome, type PauseStatus } from './ui/PauseHome';
+import { PhotoMode, type PhotoFilter } from './ui/PhotoMode';
+import { CHARS } from './story/chars';
+import { money } from './economy/Economy';
+import { regionAt } from './ui/mapData';
 import { craftMaterials } from './craft/models';
 import { CraftHud } from './ui/CraftHud';
 import { GameRenderer } from './core/GameRenderer';
@@ -42,7 +48,7 @@ import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
 
-export type GameState = 'loading' | 'title' | 'playing' | 'paused' | 'map' | 'modal' | 'phone';
+export type GameState = 'loading' | 'title' | 'playing' | 'paused' | 'map' | 'modal' | 'phone' | 'photo';
 
 const TITLE_FOV = 50;
 
@@ -67,6 +73,13 @@ export class Game {
   weapon: WeaponSystem | null = null;
   viewmodel: Viewmodel | null = null;
   private vmHidden = false;
+  mainMenu!: MainMenu;
+  pauseHome!: PauseHome;
+  photoMode!: PhotoMode;
+  /** Which pause screen is up: the landing page or the settings tabs. */
+  private pauseView: 'home' | 'settings' = 'home';
+  /** The settings tabs were opened from the main menu. */
+  private titleSettings = false;
   effects: Effects | null = null;
   vehicles: VehicleManager | null = null;
   driving: Driving | null = null;
@@ -161,6 +174,50 @@ export class Game {
       device: () => this.input.activeDevice,
       close: () => this.closeMap(),
     });
+    this.mainMenu = new MainMenu(root, {
+      slots: () => (this.commerce ? this.commerce.slots() : Promise.resolve([])),
+      read: (slot) => (this.commerce ? this.commerce.store.read(slot) : Promise.resolve(null)),
+      remove: async (slot) => { await this.commerce?.store.remove(slot); },
+      start: (slot, data) => {
+        if (!this.commerce || this.state !== 'title') return;
+        this.mainMenu.hide();
+        this.commerce.begin(slot, data);
+        this.startPlaying();
+      },
+      settings: () => this.openTitleSettings(),
+      manage: () => this.openSlotPicker(),
+      blip: (k) => this.audio.uiBlip(k),
+    });
+    this.pauseHome = new PauseHome(root, {
+      resume: () => this.resume(),
+      map: () => { this.resume(); this.openMap(); },
+      progress: () => this.openPauseSettings('Progress'),
+      settings: () => this.openPauseSettings(),
+      save: () => this.openPauseSettings('Saves'),
+      photo: () => this.enterPhoto(),
+      quit: () => { location.href = location.pathname + location.search.replace(/[?&]debug\b[^&]*/, ''); },
+      blip: (k) => this.audio.uiBlip(k),
+    });
+    this.photoMode = new PhotoMode(root, {
+      camera: this.camera,
+      look: (o) => this.input.consumeLook(o),
+      move: () => ({ x: this.input.move.x, y: this.input.move.y, up: (this.input.down('jump') ? 1 : 0) - (this.input.down('crouch') ? 1 : 0), fast: this.input.down('sprint') }),
+      ground: (x, z) => this.world.heightAt(x, z),
+      hour: () => this.world.tod.hour,
+      setHour: (hr) => this.world.setHour(hr),
+      setFilter: (f) => {
+        const P = this.world.pipeline;
+        const L: Record<PhotoFilter, [number, number, number, number, number]> = {
+          none: [1, 1, 1, 1, 0], vivid: [1.4, 1.02, 1, 0.98, 0.15], vintage: [0.62, 1.12, 1, 0.82, 0.35], cool: [0.85, 0.88, 0.98, 1.15, 0.2], noir: [0, 1, 1, 1, 0.45],
+        };
+        const [sat, r, g, b, c] = L[f];
+        P.filterSat = sat; P.filterTint.setRGB(r, g, b); P.filterContrast = c;
+      },
+      setHud: (on) => document.documentElement.classList.toggle('photo-clean', !on),
+      shoot: () => this.commerce?.photo(),
+      exit: () => this.exitPhoto(),
+    });
+
     this.map.onWaypoint = (wp) => {
       if (wp) this.world.beacon.set(wp.x, wp.z);
       else this.world.beacon.clear();
@@ -278,7 +335,9 @@ export class Game {
     await new Promise((r) => setTimeout(r, 300));
     this.state = 'title';
     this.ui.hideLoading();
-    this.ui.showTitle();
+    void this.mainMenu.show();
+    this.mainMenu.setDevice(this.input.activeDevice);
+    this.pauseHome.setDevice(this.input.activeDevice);
   }
 
   private setupVehicles(): void {
@@ -454,6 +513,10 @@ export class Game {
       case 'title':
         this.titleT += dt;
         this.placeTitleCamera(this.titleT);
+        if (this.state === 'title') this.updateTitleInput();
+        break;
+      case 'photo':
+        this.photoMode.update(dt);
         break;
       case 'playing':
         this.updatePlaying(dt, alpha);
@@ -477,6 +540,7 @@ export class Game {
         break;
     }
     if (this.state === 'title' && this.commerce?.modal.active) this.padNavModal();
+    if (this.state === 'photo') this.ui.setCaptureHint(this.input.activeDevice === 'kbm' && !this.input.pointerLocked);
     this.updateMapHud(dt);
 
     this.updateFov(dt);
@@ -533,11 +597,107 @@ export class Game {
   private updateMenuInput(): void {
     if (this.editingTouch) return;
     const n = this.input.nav;
-    const menu = this.ui.menu;
     if (this.input.capturing) return;
+    if (this.pauseView === 'home') {
+      if (n.x || n.y) this.pauseHome.navigate(n.x, n.y);
+      if (n.confirm) this.pauseHome.confirm();
+      if (n.back || n.start) this.resume();
+      return;
+    }
+    const menu = this.ui.menu;
     if (n.x || n.y) menu.nav.move(n.x, n.y);
     if (n.confirm) menu.nav.confirm();
-    if (n.back || n.start) this.resume();
+    if (n.back) this.backToPauseHome();
+    else if (n.start) this.resume();
+  }
+
+  /** Gamepad on the main menu (the keyboard and mouse talk to the DOM directly). */
+  private updateTitleInput(): void {
+    if (this.commerce?.modal.active) return;
+    const n = this.input.nav;
+    if (this.titleSettings) {
+      this.ui.menu.tick();
+      if (this.input.capturing || this.editingTouch) return;
+      if (n.x || n.y) this.ui.menu.nav.move(n.x, n.y);
+      if (n.confirm) this.ui.menu.nav.confirm();
+      if (n.back || n.start) this.closeTitleSettings();
+      return;
+    }
+    if (!this.mainMenu.isOpen) return;
+    if (n.x || n.y) this.mainMenu.navigate(n.x, n.y);
+    if (n.confirm) this.mainMenu.confirm();
+    if (n.back) this.mainMenu.back();
+  }
+
+  private openTitleSettings(): void {
+    this.titleSettings = true;
+    this.mainMenu.hide();
+    this.ui.menu.open();
+  }
+
+  private closeTitleSettings(): void {
+    if (!this.titleSettings) return;
+    this.titleSettings = false;
+    this.ui.menu.close();
+    void this.mainMenu.show();
+  }
+
+  private openPauseSettings(tab?: string): void {
+    this.pauseView = 'settings';
+    this.pauseHome.close();
+    this.ui.menu.open();
+    if (tab) this.ui.menu.openTab(tab);
+  }
+
+  private backToPauseHome(): void {
+    if (this.state !== 'paused') return;
+    this.audio.uiBlip('back');
+    this.ui.menu.close();
+    this.pauseView = 'home';
+    this.pauseHome.open(this.pauseStatus(), this.canSaveNow());
+  }
+
+  private canSaveNow(): boolean {
+    return !!this.commerce && !this.story?.mission && (this.wanted?.stars ?? 0) === 0 && !this.combat?.flow;
+  }
+
+  private pauseStatus(): PauseStatus {
+    const st = this.story, eco = this.commerce?.eco;
+    const c = CHARS[st?.active ?? 'mack'];
+    const p = this.player?.pos;
+    return {
+      who: c.name, color: c.color, role: c.role,
+      cash: money(eco?.cash ?? 0), bank: money(eco?.bank ?? 0),
+      place: (p && regionAt(p.x, p.z)) ?? 'San Verano', clock: this.world.tod.clock, day: eco?.p.day ?? 1,
+      completion: st?.completion.percent() ?? 0,
+      mission: st?.mission ? st.mission.def.title : null,
+    };
+  }
+
+  /** Photo mode: from the pause menu, the world stays frozen and the camera flies free. */
+  private enterPhoto(): void {
+    if (this.state !== 'paused') return;
+    this.pauseHome.close();
+    this.ui.menu.close();
+    this.state = 'photo';
+    this.audio.resume();
+    this.input.gameplayEnabled = true;
+    this.photoMode.enter();
+    if (this.viewmodel) this.viewmodel.group.visible = false;
+    this.ui.toast('Photo mode: click to look around · H hides the panel · Esc exits');
+  }
+
+  private exitPhoto(): void {
+    if (this.state !== 'photo') return;
+    this.photoMode.exit();
+    const onFoot = this.driving?.mode === 'foot' && !this.piloting?.busy;
+    if (this.viewmodel) this.viewmodel.group.visible = onFoot;
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.state = 'paused';
+    this.input.gameplayEnabled = false;
+    this.audio.suspend();
+    this.pauseView = 'home';
+    this.pauseHome.open(this.pauseStatus(), this.canSaveNow());
   }
 
   /** Engine/tyre/wind sound for the vehicle being driven (created lazily on first entry, silent on foot). */
@@ -636,9 +796,10 @@ export class Game {
 
   /** Slow golden-hour dolly over the city toward the sunset coast. */
   private placeTitleCamera(t: number): void {
-    const s = Math.sin(t * 0.045);
-    this.camera.position.set(1230 + Math.sin(t * 0.03) * 70, 150 + Math.sin(t * 0.11) * 9, 330 * s - 40);
-    this.camera.lookAt(120, 36, 170 * Math.sin(t * 0.045 + 0.8));
+    // a slow drift along the shore, out over the water, with the skyline across the beach
+    const s = Math.sin(t * 0.028);
+    this.camera.position.set(-170 + Math.sin(t * 0.017) * 40, 34 + Math.sin(t * 0.07) * 5, 420 * s - 30);
+    this.camera.lookAt(980, 95, 260 * Math.sin(t * 0.028 + 0.35) - 20);
     this.camera.updateMatrixWorld();
   }
 
@@ -671,6 +832,7 @@ export class Game {
     this.audio.unlock();
     this.input.gameplayEnabled = this.intro >= 1;
     this.ui.hideTitle();
+    this.mainMenu.hide();
     this.ui.showHud();
     this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
@@ -694,14 +856,17 @@ export class Game {
     this.ui.setCaptureHint(false);
     if (document.pointerLockElement) document.exitPointerLock();
     this.audio.suspend();
-    this.ui.menu.open();
+    this.pauseView = 'home';
+    this.pauseHome.open(this.pauseStatus(), this.canSaveNow());
   }
 
   resume(): void {
+    if (this.state === 'title') { this.closeTitleSettings(); return; }
     if (this.state !== 'paused') return;
     if (this.editingTouch) return;
     this.state = 'playing';
     this.ui.menu.close();
+    this.pauseHome.close();
     this.audio.resume();
     this.loop.paused = false;
     this.input.gameplayEnabled = true;
@@ -781,13 +946,17 @@ export class Game {
   private openSlotPicker(): void {
     const cm = this.commerce;
     if (!cm || cm.modal.active) return;
+    let started = false;
+    this.mainMenu.hide();
     cm.modal.open({
+      onClose: () => { if (!started && this.state === 'title') void this.mainMenu.show(); },
       title: 'Vice Coast',
       kicker: 'Choose a save slot',
       hideMoney: true,
       hints: 'Pick a slot to continue or start fresh · Import loads a save file',
       render: (host) => {
         mountSlots(cm, host.body, (slot, data) => {
+          started = true;
           cm.modal.close();
           cm.begin(slot, data);
           this.startPlaying();
@@ -897,8 +1066,9 @@ export class Game {
       if (!this.commerce || (q.has('debug') && !q.has('slots'))) {
         this.commerce?.begin(null, null);
         this.startPlaying();
-      } else this.openSlotPicker();
+      }
     });
+    this.input.on('device', (d) => { this.mainMenu.setDevice(d); this.pauseHome.setDevice(d); });
     this.input.on('device', () => this.ui.refreshPrompts());
     this.input.on('gamepad', () => this.ui.refreshPrompts());
 
@@ -915,8 +1085,10 @@ export class Game {
       if (e.code !== 'Escape' || e.repeat) return;
       if (this.input.capturing) return;
       if (this.story?.cutscenes.active || this.story?.protagonists.wheelOpen) return;
+      if (this.state === 'title') { if (this.titleSettings) this.closeTitleSettings(); return; }
+      if (this.state === 'photo') { this.exitPhoto(); return; }
       if (this.state === 'playing') this.pause();
-      else if (this.state === 'paused') this.resume();
+      else if (this.state === 'paused') { if (this.pauseView === 'settings') this.backToPauseHome(); else this.resume(); }
       else if (this.state === 'map') this.closeMap();
       else if (this.state === 'modal') this.commerce?.modal.back();
       else if (this.state === 'phone') this.phone?.pop();
@@ -927,7 +1099,7 @@ export class Game {
       if (!document.pointerLockElement && this.state === 'playing' && this.input.activeDevice === 'kbm' && !this.story?.cutscenes.active && !this.story?.protagonists.wheelOpen) this.pause();
     });
     this.canvas.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'mouse' && this.state === 'playing' && !document.pointerLockElement) void this.lockPointer();
+      if (e.pointerType === 'mouse' && (this.state === 'playing' || this.state === 'photo') && !document.pointerLockElement) void this.lockPointer();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.pause();

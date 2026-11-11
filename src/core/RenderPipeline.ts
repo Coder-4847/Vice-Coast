@@ -124,6 +124,10 @@ export class RenderPipeline {
   private h = 1;
   /** Meshes (sky dome, ocean, light pools…) that must not appear in the ambient-occlusion depth pre-pass. */
   readonly hideForAO: THREE.Object3D[] = [];
+  /** Photo-mode look: multiplies saturation and tints the final grade. */
+  filterSat = 1;
+  readonly filterTint = new THREE.Color(1, 1, 1);
+  filterContrast = 0;
   /** Optional second pass drawn over the world with its own camera (the first-person viewmodel). */
   overlayCamera: THREE.Camera | null = null;
 
@@ -211,9 +215,9 @@ export class RenderPipeline {
     // 3. Grade / tone map.
     const u = this.final.uniforms;
     u.uExposure!.value = p.exposure;
-    u.uTint!.value.copy(p.tint);
-    u.uSat!.value = p.saturation;
-    u.uVignette!.value = this.preset.cinematic ? p.vignette : 0;
+    u.uTint!.value.copy(p.tint).multiply(this.filterTint);
+    u.uSat!.value = p.saturation * this.filterSat;
+    u.uVignette!.value = Math.max(this.preset.cinematic ? p.vignette : 0, this.filterContrast);
     u.uGrain!.value = this.preset.cinematic ? 0.035 : 0;
     u.uFlare!.value = this.preset.cinematic ? 1 : 0;
     u.uTime!.value = p.time;

@@ -304,6 +304,16 @@ export class AudioEngine {
     osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
   }
 
+  /** Menu sounds: a soft tick when the selection moves, a two-note chime to confirm, a lower one to go back. */
+  uiBlip(kind: 'move' | 'ok' | 'back'): void {
+    if (!this.ready()) return;
+    const t = this.now();
+    const o = this.master;
+    if (kind === 'move') this.tone(o, t, { freq: 1480, peak: 0.018, decay: 0.03, type: 'sine' });
+    else if (kind === 'ok') { this.tone(o, t, { freq: 880, peak: 0.04, decay: 0.07, type: 'triangle' }); this.tone(o, t + 0.055, { freq: 1320, peak: 0.035, decay: 0.09, type: 'triangle' }); }
+    else this.tone(o, t, { freq: 660, to: 520, peak: 0.035, decay: 0.08, type: 'triangle' });
+  }
+
   /** Short radio squelch + beeps (dispatch chatter, wanted-level changes). */
   radioChirp(): void {
     if (!this.ready()) return;

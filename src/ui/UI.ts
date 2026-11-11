@@ -329,7 +329,13 @@ export class UI {
     let name = DEVICE_NAMES[d];
     if (d === 'gamepad') name = this.input.padLayout === 'playstation' ? 'PlayStation controller' : this.input.padLayout === 'xbox' ? 'Xbox controller' : 'Controller';
     this.deviceChip.textContent = name;
+    // the device chip shows for a few seconds when the input device changes, then gets out of the way
+    this.deviceChip.classList.add('flash');
+    window.clearTimeout(this.chipT);
+    this.chipT = window.setTimeout(() => this.deviceChip.classList.remove('flash'), 3500);
   }
+
+  private chipT = 0;
 
   /** Rebuilds every prompt that shows button glyphs for the active device. */
   refreshPrompts(): void {

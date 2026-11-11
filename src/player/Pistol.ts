@@ -20,6 +20,25 @@ function noiseTexture(size: number, strength: number, repeat = 3): THREE.CanvasT
   return t;
 }
 
+/** Reverse every triangle (after a mirroring scale), so the outside faces outwards again. */
+function flipWinding(g: THREE.BufferGeometry): void {
+  const idx = g.getIndex();
+  if (idx) {
+    const a = idx.array as Uint16Array | Uint32Array;
+    for (let i = 0; i < a.length; i += 3) { const t = a[i + 1]!; a[i + 1] = a[i + 2]!; a[i + 2] = t; }
+    idx.needsUpdate = true;
+    return;
+  }
+  for (const name of Object.keys(g.attributes)) {
+    const at = g.attributes[name] as THREE.BufferAttribute;
+    const n = at.itemSize, arr = at.array as Float32Array;
+    for (let t = 0; t < at.count; t += 3) {
+      for (let k = 0; k < n; k++) { const i1 = (t + 1) * n + k, i2 = (t + 2) * n + k; const tmp = arr[i1]!; arr[i1] = arr[i2]!; arr[i2] = tmp; }
+    }
+    at.needsUpdate = true;
+  }
+}
+
 /**
  * The VC-9 service pistol, modelled in metres. Local frame: +X right, +Y up, −Z toward the muzzle.
  * Origin sits at the top of the trigger-guard area; the slide moves along +Z when firing.
@@ -68,6 +87,7 @@ export class Pistol {
     slideGeo.translate(0, 0, -0.0135);
     slideGeo.rotateY(Math.PI / 2); // length axis → −Z (muzzle), thickness → X
     slideGeo.scale(1, 1, -1); // keep muzzle at −Z
+    flipWinding(slideGeo); // the mirror turned the faces inside-out: put them back
     const slideMesh = new THREE.Mesh(slideGeo, slideMat);
     this.slide.add(slideMesh);
 
