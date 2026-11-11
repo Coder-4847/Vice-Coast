@@ -215,12 +215,16 @@ export class ArmRig {
   solve(shoulder: THREE.Vector3, wrist: THREE.Vector3, pole: THREE.Vector3): void {
     const d = this._dir.subVectors(wrist, shoulder);
     let dist = d.length();
-    const maxReach = this.L1 + this.L2 - 0.004;
-    const minReach = Math.abs(this.L1 - this.L2) + 0.01;
+    // long guns put the support hand beyond a real arm's reach from this camera-space shoulder: stretch the arm
+    // (up to 45 %) rather than leave the hand floating in front of a short forearm
+    const k = THREE.MathUtils.clamp(dist / (this.L1 + this.L2 - 0.004), 1, 1.45);
+    const L1 = this.L1 * k, L2 = this.L2 * k;
+    const maxReach = L1 + L2 - 0.004;
+    const minReach = Math.abs(L1 - L2) + 0.01;
     d.multiplyScalar(1 / Math.max(dist, 1e-5));
     dist = THREE.MathUtils.clamp(dist, minReach, maxReach);
-    const a = (this.L1 * this.L1 - this.L2 * this.L2 + dist * dist) / (2 * dist);
-    const h = Math.sqrt(Math.max(0, this.L1 * this.L1 - a * a));
+    const a = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist);
+    const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
     // pole component perpendicular to the shoulder→wrist axis
     this._perp.copy(pole).addScaledVector(d, -pole.dot(d));
     if (this._perp.lengthSq() < 1e-6) this._perp.set(0, -1, 0);
@@ -229,6 +233,7 @@ export class ArmRig {
     const wristClamped = shoulder.clone().addScaledVector(d, dist);
 
     this.place(this.upper, shoulder, this._elbow);
+    this.upper.scale.z = k;
     this.elbowBall.position.copy(this._elbow);
     // forearm: sleeve from the elbow, cuff and a little skin before the wrist
     const fdir = wristClamped.clone().sub(this._elbow);

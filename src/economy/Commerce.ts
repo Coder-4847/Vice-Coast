@@ -182,7 +182,16 @@ export class Commerce {
     return `${where} · Day ${this.eco.p.day} · ${this.game.world.tod.clock}`;
   }
 
-  async save(slot = this.slot ?? 1, quiet = false): Promise<boolean> {
+  private saveChain: Promise<unknown> = Promise.resolve();
+
+  /** Saves queue behind each other, so a manual save during an autosave is never dropped. */
+  save(slot = this.slot ?? 1, quiet = false): Promise<boolean> {
+    const run = this.saveChain.then(() => this.saveNow(slot, quiet), () => this.saveNow(slot, quiet));
+    this.saveChain = run.catch(() => undefined);
+    return run;
+  }
+
+  private async saveNow(slot: number, quiet: boolean): Promise<boolean> {
     if (this.saving || !this.game.player || !this.game.combat) return false;
     if (this.game.story?.mission && !quiet) { this.game.ui.toast('You can\'t save in the middle of a mission'); return false; }
     if (this.game.story?.mission) return false;

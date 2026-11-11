@@ -86,7 +86,7 @@ export class LongGun implements GunModel {
       this.muzzle.set(0, 0.018, -0.36);
       this.sightPoint.set(0, 0.092, -0.1);
       magZ = -0.02; this.magLength = 0.16;
-      rightPos = new THREE.Vector3(0.027, -0.075, 0.06); leftPos = new THREE.Vector3(-0.025, -0.04, -0.15);
+      rightPos = new THREE.Vector3(0.027, -0.075, 0.06); leftPos = new THREE.Vector3(-0.058, -0.026, -0.15);
       g.add(box(0.032, 0.09, 0.04, 0, -0.05, 0.06, poly)); // grip
     } else if (this.id === 'shotgun') {
       g.add(box(0.046, 0.075, 0.22, 0, 0.012, -0.0, metal));
@@ -101,7 +101,7 @@ export class LongGun implements GunModel {
       this.muzzle.set(0, 0.034, -0.72);
       this.sightPoint.set(0, 0.064, -0.4);
       magZ = 0.0; this.magLength = 0.0001;
-      rightPos = new THREE.Vector3(0.027, -0.075, 0.075); leftPos = new THREE.Vector3(-0.03, -0.012, -0.26);
+      rightPos = new THREE.Vector3(0.027, -0.075, 0.075); leftPos = new THREE.Vector3(-0.062, -0.04, -0.27);
       g.add(box(0.034, 0.08, 0.04, 0, -0.05, 0.075, wood));
       gripRake = 0.18;
     } else {
@@ -116,7 +116,7 @@ export class LongGun implements GunModel {
       this.muzzle.set(0, 0.022, -0.65);
       this.sightPoint.set(0, 0.1, -0.05);
       magZ = -0.06; this.magLength = 0.15; rake = 0.2;
-      rightPos = new THREE.Vector3(0.027, -0.078, 0.07); leftPos = new THREE.Vector3(-0.028, -0.04, -0.27);
+      rightPos = new THREE.Vector3(0.027, -0.078, 0.07); leftPos = new THREE.Vector3(-0.06, -0.022, -0.26);
       g.add(box(0.032, 0.09, 0.04, 0, -0.05, 0.075, poly));
     }
     g.add(this.bolt);
@@ -144,7 +144,9 @@ export class LongGun implements GunModel {
     const gf = new THREE.Matrix4().makeRotationX(-gripRake * 0.2);
     const right = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 1)).setPosition(rightPos);
     this.rightGrip.multiplyMatrices(gf, right);
-    const left = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -1, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, 1)).setPosition(leftPos);
+    // support hand under the handguard: palm up, fingers wrapping up the far side, thumb along the near side
+    // (a reflection of the right-hand rig: fingers −Z → +X, back of hand +Y → −Y, thumb −X → muzzle)
+    const left = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, -1, 0), new THREE.Vector3(-1, 0, 0)).setPosition(leftPos);
     this.leftGrip.copy(left);
     g.traverse((o) => { if (o instanceof THREE.Mesh) o.frustumCulled = false; });
   }

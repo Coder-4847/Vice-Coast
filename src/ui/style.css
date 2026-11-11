@@ -768,3 +768,12 @@ html.photo-clean #ui > *:not(.photomode):not(.toasts) { visibility: hidden !impo
 .prompt { border-radius: 999px; padding: 8px 18px 8px 10px; font-weight: 500; }
 .objective { border-left-width: 4px; border-image: var(--sunset) 1; border-radius: 0 10px 10px 0; }
 .hints { border-radius: 14px; }
+@media (max-height: 680px) {
+  .mainmenu, .pausehome { padding-top: var(--sp-5); padding-bottom: var(--sp-3); }
+  .mm-left, .pz-left { gap: var(--sp-3); max-height: calc(100vh - 70px); overflow-y: auto; scrollbar-width: none; }
+  .mm-vice { font-size: clamp(3rem, 9vw, 5.2rem); }
+  .mm-coast { font-size: clamp(1.8rem, 5vw, 3rem); }
+  .mm-label { font-size: 1.6rem; }
+  .mm-item { padding: 5px 14px 5px 22px; }
+  .pz-title span { font-size: 3rem; }
+}
