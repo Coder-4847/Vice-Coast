@@ -12,6 +12,6 @@
 ## Assets
 
 None yet. Everything so far is generated in code: geometry, textures, the sky, the pistol and hands, and **all audio**
-(Web Audio synthesis — there are no sound files). The UI uses the system font stack.
+(Web Audio synthesis — there are no sound files). The UI uses **Inter** and **Bebas Neue** from Google Fonts (both SIL Open Font License 1.1), falling back to the system font stack.
 Any CC0 / permissively licensed asset added later (Poly Haven, Kenney, Quaternius, …) is listed here with
 its source URL and licence.

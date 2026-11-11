@@ -84,7 +84,7 @@ export class SettingsMenu {
       body.append(p);
     });
 
-    const resume = h('button', 'btn primary', 'Resume');
+    const resume = h('button', 'btn primary', 'Back');
     resume.type = 'button';
     resume.addEventListener('click', () => hooks.resume());
     const foot = h('div', 'panel-foot', h('span', ''), resume);
@@ -110,7 +110,7 @@ export class SettingsMenu {
   private updateFootHint(): void {
     const dev = this.input.activeDevice;
     const back = dev === 'gamepad' ? padButtonLabel(PAD.B, this.input.padLayout) : dev === 'touch' ? 'Menu' : 'Esc';
-    this.footHint.textContent = dev === 'touch' ? '' : `${back} — resume`;
+    this.footHint.textContent = dev === 'touch' ? '' : `${back} — back`;
   }
 
   get isOpen(): boolean {

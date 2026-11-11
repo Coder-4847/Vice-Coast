@@ -350,3 +350,11 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Finishing *The Crown, Part II* unlocks **Aurelia** on the heist board (Boardwalk Studio): loud / quiet / smart, three prep missions, crew effects as before.
 - [ ] After the yacht heist, *Three Ways Out* appears. A choice screen offers Clean Slate, Clear Skies and Big Finish; each plays its own short sequence and cutscene, then the credits scene, a "Free roam" banner, a Pruitt message and a $15,000 reward.
 - [ ] Replaying the finale from the phone (Missions → Completed) lets you pick a different ending.
+
+
+## 1.0 polish
+- [ ] Loading → main menu over the coastal fly-by. With no saves: New Game, Load Game, Settings, How to Play, Credits; with a save, Continue first (slot, label, cash, time played).
+- [ ] New Game → choose a slot (an occupied slot needs a second press to overwrite) → the prologue in the snow at the Pinecrest sawmill: follow Ray, hold E at the office, two gunfights, the Barrage drive to the lighthouse road, the closing scene, "Nine years later", Mack's intro outside the Boardwalk Studio on a city street.
+- [ ] Esc → pause landing page; Settings opens the tabs and Esc / B goes back to it; Save Game is greyed out on a mission or with stars; Quit to Main Menu needs a second press.
+- [ ] Photo Mode: click to look, WASD / Space / C / Shift, sliders and filters, H hides the panel, Take photo downloads a PNG, Esc returns to the pause page and everything (time of day, FOV, HUD, arms) is restored.
+- [ ] Guns: the VC-9 slide is solid from every angle; no black/white stripes on the arms or guns at any time of day; the SMG, shotgun and rifle support hand sits under the handguard with the arm attached.

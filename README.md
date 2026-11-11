@@ -5,11 +5,19 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **Phase 8 — the rest of the land.** The state of San Verano is now a 6 × 8 km world: Port Valeria plus **Cinder Flats**
-> (desert strip town, trailer park, biker bar, scrap yard, salt pan, airstrip, wind turbines), **Dusk Harbor** (container port),
-> **Pinecrest Bay** (logging town, marina, lighthouse), **Mount Kestrel** (switchback road, cable car, summit tower, lake, cave) and
-> **Costa Merida** (canal resort city with a casino), joined by highways, a coast railway and a state map. Built on combat and
-> police (Phase 7), the living city (Phase 6) and the driving model (Phase 4). See the [roadmap](#roadmap) and [docs/WORLD.md](docs/WORLD.md).
+> Status: **1.0 — complete.** Start from the main menu, play the snowbound prologue *Pinecrest, 2011*, then three switchable
+> protagonists, 38 story missions with six heists and a three-ending finale, 15 races, jobs, casino and bar games, a 107-piece
+> collectible hunt, six synthesized radio stations and a photo mode, across a 6 × 8 km state. See the [roadmap](#roadmap).
+
+### Starting out
+
+* **Main menu**: *Continue* loads your most recent save; *New Game* asks for one of three slots; *Load Game*, *Settings*,
+  *How to Play* and *Credits* are there too. Keyboard, mouse, controller and touch all work.
+* **Prologue**: a new game opens nine years earlier in the snow at the Pinecrest sawmill. It teaches walking, shooting and
+  driving and ends outside Mack's flat on the Seaside boardwalk. You can abandon it from the failure screen and lose nothing.
+* **Pause menu** (`Esc` / Start): Resume, Map, Progress, Save Game, **Photo Mode**, Settings, Quit to Main Menu.
+* **Photo mode**: the world freezes; fly the camera with `WASD`, mouse, `Space` / `C`, `Shift`; set field of view, roll,
+  time of day and a filter (Natural, Vivid, Vintage, Cool, Noir); `H` hides the panel; *Take photo* saves a PNG.
 
 ## Run locally
 
@@ -249,7 +257,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 12. **Robberies and crew** ✅ — 14 robbery kiosks plus ATMs, a 12-person crew that fights, gets hurt and has loyalty, and three more heists (museum and yacht heists, and the full 38-mission campaign, are still to come)
 13. **Side activities, radio, collectibles** ✅ (this build) — 6 synthesized radio stations, 15 races, 5 job types, flight school and stunt course, casino / darts / pool / toolkit mini-games, 107 collectibles and a completion tracker (the long tail of sports, fishing, hunting, diving and similar activities is deferred, see docs/ACTIVITIES.md)
 14. **Campaign: Act II** ✅ — missions 13–27, *Crown of Glass*, with 18 new cutscenes (Act III, the Aurelia heist and the three-ending finale are next)
-15. **Campaign: Act III and the finale** ✅ (this build) — missions 28–36, the Aurelia yacht heist, and the three-ending finale with free roam
-16. Polish (last)
+15. **Campaign: Act III and the finale** ✅ — missions 28–36, the Aurelia yacht heist, and the three-ending finale with free roam
+16. **Polish** ✅ (this build) — main menu, pause menu and photo mode, the prologue, spawn in the city, see-through gun and viewmodel shadow fixes, long-gun support-hand pose, queued saves, a UI restyle
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

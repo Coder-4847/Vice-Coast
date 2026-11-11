@@ -777,3 +777,6 @@ html.photo-clean #ui > *:not(.photomode):not(.toasts) { visibility: hidden !impo
   .mm-item { padding: 5px 14px 5px 22px; }
   .pz-title span { font-size: 3rem; }
 }
+.pm-panel { text-align: left; }
+.pm-rowtop { width: 100%; display: flex; justify-content: space-between; gap: var(--sp-3); }
+.pm-rowtop output { margin-left: auto; }

@@ -142,7 +142,8 @@ export class Game {
     this.settings.on('change', () => this.applySettings());
 
     this.ui = new UI(root, this.settings, this.input, this.gfx, {
-      resume: () => this.resume(),
+      // the settings panel's Back button: to the pause page in game, to the main menu on the title screen
+      resume: () => { if (this.state === 'paused' && this.pauseView === 'settings') this.backToPauseHome(); else this.resume(); },
       editTouchLayout: () => this.beginTouchEdit(),
       resetTouchLayout: () => this.touch.resetLayout(),
       finishTouchLayout: () => this.endTouchEdit(),
