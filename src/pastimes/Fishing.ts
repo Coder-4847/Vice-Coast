@@ -114,7 +114,7 @@ export class Fishing {
     this.s.hud.showTip(`${spot.name}. Hold ${this.s.interactKey()} to cast; strike when the float goes under. ${this.jumpKey()} to stop.`, 7);
   }
 
-  private jumpKey(): string { const d = this.s.g.input.activeDevice; return d === 'gamepad' ? 'A' : d === 'touch' ? 'Jump' : 'Space'; }
+  private jumpKey(): string { const d = this.s.g.input.activeDevice; return d === 'gamepad' ? 'A' : 'Space'; }
 
   stop(): void {
     const g = this.s.g;

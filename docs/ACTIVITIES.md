@@ -117,7 +117,7 @@ groups in the Progress tab).
 | Diving | Neptune Dive Shop (Spawn Beach) | rent scuba ($60) or free-dive on one breath; crouch dives, jump rises; five wrecks 12–20 m down with four relics each; murky underwater fog, muffled sound, oxygen meter | per relic |
 
 The mini-games are canvas pages inside the shop modal (`arena.ts` gives them keyboard capture, held-stick gamepad
-polling, big touch buttons and a Leave button). Fishing, hunting and diving run in the world.
+polling, on-screen buttons you can click and a Leave button). Fishing, hunting and diving run in the world.
 
 ## Police, escape and the stock market (Phase 15)
 

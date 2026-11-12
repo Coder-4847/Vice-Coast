@@ -251,7 +251,7 @@ export class Story {
 
   switchKey(): string {
     const g = this.g;
-    return g.input.activeDevice === 'gamepad' ? 'D-pad ←' : g.input.activeDevice === 'touch' ? 'Switch' : 'Z';
+    return g.input.activeDevice === 'gamepad' ? 'D-pad ←' : 'Z';
   }
 
   /** A launch ramp: returns a remover. `ry` is the direction of travel (forward = (sin ry, cos ry)). */

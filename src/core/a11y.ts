@@ -7,7 +7,7 @@ export const a11y = {
   shake: 1,
   /** Screen and sky flashes (lightning, hurt flash, explosions). */
   flashes: 1,
-  /** Aim assist strength for controller and touch: 0 off, 0.5 light, 1 strong. */
+  /** Aim assist strength for controllers: 0 off, 0.5 light, 1 strong. */
   aimAssist: 0.5,
   /** Mini-games that need fast tapping accept holding the button instead. */
   holdToMash: false,

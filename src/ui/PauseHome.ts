@@ -105,8 +105,8 @@ export class PauseHome {
     (document.activeElement as HTMLElement | null)?.blur();
   }
 
-  setDevice(d: 'kbm' | 'gamepad' | 'touch'): void {
-    this.hint.textContent = d === 'gamepad' ? 'D-pad  select   ·   A  confirm   ·   B  resume' : d === 'touch' ? 'Tap to choose' : '↑ ↓  select   ·   Enter  confirm   ·   Esc  resume';
+  setDevice(d: 'kbm' | 'gamepad'): void {
+    this.hint.textContent = d === 'gamepad' ? 'D-pad  select   ·   A  confirm   ·   B  resume' : '↑ ↓  select   ·   Enter  confirm   ·   Esc  resume';
   }
 
   navigate(dx: number, dy: number): void { this.nav.move(dx, dy); }

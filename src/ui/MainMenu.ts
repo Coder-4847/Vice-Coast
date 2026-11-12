@@ -43,7 +43,7 @@ const CONTROLS: [string, string, string][] = [
 
 /**
  * The main menu over the coastal fly-by: Continue, New Game, Load Game, Settings, How to Play, Credits.
- * Keyboard, mouse, gamepad (via `nav`) and touch all work; the right-hand panel swaps per item.
+ * Keyboard, mouse and gamepad (via `nav`) all work; the right-hand panel swaps per item.
  */
 export class MainMenu {
   readonly root: HTMLElement;
@@ -98,8 +98,8 @@ export class MainMenu {
     (document.activeElement as HTMLElement | null)?.blur();
   }
 
-  setDevice(d: 'kbm' | 'gamepad' | 'touch'): void {
-    this.hint.textContent = d === 'gamepad' ? 'D-pad  select   ·   A  confirm   ·   B  back' : d === 'touch' ? 'Tap to choose' : '↑ ↓  select   ·   Enter  confirm   ·   Esc  back';
+  setDevice(d: 'kbm' | 'gamepad'): void {
+    this.hint.textContent = d === 'gamepad' ? 'D-pad  select   ·   A  confirm   ·   B  back' : '↑ ↓  select   ·   Enter  confirm   ·   Esc  back';
   }
 
   /** Gamepad / keyboard from the game loop. */

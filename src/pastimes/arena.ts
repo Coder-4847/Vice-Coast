@@ -16,7 +16,7 @@ export interface Arena {
   readonly ctx: CanvasRenderingContext2D;
   readonly w: number;
   readonly h: number;
-  /** True while a key, touch button, stick or d-pad is held. */
+  /** True while a key, on-screen button, stick or d-pad is held. */
   held(k: Key): boolean;
   /** -1 … 1 from left/right keys, buttons and the left stick. */
   axisX(): number;
@@ -28,7 +28,7 @@ export interface Arena {
 
 /**
  * A canvas game inside a modal page: keyboard (captured so the menu does not move), gamepad (through the page's
- * `pad` hooks plus held-stick polling) and big touch buttons under the canvas. `frame` runs every animation frame.
+ * `pad` hooks plus held-stick polling) and on-screen buttons under the canvas (clickable with the mouse). `frame` runs every animation frame.
  */
 export function arena(page: Page, host: PageHost, o: { w: number; h: number; buttons: ArenaButton[]; press(k: Key): void; frame(dt: number, t: number): void; intro?: string }): Arena {
   const cv = h('canvas', 'cg-canvas sport');

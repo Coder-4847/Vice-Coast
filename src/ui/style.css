@@ -237,25 +237,6 @@ input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
 .overlay p { margin: 0; max-width: 480px; color: var(--muted); font-weight: 300; }
 
 /* ---- Touch controls ------------------------------------------------------ */
-.touch { position: absolute; inset: 0; z-index: 5; display: none; pointer-events: none !important; --touch-opacity: 0.8; }
-html[data-device="touch"] .touch, .touch.editing { display: block; }
-.touch > * { pointer-events: none; }
-.touch.active > .touch-zone, .touch.active > .touch-btn { pointer-events: auto; }
-.touch-zone { position: absolute; top: 0; bottom: 0; touch-action: none; }
-.touch-left { left: 0; width: 42%; }
-.touch-look { left: 42%; right: 0; }
-.touch-stick { position: absolute; left: 0; top: 0; width: 116px; height: 116px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.05); opacity: 0; transition: opacity var(--dur-2) var(--ease); will-change: transform; }
-.touch-stick.show { opacity: var(--touch-opacity); }
-.touch-knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); will-change: transform; }
-.touch-btn { position: absolute; left: 0; top: 0; padding: 0; border: 0; background: none; touch-action: none; opacity: var(--touch-opacity); -webkit-touch-callout: none; will-change: transform; }
-.touch-face { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.4); background: rgba(14, 16, 23, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 0.625rem; letter-spacing: 0.04em; font-weight: 500; text-transform: uppercase; color: var(--text); transition: transform 90ms var(--ease), background-color 90ms var(--ease), border-color 90ms var(--ease); }
-.touch-btn.down .touch-face { transform: scale(0.9); background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.touch-btn.on .touch-face { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.touch.editing { pointer-events: auto !important; }
-.touch.editing .touch-btn { pointer-events: auto; opacity: 1; }
-.touch.editing .touch-face { border-style: dashed; border-color: var(--accent); }
-.edit-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); z-index: 70; font-size: var(--fs-sm); }
-.edit-bar.is-hidden { display: none; }
 
 @media (max-width: 640px), (max-height: 480px) {
   .panel { width: 100vw; height: 100dvh; border-radius: 0; border: 0; }
@@ -841,27 +822,3 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 /* pastime panels are fully removed when not in use */
 .ps-hud.is-hidden, .ps-breath.is-hidden { display: none; }
 
-/* ------------------------------------------------------------------------------- touch layout (phones) */
-/* Thumb clusters own the bottom corners, so on touch the HUD moves to the top edge. */
-.touch-btn.small .touch-face { font-size: 0.56rem; background: rgba(14,16,23,0.55); }
-.touch-btn.primary .touch-face { font-size: 0.8rem; font-weight: 700; border-width: 2px; border-color: rgba(255,255,255,0.6); background: rgba(255,90,60,0.28); }
-html[data-device="touch"] .hud .minimap { width: 120px; top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
-html[data-device="touch"] .hud .minimap-disc { width: 120px; height: 120px; }
-html[data-device="touch"] .hud .minimap-label { font-size: 0.6rem; letter-spacing: 0.12em; margin-top: 3px; }
-html[data-device="touch"] .hud .minimap-sub { display: none; }
-html[data-device="touch"] .hud .wanted { top: calc(8px + env(safe-area-inset-top) + 152px); right: calc(10px + env(safe-area-inset-right)); width: 120px; }
-html[data-device="touch"] .hud .stars { font-size: 15px; }
-html[data-device="touch"] .hud .ammo { top: calc(8px + env(safe-area-inset-top)); bottom: auto; right: calc(140px + env(safe-area-inset-right)); padding: 6px 10px; }
-html[data-device="touch"] .hud .ammo-num { font-size: 1.5rem; }
-html[data-device="touch"] .hud .ammo-name { font-size: 0.55rem; letter-spacing: 0.16em; }
-html[data-device="touch"] .hud .speedo { top: calc(8px + env(safe-area-inset-top)); bottom: auto; right: calc(140px + env(safe-area-inset-right)); width: 168px; padding: 6px 10px; }
-html[data-device="touch"] .hud .vitals { top: calc(48px + env(safe-area-inset-top)); bottom: auto; left: calc(12px + env(safe-area-inset-left)); width: 150px; }
-html[data-device="touch"] .hud .ability { top: calc(84px + env(safe-area-inset-top)); bottom: auto; left: calc(12px + env(safe-area-inset-left)); width: 150px; }
-html[data-device="touch"] .hud .money-hud b { font-size: 1.2rem; }
-html[data-device="touch"] .hud .prompt { top: 38%; }
-html[data-device="touch"] .hud .ps-hud { bottom: calc(10px + env(safe-area-inset-bottom)); width: min(300px, 40vw); padding: 6px 10px 8px; }
-html[data-device="touch"] .hud .ps-hud.hunt { top: calc(110px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); right: auto; bottom: auto; width: 170px; }
-html[data-device="touch"] .hud .ps-breath { top: 64px; }
-html[data-device="touch"] .hud .objective { max-width: 44vw; }
-html[data-device="touch"] .hud .speedo { width: 190px; transform: scale(0.68); transform-origin: top right; }
-html[data-device="touch"] .toasts { top: calc(62px + env(safe-area-inset-top)); }

@@ -12,7 +12,7 @@ Everything — name, world, characters, brands, music, art — is original.
 ### Starting out
 
 * **Main menu**: *Continue* loads your most recent save; *New Game* asks for one of three slots; *Load Game*, *Settings*,
-  *How to Play* and *Credits* are there too. Keyboard, mouse, controller and touch all work.
+  *How to Play* and *Credits* are there too. Keyboard, mouse and controller are supported; phones and tablets are not (there are no on-screen touch controls).
 * **Prologue**: a new game opens nine years earlier in the snow at the Pinecrest sawmill. It teaches walking, shooting and
   driving and ends outside Mack's flat on the Seaside boardwalk. You can abandon it from the failure screen and lose nothing.
 * **Pause menu** (`Esc` / Start): Resume, Map, Progress, Save Game, **Photo Mode**, Settings, Quit to Main Menu.
@@ -39,23 +39,23 @@ Look-dev URL parameters: `?time=18.7` (hour 0–24), `?weather=rain` (`clear clo
 All bindings are rebindable in **Esc → Controls / Gamepad**, and prompts switch glyphs automatically when you change device.
 Click the game to capture the mouse. You spawn on a beach shooting range facing the city at golden hour.
 
-| Action | Keyboard + mouse | Gamepad | Touch |
-| --- | --- | --- | --- |
-| Move | `W A S D` / arrows | Left stick | Left thumb (floating stick) |
-| Look | Mouse | Right stick | Drag the right side · optional gyro |
-| Fire / aim | `LMB` / `RMB` | `RT` / `LT` | Fire / Aim buttons |
-| Reload | `R` | `X` (□) | Reload |
-| Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) | Jump |
-| Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` | Sprint · Crouch (latching) |
-| Draw / holster · inspect | `1` · `G` | D-pad ↓ · — | Arms (cycles weapons) |
-| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`5` (pistol, SMG, shotgun, rifle) | `LB` + right stick | Arms |
-| Swim | walk into the sea; `C` dives, `Space` surfaces | same | same |
-| Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` | Switch · Power |
-| Crew commands (hold / follow / attack / breach) | `B` | D-pad → | Crew |
-| Radio: next station (in a vehicle; `Shift`+`Q` goes back) | `Q` | `LB` | Radio |
-| Map (full-screen, set waypoint) | `M` | `Back` (View) | Map |
-| Menu | `Esc` or `P` | `Start` (Options) | Menu |
-| Noclip (debug) | `F9` | — | — |
+| Action | Keyboard + mouse | Gamepad |
+| --- | --- | --- |
+| Move | `W A S D` / arrows | Left stick |
+| Look | Mouse | Right stick |
+| Fire / aim | `LMB` / `RMB` | `RT` / `LT` |
+| Reload | `R` | `X` (□) |
+| Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) |
+| Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` |
+| Draw / holster · inspect | `1` · `G` | D-pad ↓ · — |
+| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`5` (pistol, SMG, shotgun, rifle) | `LB` + right stick |
+| Swim | walk into the sea; `C` dives, `Space` surfaces | same |
+| Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` |
+| Crew commands (hold / follow / attack / breach) | `B` | D-pad → |
+| Radio: next station (in a vehicle; `Shift`+`Q` goes back) | `Q` | `LB` |
+| Map (full-screen, set waypoint) | `M` | `Back` (View) |
+| Menu | `Esc` or `P` | `Start` (Options) |
+| Noclip (debug) | `F9` | — |
 
 ### Combat, police and the wanted level
 
@@ -96,7 +96,7 @@ on the desert plateau (until you pick a weather in **Esc → Environment**).
 
 The minimap (top right) rotates with your heading and zooms out as you speed up; it shows the district or region, the street
 you are on, and the road distance to your waypoint. Press `M` for the full map of the whole state (roads, rail, biomes, landmarks
-and region names): click (or `A` on a pad, tap on touch) to set a waypoint, drag / left stick to pan, scroll / triggers / pinch to
+and region names): click (or `A` on a pad) to set a waypoint, drag / left stick to pan, scroll / triggers to
 zoom, right-click or `X` to clear, `C` / `Y` to centre. The route follows highways and streets across the whole state (dirt
 tracks only when nothing else connects), and a light beam marks the waypoint in the world.
 
@@ -104,17 +104,16 @@ tracks only when nothing else connects), and a light beam marks the waypoint in 
 
 Walk to a car in the lot (east of the range, ~170 m along the beach) and press the interact key.
 
-| Action | Keyboard + mouse | Gamepad | Touch |
-| --- | --- | --- | --- |
-| Enter / exit | `E` (exit below ~40 km/h) | `Y` (△) | Use / Exit |
-| Throttle · brake / reverse | `W` · `S` | `RT` · `LT` | Gas · Brake |
-| Steer | `A` `D` | Left stick | Left thumb |
-| Handbrake (drift) | `Space` | `A` (✕) | Drift |
-| Camera mode (chase / close / hood / cinematic) | `V` | D-pad → | Cam |
-| Look behind · free look | `C` · mouse | `R3` · right stick | Look back · drag |
-| Horn · headlights | `H` · `L` | `L3` · — | Horn · Lights |
+| Action | Keyboard + mouse | Gamepad |
+| --- | --- | --- |
+| Enter / exit | `E` (exit below ~40 km/h) | `Y` (△) |
+| Throttle · brake / reverse | `W` · `S` | `RT` · `LT` |
+| Steer | `A` `D` | Left stick |
+| Handbrake (drift) | `Space` | `A` (✕) |
+| Camera mode (chase / close / hood / cinematic) | `V` | D-pad → |
+| Look behind · free look | `C` · mouse | `R3` · right stick |
+| Horn · headlights | `H` · `L` | `L3` · — |
 
-Touch buttons can be dragged anywhere: **Menu → Touch → Edit layout**.
 
 ### Money, properties, shops and the phone
 
@@ -130,7 +129,7 @@ You start with $5,000 in cash and $2,500 in the bank. Coloured beams mark things
 | Threadline, Costa Rags, The Clip Joint, Pinecrest Barbers | Jackets, gloves, sunglasses, hair style and colour (the figure preview updates as you choose; you see sleeves and gloves in first person and the whole figure in a car) |
 | Brass & Barrel, Cinder Surplus | Weapons, ammo, extended magazines, suppressors, optics, finishes, medkits and armour |
 | Burger and taco joints | Food heals |
-| **Phone** (`T` · D-pad up · the Phone button on touch) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), **online car dealer**, realty listings, insurance claims for written-off cars, and a **camera** that saves a PNG |
+| **Phone** (`T` · D-pad up) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), **online car dealer**, realty listings, insurance claims for written-off cars, and a **camera** that saves a PNG |
 
 Money comes from wallets dropped by people you take down, cars sold at the back room, and property sales; steadier income arrives
 with missions and heists in later phases.
@@ -215,7 +214,7 @@ by itself ~40 m above the ground), steer it, and land on your feet.
 ```
 src/
   core/    game loop (fixed timestep + interpolation), renderer + HDR post pipeline, quality presets, settings
-  input/   action map, keyboard/mouse + gamepad + touch, glyphs, rebinding
+  input/   action map, keyboard/mouse + gamepad, glyphs, rebinding
   ui/      design system (style.css), loading/title/HUD, settings menu, menu navigation
   world/   atmosphere (sky, time of day, weather), lighting rig, ocean, props, effects, landmarks
   world/heightfield.ts, TerrainData, terrainBake, bake.worker, Terrain   the state's shape → baked 4 m heightmap → clipmap renderer
@@ -260,6 +259,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 15. **Campaign: Act III and the finale** ✅ — missions 28–36, the Aurelia yacht heist, and the three-ending finale with free roam
 16. **Polish** ✅ — main menu, pause menu and photo mode, the prologue, spawn in the city, see-through gun and viewmodel shadow fixes, long-gun support-hand pose, queued saves, a UI restyle
 
-17. **Pastimes, accessibility and the living city** ✅ (this build) — golf, tennis, bowling, hoops and arm wrestling; fishing, hunting and scuba diving; a mixer with music/effects/dialogue/menu buses, ducking, mono and night mode; HUD size, high contrast, readable font, camera-shake and flash controls, aim assist, hold-to-mash and on-screen sound cues; a two-thumb touch layout; denser traffic and crowds; sun shafts, sharpening and a new grade; police vision cones, search zones and Spray Shacks; a stock market (see docs/ACTIVITIES.md). Still not built: triathlon, base-jumping courses, a treasure hunt, in-game TV and a social feed.
+17. **Pastimes, accessibility and the living city** ✅ — golf, tennis, bowling, hoops and arm wrestling; fishing, hunting and scuba diving; a mixer with music/effects/dialogue/menu buses, ducking, mono and night mode; HUD size, high contrast, readable font, camera-shake and flash controls, aim assist, hold-to-mash and on-screen sound cues; denser traffic and crowds; sun shafts, sharpening and a new grade; police vision cones, search zones and Spray Shacks; a stock market (see docs/ACTIVITIES.md). Still not built: triathlon, base-jumping courses, a treasure hunt, in-game TV and a social feed.
+18. **Desktop only** ✅ (this build) — touch controls and gyro aim removed; keyboard + mouse and controller remain, and phones get a notice
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

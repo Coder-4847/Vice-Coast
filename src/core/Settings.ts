@@ -21,16 +21,10 @@ export interface SettingsData {
     padDeadzone: number;
     padInvertY: boolean;
     rumble: boolean;
-    gyro: boolean;
-    gyroSensitivity: number;
-    touchSensitivity: number;
-    touchOpacity: number;
     sprintMode: HoldMode;
     crouchMode: HoldMode;
     aimMode: HoldMode;
     bindings: Record<Action, ActionBinding>;
-    /** Touch button centres as viewport fractions, keyed by button id. */
-    touchLayout: Record<string, { x: number; y: number }>;
   };
   audio: {
     master: number;
@@ -86,15 +80,10 @@ export function defaultSettings(): SettingsData {
       padDeadzone: 0.16,
       padInvertY: false,
       rumble: true,
-      gyro: false,
-      gyroSensitivity: 1,
-      touchSensitivity: 1,
-      touchOpacity: 0.8,
       sprintMode: 'hold',
       crouchMode: 'toggle',
       aimMode: 'hold',
       bindings: defaultBindings(),
-      touchLayout: {},
     },
     audio: { master: 0.8, radio: 0.7, sfx: 0.9, dialogue: 1, ui: 0.7, mono: false, range: 'wide' },
     accessibility: {
@@ -138,16 +127,6 @@ export class Settings extends Emitter<{ change: SettingsData }> {
       if (!raw) return;
       const parsed: unknown = JSON.parse(raw);
       this.data = this.sanitise(merge(defaultSettings(), parsed));
-      // Free-form maps are not covered by the default-shaped merge above.
-      const controls = isObject(parsed) && isObject(parsed.controls) ? parsed.controls : undefined;
-      const layout = controls && isObject(controls.touchLayout) ? controls.touchLayout : undefined;
-      if (layout) {
-        for (const [id, p] of Object.entries(layout)) {
-          if (isObject(p) && typeof p.x === 'number' && typeof p.y === 'number') {
-            this.data.controls.touchLayout[id] = { x: p.x, y: p.y };
-          }
-        }
-      }
     } catch {
       /* private mode / corrupt data: keep defaults */
     }

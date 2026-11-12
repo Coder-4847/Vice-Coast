@@ -35,10 +35,6 @@ export interface HudState {
 
 export interface UIHooks {
   resume(): void;
-  editTouchLayout(): void;
-  resetTouchLayout(): void;
-  finishTouchLayout(): void;
-  setGyro(on: boolean): Promise<boolean>;
   autoPreset(): PresetName;
   env: EnvControls;
   mountSaves?(host: HTMLElement): () => void;
@@ -51,11 +47,11 @@ const TIPS = [
   'Cars, bikes, boats and aircraft are always third person. On foot you see through your own eyes.',
   'Plug in a controller at any time — prompts switch glyphs automatically.',
   'Heat fades faster if you change cars, change clothes, or break line of sight.',
-  'Every touch button can be dragged: Settings → Touch → Edit layout.',
+  'Hold the weapon or radio button for a wheel; tap the radio button to skip a station.',
   'Dynamic resolution keeps the game near 60 FPS on modest hardware.',
 ];
 
-const DEVICE_NAMES: Record<Device, string> = { kbm: 'Keyboard & mouse', gamepad: 'Controller', touch: 'Touch' };
+const DEVICE_NAMES: Record<Device, string> = { kbm: 'Keyboard & mouse', gamepad: 'Controller' };
 
 /** Owns every DOM screen: loading, title, HUD, pause/settings menu, toasts and fatal overlays. */
 export class UI {
@@ -76,7 +72,6 @@ export class UI {
   private readonly capture: HTMLElement;
   private readonly deviceChip: HTMLElement;
   private readonly toasts: HTMLElement;
-  private readonly editBar: HTMLElement;
   private readonly ammoEl: HTMLElement;
   private readonly ammoNum: HTMLElement;
   private readonly ammoRes: HTMLElement;
@@ -147,17 +142,10 @@ export class UI {
     this.hud = h('div', 'hud is-hidden', this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl, this.speedoEl);
 
     this.toasts = h('div', 'toasts');
-    this.editBar = h('div', 'edit-bar panel-glass is-hidden');
-    const done = h('button', 'btn primary', 'Done');
-    const reset = h('button', 'btn', 'Reset');
-    done.type = reset.type = 'button';
-    done.addEventListener('click', () => hooks.finishTouchLayout());
-    reset.addEventListener('click', () => hooks.resetTouchLayout());
-    this.editBar.append(h('span', '', 'Drag buttons to reposition'), reset, done);
 
     root.append(this.loading, this.hud);
     this.menu = new SettingsMenu(root, settings, input, gfx, { ...hooks, notify: (m) => this.toast(m) });
-    root.append(this.title, this.toasts, this.editBar);
+    root.append(this.title, this.toasts);
 
     settings.on('change', (d) => this.applyAccessibility(d.accessibility));
     this.applyAccessibility(settings.data.accessibility);
@@ -212,9 +200,6 @@ export class UI {
     this.capture.classList.toggle('is-hidden', !visible);
   }
 
-  setEditBar(visible: boolean): void {
-    this.editBar.classList.toggle('is-hidden', !visible);
-  }
 
   private buildStats(): HTMLElement {
     const mk = (k: string, v = '—') => {
@@ -343,7 +328,7 @@ export class UI {
     const g = (a: Parameters<InputManager['glyph']>[0]) => this.input.glyph(a, d);
     const key = (t: string) => h('kbd', '', t);
 
-    this.press.textContent = d === 'touch' ? 'Tap to start' : d === 'gamepad' ? 'Press any button' : 'Press any key';
+    this.press.textContent = d === 'gamepad' ? 'Press any button' : 'Press any key';
 
     const rows: [string, Node[]][] =
       d === 'kbm'

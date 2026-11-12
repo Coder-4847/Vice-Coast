@@ -1,6 +1,6 @@
 # QA checklist
 
-Run on desktop (Chrome + Firefox), a gamepad (Xbox and PlayStation layouts) and a touch device/emulation.
+Run on desktop (Chrome + Firefox) and a gamepad (Xbox and PlayStation layouts). Touch devices are not supported; a phone should show the "keyboard & mouse or a controller needed" notice.
 Append `?debug` to inspect `window.__vice`.
 
 ## Phase 1 — Foundation
@@ -23,17 +23,11 @@ Append `?debug` to inspect `window.__vice`.
 - [ ] Vibration toggle rumbles once when enabled.
 - [ ] Pressing a key afterwards switches glyphs back to keyboard.
 
-### Input — touch
-- [ ] Tap starts; floating left stick moves; dragging the right side looks; both work simultaneously.
-- [ ] Buttons respond to multi-touch; Sprint/Crouch latch (hold mode) and a very short tap still registers.
-- [ ] *Menu → Touch → Edit layout*: buttons drag, positions persist, *Reset* restores defaults.
-- [ ] Gyro aim (needs a physical device; sign conventions are **unverified on hardware**).
-
 ### Settings & quality
 - [ ] Preset switching applies live (shadows, draw distance, building count); AA note appears when it needs a reload.
 - [ ] Resolution scale, dynamic resolution, FOV, FPS counter apply immediately and persist after reload.
 - [ ] Reduce motion removes UI animation; text size scales the UI; colour-blind accent swaps the accent colour.
-- [ ] Input test tab shows live sticks, buttons, keys, touch pointers.
+- [ ] Input test tab shows live sticks, buttons and keys.
 
 ### Robustness
 - [ ] Tab hidden while playing → pauses. Window resize keeps aspect and the canvas sharp.
@@ -80,7 +74,7 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 - [ ] Walls and buildings stop you at the capsule radius; slopes and small steps are climbed smoothly.
 - [ ] Vault a ≤ 1.3 m thin obstacle (crate pyramid / table) and climb a ≤ 2.3 m ledge; prompt "Vault"/"Climb" shows with the right glyph; > 2.4 m shows nothing.
 - [ ] Walk into the sea: you float at the surface, `C` dives, `Space` surfaces, no weapon use while swimming.
-- [ ] Very short key taps (< 1 frame) still register on keyboard and touch.
+- [ ] Very short key taps (< 1 frame) still register on keyboard.
 
 ### First-person body and weapon
 - [ ] Both hands and sleeved arms are visible; hands sit correctly on the pistol grip (strong hand on the grip, support hand cupping it).
@@ -100,7 +94,7 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 
 ### Audio and settings
 - [ ] Sound starts after the first key press/click (browser autoplay rule); Esc pauses audio; Audio tab master volume works.
-- [ ] Gamepad: rumble on shots; menu navigation unchanged. Touch: Arms button draws/holsters.
+- [ ] Gamepad: rumble on shots; menu navigation unchanged.
 
 
 ## Phase 4 — Vehicles
@@ -128,7 +122,7 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 ### Audio, HUD, input
 - [ ] Engine pitch follows RPM, with shift blips; tyres squeal while sliding; wind rises with speed; horn on `H`; sound stops when you get out.
 - [ ] Speedometer shows km/h, gear, RPM bar and vehicle name.
-- [ ] Gamepad: triggers are analogue throttle/brake; rumble on impact. Touch: driving layout (gas, brake, drift, exit, cam, look back, horn, lights) replaces the foot buttons while in a vehicle.
+- [ ] Gamepad: triggers are analogue throttle/brake; rumble on impact.
 
 
 ## Phase 5 — Port Valeria, streaming and maps
@@ -149,7 +143,7 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 ### Map and minimap
 - [ ] Minimap rotates with the heading, N marker stays north, zooms out when driving fast; district and street names update as you move.
 - [ ] `M` opens the full map (mouse released, game paused); `M`/`Esc`/Close returns to the game; clicking sets a waypoint with a route and a light beam in the world; right-click clears; arriving clears it with a toast.
-- [ ] Gamepad: `Back` opens, sticks pan, triggers zoom, `A` sets, `X` clears, `B` closes. Touch: Map button opens, drag pans, pinch zooms, tap sets.
+- [ ] Gamepad: `Back` opens, sticks pan, triggers zoom, `A` sets, `X` clears, `B` closes.
 
 
 ## Phase 6 — NPCs and traffic
@@ -179,7 +173,7 @@ Use **Esc → Environment** (or `?time=…&weather=…&speed=0`) and test at lea
 
 ### Weapons and health
 - [ ] Crates beside the spawn give the WASP-9, HAMMER-12 and FALCON AR-7 (+ammo), armour and a medkit; they reappear after ~75 s. A toast names each pickup.
-- [ ] Hold `Tab` (pad: `LB`): the wheel opens, moving the mouse / right stick highlights a weapon, releasing equips it (holster → draw animation). `2`–`5` pick directly; on touch the Arms button cycles.
+- [ ] Hold `Tab` (pad: `LB`): the wheel opens, moving the mouse / right stick highlights a weapon, releasing equips it (holster → draw animation). `2`–`5` pick directly.
 - [ ] SMG and rifle fire full-auto while held; pistol and shotgun are semi-auto; the shotgun fires 8 pellets and pumps after each shot; each gun has its own sound, recoil and reload. Headshots do ~2.6× damage.
 - [ ] Armour bar (blue) drains before the health bar; health regenerates to 60 % after ~5 s without being hit; the screen flashes red when hurt; falls from a few metres hurt.
 - [ ] Shooting a car damages it; at low health it smokes, then burns and explodes ~5 s after reaching zero (damaging anything nearby, including you if you are inside or close).

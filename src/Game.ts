@@ -26,7 +26,6 @@ import { AimAssist } from './combat/AimAssist';
 import { SoundCues } from './ui/SoundCues';
 import { Settings } from './core/Settings';
 import { InputManager } from './input/InputManager';
-import { TouchControls } from './input/TouchControls';
 import { UI } from './ui/UI';
 import { MapUI } from './ui/MapUI';
 import { AudioEngine } from './audio/AudioEngine';
@@ -46,7 +45,6 @@ import { Wanted } from './combat/Wanted';
 import { Heli } from './combat/Aircraft';
 import { Pickups } from './world/Pickups';
 import { WeaponWheel } from './ui/WeaponWheel';
-import { WEAPON_ORDER } from './player/Weapons';
 import { CombatHud } from './ui/CombatHud';
 import { World } from './world/World';
 import { WEATHER_TYPES, type WeatherType } from './world/Weather';
@@ -64,7 +62,6 @@ export class Game {
   readonly gfx: GameRenderer;
   readonly world: World;
   readonly ui: UI;
-  readonly touch: TouchControls;
   map!: MapUI;
   readonly loop: GameLoop;
 
@@ -114,7 +111,6 @@ export class Game {
   private titleT = 0;
   private fovFrom = TITLE_FOV;
   private fovT = 1;
-  private editingTouch = false;
   private timeFrozen = false;
   private readonly mapFwd = new THREE.Vector3();
   private lastDt = 1 / 60;
@@ -139,7 +135,6 @@ export class Game {
     this.world = new World(this.gfx, this.camera, preset);
     this.applyUrlParams();
     this.input = new InputManager(this.settings, this.canvas);
-    this.touch = new TouchControls(root, this.input, this.settings);
 
     // Must be registered before the UI so menu widgets re-sync against the already-applied state.
     this.settings.on('change', () => this.applySettings());
@@ -147,10 +142,6 @@ export class Game {
     this.ui = new UI(root, this.settings, this.input, this.gfx, {
       // the settings panel's Back button: to the pause page in game, to the main menu on the title screen
       resume: () => { if (this.state === 'paused' && this.pauseView === 'settings') this.backToPauseHome(); else this.resume(); },
-      editTouchLayout: () => this.beginTouchEdit(),
-      resetTouchLayout: () => this.touch.resetLayout(),
-      finishTouchLayout: () => this.endTouchEdit(),
-      setGyro: (on) => this.touch.setGyro(on),
       autoPreset: () => this.autoPreset,
       mountSaves: (host) => (this.commerce ? this.commerce.mountSaves(host) : () => undefined),
       mountProgress: (host) => {
@@ -435,7 +426,7 @@ export class Game {
 
   // ------------------------------------------------------------------ loop
 
-  /** Weapon wheel (hold), touch cycling, and pickup collection. */
+  /** Weapon wheel (hold) and pickup collection. */
   private updateWheel(dt: number, weapon: WeaponSystem): void {
     const wheel = this.wheel;
     const input = this.input;
@@ -444,16 +435,6 @@ export class Game {
     const dead = !!this.combat?.flow;
     if (this.pickups) this.pickups.update(dt, p.pos.x, p.pos.y, p.pos.z, !dead && this.driving?.mode === 'foot' && !this.piloting?.busy);
     if (dead) { wheel.finish(); return; }
-    if (input.activeDevice === 'touch') {
-      // touch: the Arms button cycles through the weapons you own
-      if (input.pressed('weaponWheel')) {
-        const owned = WEAPON_ORDER.filter((id) => weapon.inv[id].owned || id === weapon.def.id);
-        const next = owned[(owned.indexOf(weapon.def.id) + 1) % owned.length];
-        if (next && next !== weapon.def.id) weapon.select(next);
-        else weapon.toggleHolster();
-      }
-      return;
-    }
     if (input.down('weaponWheel') && weapon.state !== 'reloading') wheel.open();
     if (wheel.isOpen) {
       wheel.tick();
@@ -529,7 +510,7 @@ export class Game {
         this.updatePlaying(dt, alpha);
         if (input.pressed('pause')) this.pause();
         else if (input.pressed('map')) this.openMap();
-        this.ui.setCaptureHint(input.activeDevice === 'kbm' && !input.pointerLocked && !this.editingTouch);
+        this.ui.setCaptureHint(input.activeDevice === 'kbm' && !input.pointerLocked);
         break;
       case 'paused':
         this.updateMenuInput();
@@ -602,7 +583,6 @@ export class Game {
 
   /** Gamepad / keyboard navigation of the pause menu. */
   private updateMenuInput(): void {
-    if (this.editingTouch) return;
     const n = this.input.nav;
     if (this.input.capturing) return;
     if (this.pauseView === 'home') {
@@ -624,7 +604,7 @@ export class Game {
     const n = this.input.nav;
     if (this.titleSettings) {
       this.ui.menu.tick();
-      if (this.input.capturing || this.editingTouch) return;
+      if (this.input.capturing) return;
       if (n.x || n.y) this.ui.menu.nav.move(n.x, n.y);
       if (n.confirm) this.ui.menu.nav.confirm();
       if (n.back || n.start) this.closeTitleSettings();
@@ -793,7 +773,6 @@ export class Game {
     this.npcs?.update(dt, alpha);
     this.updateCombat(dt);
     this.updateVehicleAudio(driving);
-    this.touch.setMode((driving && driving.mode !== 'foot') || piloting?.busy ? 'vehicle' : 'foot');
     if (this.effects) this.effects.setViewport(this.gfx.renderer.domElement.height, this.camera.fov);
     if (this.intro < 1) {
       // Blend from the title camera into the player's eyes over ~2.4 s, then hand over control.
@@ -868,7 +847,6 @@ export class Game {
     this.ui.hideTitle();
     this.mainMenu.hide();
     this.ui.showHud();
-    this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
   }
 
@@ -886,7 +864,6 @@ export class Game {
     this.state = 'paused';
     this.input.gameplayEnabled = false;
     this.loop.paused = true;
-    this.touch.setActive(false);
     this.ui.setCaptureHint(false);
     if (document.pointerLockElement) document.exitPointerLock();
     this.audio.suspend();
@@ -897,14 +874,12 @@ export class Game {
   resume(): void {
     if (this.state === 'title') { this.closeTitleSettings(); return; }
     if (this.state !== 'paused') return;
-    if (this.editingTouch) return;
     this.state = 'playing';
     this.ui.menu.close();
     this.pauseHome.close();
     this.audio.resume();
     this.loop.paused = false;
     this.input.gameplayEnabled = true;
-    this.touch.setActive(true);
     this.ui.dismissHints();
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
   }
@@ -914,7 +889,6 @@ export class Game {
     this.state = 'map';
     this.input.gameplayEnabled = false;
     this.loop.paused = true;
-    this.touch.setActive(false);
     this.ui.setCaptureHint(false);
     if (document.pointerLockElement) document.exitPointerLock();
     this.audio.suspend();
@@ -928,7 +902,6 @@ export class Game {
     this.audio.resume();
     this.loop.paused = false;
     this.input.gameplayEnabled = true;
-    this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
   }
 
@@ -940,7 +913,6 @@ export class Game {
     this.ui.hudRoot.classList.add('dim');
     this.input.gameplayEnabled = false;
     this.loop.paused = true;
-    this.touch.setActive(false);
     this.ui.setCaptureHint(false);
     if (document.pointerLockElement) document.exitPointerLock();
   }
@@ -951,7 +923,6 @@ export class Game {
     this.ui.hudRoot.classList.remove('dim');
     this.loop.paused = false;
     this.input.gameplayEnabled = true;
-    this.touch.setActive(true);
     this.camera.fov = this.baseFov;
     this.camera.updateProjectionMatrix();
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
@@ -961,7 +932,6 @@ export class Game {
     if (this.state !== 'playing' || !this.phone || this.piloting?.busy || this.skydive?.active) return;
     this.state = 'phone';
     this.input.gameplayEnabled = false;
-    this.touch.setActive(false);
     this.ui.setCaptureHint(false);
     if (this.weapon?.isDrawn) this.weapon.toggleHolster();
     if (document.pointerLockElement) document.exitPointerLock();
@@ -972,7 +942,6 @@ export class Game {
     if (this.state !== 'phone') return;
     this.state = 'playing';
     this.input.gameplayEnabled = true;
-    this.touch.setActive(true);
     if (this.input.activeDevice === 'kbm') void this.lockPointer();
   }
 
@@ -1035,20 +1004,6 @@ export class Game {
     });
   }
 
-  private beginTouchEdit(): void {
-    this.editingTouch = true;
-    this.ui.menu.close();
-    this.touch.setEditing(true);
-    this.ui.setEditBar(true);
-  }
-
-  private endTouchEdit(): void {
-    this.editingTouch = false;
-    this.touch.setEditing(false);
-    this.ui.setEditBar(false);
-    this.ui.menu.open();
-  }
-
   private async lockPointer(): Promise<void> {
     if (document.pointerLockElement === this.canvas) return;
     try {
@@ -1103,8 +1058,6 @@ export class Game {
       this.fovFrom = this.camera.fov;
       this.fovT = 1;
     }
-    const wantGyro = this.settings.data.controls.gyro;
-    if (this.touch.gyroActive !== wantGyro) void this.touch.setGyro(wantGyro);
   }
 
   // ------------------------------------------------------------------ events

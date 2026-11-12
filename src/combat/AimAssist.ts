@@ -5,7 +5,7 @@ export interface AssistTarget { x: number; y: number; z: number }
 const wrap = (a: number): number => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 
 /**
- * Controller / touch aim assist: while aiming down sights, the view eases toward the nearest valid target inside a
+ * Controller aim assist: while aiming down sights, the view eases toward the nearest valid target inside a
  * small cone, and snaps part of the way on the moment aiming starts. Strength 0 turns it off.
  */
 export class AimAssist {

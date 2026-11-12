@@ -24,9 +24,6 @@ export interface EnvControls {
 interface MenuHooks {
   env: EnvControls;
   resume(): void;
-  editTouchLayout(): void;
-  resetTouchLayout(): void;
-  setGyro(on: boolean): Promise<boolean>;
   autoPreset(): PresetName;
   notify(message: string): void;
   /** Fills the Saves tab; returns a function that re-reads the slots. */
@@ -37,7 +34,7 @@ interface MenuHooks {
 
 type Sync = () => void;
 
-const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Touch', 'Accessibility', 'Audio', 'Input test', 'Saves', 'Progress'] as const;
+const TABS = ['Graphics', 'Environment', 'Controls', 'Gamepad', 'Accessibility', 'Audio', 'Input test', 'Saves', 'Progress'] as const;
 const SAVE_TAB = 8;
 const PROGRESS_TAB = 9;
 const ENV_TAB = 1;
@@ -77,7 +74,7 @@ export class SettingsMenu {
     });
 
     const body = h('div', 'panel-body');
-    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.touch(), this.accessibility(), this.audioPage(), this.inputTest(), this.savesPage(), this.progressPage()];
+    this.pages = [this.graphics(), this.environment(), this.controls(), this.gamepad(), this.accessibility(), this.audioPage(), this.inputTest(), this.savesPage(), this.progressPage()];
     this.pages.forEach((p) => {
       p.classList.add('tabpage');
       p.setAttribute('role', 'tabpanel');
@@ -109,8 +106,8 @@ export class SettingsMenu {
 
   private updateFootHint(): void {
     const dev = this.input.activeDevice;
-    const back = dev === 'gamepad' ? padButtonLabel(PAD.B, this.input.padLayout) : dev === 'touch' ? 'Menu' : 'Esc';
-    this.footHint.textContent = dev === 'touch' ? '' : `${back} — back`;
+    const back = dev === 'gamepad' ? padButtonLabel(PAD.B, this.input.padLayout) : 'Esc';
+    this.footHint.textContent = `${back} — back`;
   }
 
   get isOpen(): boolean {
@@ -120,7 +117,7 @@ export class SettingsMenu {
   open(): void {
     this.root.classList.remove('is-hidden');
     this.sync();
-    if (this.input.activeDevice !== 'touch' && this.input.activeDevice !== 'kbm') this.nav.focusFirst();
+    if (this.input.activeDevice === 'gamepad') this.nav.focusFirst();
     else (this.tabButtons[this.current] as HTMLElement).focus({ preventScroll: true });
   }
 
@@ -389,7 +386,7 @@ export class SettingsMenu {
     page.append(
       this.group('Mouse'),
       this.slider('Mouse sensitivity', 0.2, 3, 0.05, () => this.settings.data.controls.mouseSensitivity, (v) => this.update((d) => (d.controls.mouseSensitivity = v)), (v) => v.toFixed(2)),
-      this.toggle('Invert vertical look', () => this.settings.data.controls.invertY, (v) => this.update((d) => (d.controls.invertY = v)), 'Also applies to touch and gyro.'),
+      this.toggle('Invert vertical look', () => this.settings.data.controls.invertY, (v) => this.update((d) => (d.controls.invertY = v)),),
       this.group('Hold or toggle'),
       this.segmented('Sprint', holdOpts, () => this.settings.data.controls.sprintMode, (v) => this.update((d) => (d.controls.sprintMode = v))),
       this.segmented('Crouch', holdOpts, () => this.settings.data.controls.crouchMode, (v) => this.update((d) => (d.controls.crouchMode = v))),
@@ -428,24 +425,6 @@ export class SettingsMenu {
     return page;
   }
 
-  private touch(): HTMLElement {
-    const page = h('div');
-    page.append(
-      this.group('Look'),
-      this.slider('Touch sensitivity', 0.3, 3, 0.05, () => this.settings.data.controls.touchSensitivity, (v) => this.update((d) => (d.controls.touchSensitivity = v)), (v) => v.toFixed(2)),
-      this.toggle('Gyro aim', () => this.settings.data.controls.gyro, async (v) => {
-        const ok = await this.hooks.setGyro(v);
-        this.update((d) => (d.controls.gyro = v && ok));
-      }, 'Tilt the device to aim. Needs a device with motion sensors.'),
-      this.slider('Gyro sensitivity', 0.3, 3, 0.05, () => this.settings.data.controls.gyroSensitivity, (v) => this.update((d) => (d.controls.gyroSensitivity = v)), (v) => v.toFixed(2)),
-      this.group('On-screen controls'),
-      this.slider('Button opacity', 0.3, 1, 0.05, () => this.settings.data.controls.touchOpacity, (v) => this.update((d) => (d.controls.touchOpacity = v)), (v) => `${Math.round(v * 100)}%`),
-      this.button('Button layout', 'Edit layout', () => this.hooks.editTouchLayout(), 'Drag any button to where your thumbs like it.'),
-      this.button('Reset layout', 'Reset', () => this.hooks.resetTouchLayout()),
-    );
-    return page;
-  }
-
   private accessibility(): HTMLElement {
     const page = h('div');
     const cb: [ColorBlindMode, string][] = [['off', 'Off'], ['protanopia', 'Protan'], ['deuteranopia', 'Deutan'], ['tritanopia', 'Tritan']];
@@ -468,7 +447,7 @@ export class SettingsMenu {
       this.slider('Camera shake', 0, 1, 0.05, () => this.settings.data.accessibility.cameraShake, (v) => this.update((d) => (d.accessibility.cameraShake = v)), (v) => `${Math.round(v * 100)}%`, 'Explosions, crashes and turbulence.'),
       this.toggle('Reduce flashes', () => this.settings.data.accessibility.reduceFlashes, (v) => this.update((d) => (d.accessibility.reduceFlashes = v)), 'Dims lightning and the red damage flash.'),
       this.group('Assists'),
-      this.segmented('Aim assist', [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']], () => this.settings.data.accessibility.aimAssist, (v) => this.update((d) => (d.accessibility.aimAssist = v)), 'Controller and touch: aiming down sights eases onto nearby enemies.'),
+      this.segmented('Aim assist', [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']], () => this.settings.data.accessibility.aimAssist, (v) => this.update((d) => (d.accessibility.aimAssist = v)), 'Controller: aiming down sights eases onto nearby enemies.'),
       this.toggle('Hold instead of tapping', () => this.settings.data.accessibility.holdToMash, (v) => this.update((d) => (d.accessibility.holdToMash = v)), 'Arm wrestling and other button-mashing moments accept a held button.'),
     );
     return page;
@@ -494,7 +473,7 @@ export class SettingsMenu {
 
   private inputTest(): HTMLElement {
     const page = h('div');
-    const dev = h('p'); const pad = h('p'); const map = h('p'); const lock = h('p'); const touch = h('p'); const keys = h('p'); const mv = h('p');
+    const dev = h('p'); const pad = h('p'); const map = h('p'); const lock = h('p'); const keys = h('p'); const mv = h('p');
     const mkStick = () => { const i = h('i'); return { box: h('div', 'stick-box', i), dot: i }; };
     const ls = mkStick(); const rs = mkStick();
     const grid = h('div', 'btn-grid');
@@ -508,10 +487,10 @@ export class SettingsMenu {
       h('div', 'tester',
         h('div', 'card', h('h4', '', 'Active device'), dev, mv, lock),
         h('div', 'card', h('h4', '', 'Gamepad'), pad, map, h('div', 'sticks', ls.box, rs.box), grid),
-        h('div', 'card', h('h4', '', 'Keyboard & touch'), keys, touch),
+        h('div', 'card', h('h4', '', 'Keyboard'), keys),
       ),
     );
-    const names = { kbm: 'Keyboard + mouse', gamepad: 'Gamepad', touch: 'Touch' } as const;
+    const names = { kbm: 'Keyboard + mouse', gamepad: 'Gamepad' } as const;
     this.tester = {
       tick: () => {
         const s = this.input.debugState();
@@ -525,7 +504,6 @@ export class SettingsMenu {
         rs.dot.style.transform = `translate(${a[2]! * 31}px, ${a[3]! * 31}px)`;
         cells.forEach((c, i) => c.classList.toggle('on', !!s.padButtons[i]));
         keys.textContent = s.keys.length ? `Held: ${s.keys.map(keyLabel).join(' + ')}` : 'Held: —';
-        touch.textContent = `Touch pointers: ${s.touchPointers}`;
       },
     };
     return page;

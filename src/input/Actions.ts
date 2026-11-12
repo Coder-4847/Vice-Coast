@@ -1,4 +1,4 @@
-export type Device = 'kbm' | 'gamepad' | 'touch';
+export type Device = 'kbm' | 'gamepad';
 
 export type Action =
   | 'moveForward' | 'moveBack' | 'moveLeft' | 'moveRight'

@@ -26,7 +26,7 @@ type Holdable = 'sprint' | 'crouch' | 'aim';
 const HOLDABLES: Holdable[] = ['sprint', 'crouch', 'aim'];
 
 /**
- * Unifies keyboard + mouse, gamepad and touch behind one action API.
+ * Unifies keyboard + mouse and gamepad behind one action API.
  * Call `beginFrame(dt)` once per rendered frame, before any consumer reads state.
  */
 export class InputManager extends Emitter<InputEvents> implements BindingSource {
@@ -72,12 +72,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   private scratchL = { x: 0, y: 0 };
   private scratchR = { x: 0, y: 0 };
 
-  private touchMove = { x: 0, y: 0 };
-  private touchHeld = new Set<Action>();
-  /** Touch presses not yet observed by a frame, and releases deferred until they are. */
-  private touchUnseen = new Set<Action>();
-  private touchDeferred = new Set<Action>();
-  private touchPointers = 0;
 
   private lookX = 0;
   private lookY = 0;
@@ -95,8 +89,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
       this.prev[d.id] = false;
     }
     this.bind();
-    // If touch is the only pointer on this device, start in touch mode.
-    if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) this.activeDevice = 'touch';
   }
 
   // ---------------------------------------------------------------- bindings
@@ -183,7 +175,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     let v = 0;
     const b = this.binding(action);
     for (const k of b.kbm) if (this.keys.has(k) && !this.suppressed.has(k)) return 1;
-    if (this.touchHeld.has(action)) return 1;
     if (this.pad) {
       for (const i of b.pad) {
         const btn = this.pad.buttons[i];
@@ -230,7 +221,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
         const b = this.binding(id);
         for (const k of b.kbm) if (this.keys.has(k) && !this.suppressed.has(k)) { down = true; break; }
         if (!down && this.pad) for (const i of b.pad) if (this.padDown[i]) { down = true; break; }
-        if (!down && this.touchHeld.has(id)) down = true;
       }
       this.cur[id] = down;
     }
@@ -238,22 +228,19 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     this.keysUnseen.clear();
     for (const k of this.keysDeferred) this.keys.delete(k);
     this.keysDeferred.clear();
-    this.touchUnseen.clear();
-    for (const a of this.touchDeferred) this.touchHeld.delete(a);
-    this.touchDeferred.clear();
     for (const h of HOLDABLES) if (this.pressed(h)) this.toggled[h] = !this.toggled[h];
     if (!enabled) {
       this.toggled.sprint = this.toggled.crouch = this.toggled.aim = false;
     }
 
-    // Movement: keyboard digital + pad stick + touch stick, clamped to the unit circle.
+    // Movement: keyboard digital + pad stick, clamped to the unit circle.
     let mx = 0;
     let my = 0;
     if (enabled) {
       mx = (this.cur.moveRight ? 1 : 0) - (this.cur.moveLeft ? 1 : 0);
       my = (this.cur.moveForward ? 1 : 0) - (this.cur.moveBack ? 1 : 0);
-      mx += this.padMove.x + this.touchMove.x;
-      my += this.padMove.y + this.touchMove.y;
+      mx += this.padMove.x;
+      my += this.padMove.y;
       const len = Math.hypot(mx, my);
       if (len > 1) {
         mx /= len;
@@ -271,49 +258,11 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     }
   }
 
-  // -------------------------------------------------------------- touch sink
-
-  setTouchMove(x: number, y: number): void {
-    this.touchMove.x = x;
-    this.touchMove.y = y;
-  }
-  setTouchAction(action: Action, down: boolean): void {
-    if (down) {
-      this.touchHeld.add(action);
-      this.touchUnseen.add(action);
-      this.touchDeferred.delete(action);
-    } else if (this.touchUnseen.has(action)) {
-      // Tap shorter than a frame: keep it down until one frame has seen it.
-      this.touchDeferred.add(action);
-    } else {
-      this.touchHeld.delete(action);
-    }
-  }
-  addTouchLook(dxPx: number, dyPx: number): void {
-    if (!this.gameplayEnabled) return;
-    const c = this.settings.data.controls;
-    this.lookX += dxPx * 0.0042 * c.touchSensitivity;
-    this.lookY += dyPx * 0.0042 * c.touchSensitivity * (c.invertY ? -1 : 1);
-  }
-  setTouchPointers(n: number): void {
-    this.touchPointers = n;
-  }
-  /** Gyro rotation already integrated to radians in game convention (+x right, +y down). */
-  addGyro(dx: number, dy: number): void {
-    if (!this.gameplayEnabled) return;
-    const c = this.settings.data.controls;
-    this.lookX += dx * c.gyroSensitivity;
-    this.lookY += dy * c.gyroSensitivity * (c.invertY ? -1 : 1);
-  }
 
   // ----------------------------------------------------------------- haptics
 
   rumble(strong: number, weak: number, ms: number): void {
     if (!this.settings.data.controls.rumble) return;
-    if (this.activeDevice === 'touch') {
-      navigator.vibrate?.(Math.min(40, ms));
-      return;
-    }
     const act = this.pad?.vibrationActuator as
       | { playEffect?: (t: string, p: object) => Promise<unknown> }
       | undefined;
@@ -331,7 +280,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
       padAxes: this.padAxes,
       padButtons: this.padDown,
       keys: [...this.keys],
-      touchPointers: this.touchPointers,
       move: this.move,
       locked: this.pointerLocked,
     };
@@ -384,7 +332,6 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     });
     w.addEventListener('blur', () => {
       this.keys.clear();
-      this.touchHeld.clear();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.keys.clear();
@@ -403,8 +350,9 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
         this.setDevice('kbm');
         this.emit('anyinput', 'kbm');
       } else {
-        this.setDevice('touch');
-        this.emit('anyinput', 'touch');
+        // pens and touch screens on laptops drive the menus like a mouse
+        this.setDevice('kbm');
+        this.emit('anyinput', 'kbm');
       }
     }, true);
     w.addEventListener('pointermove', (e) => {

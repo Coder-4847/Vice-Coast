@@ -62,7 +62,7 @@ export class Protagonists {
     const g = this.s.g;
     const dev = g.input.activeDevice;
     const sw = glyphFor(g.input, 'character', dev);
-    hint.textContent = dev === 'gamepad' ? 'D-pad / stick choose · A switch · B close' : dev === 'touch' ? 'Tap a character' : `← → choose · Enter switch · 1 2 3 · ${sw} or Esc close`;
+    hint.textContent = dev === 'gamepad' ? 'D-pad / stick choose · A switch · B close' : `← → choose · Enter switch · 1 2 3 · ${sw} or Esc close`;
     CHAR_IDS.forEach((id, i) => {
       const c = CHARS[id];
       const open = st.unlocked.includes(id);

@@ -652,9 +652,7 @@ export class MapUI {
     const dev = this.hooks.device();
     this.hint.innerHTML = dev === 'gamepad'
       ? '<span><kbd>Left stick</kbd> pan</span><span><kbd>LT</kbd><kbd>RT</kbd> zoom</span><span><kbd>A</kbd> set waypoint</span><span><kbd>X</kbd> clear</span><span><kbd>Y</kbd> centre</span><span><kbd>B</kbd> close</span>'
-      : dev === 'touch'
-        ? '<span>Drag to pan</span><span>Pinch to zoom</span><span>Tap to set a waypoint</span>'
-        : '<span><kbd>Click</kbd> set waypoint</span><span><kbd>Drag</kbd> pan</span><span><kbd>Scroll</kbd> zoom</span><span><kbd>Right-click</kbd> clear</span><span><kbd>M</kbd> close</span>';
+      : '<span><kbd>Click</kbd> set waypoint</span><span><kbd>Drag</kbd> pan</span><span><kbd>Scroll</kbd> zoom</span><span><kbd>Right-click</kbd> clear</span><span><kbd>M</kbd> close</span>';
     const ctx = this.bigCtx;
     const dpr = this.big.width / Math.max(1, this.view.w);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
