@@ -719,7 +719,7 @@ function genResidential(b: Block, r: () => number, out: ChunkData): void {
 
 /** Southside: one-storey houses behind chain-link fences, a few walk-ups, a corner store and a basketball court. */
 function genHood(b: Block, r: () => number, out: ChunkData): void {
-  const nx = Math.max(1, Math.round(b.w / 18)), nz = b.d > 50 ? 2 : 1;
+  const nx = Math.max(1, Math.round(b.w / 14)), nz = Math.max(1, Math.min(4, Math.round(b.d / 17)));
   let court = r() < 0.18;
   for (const l of lots(b.x0 + 0.6, b.z0 + 0.6, b.x1 - 0.6, b.z1 - 0.6, nx, nz, 1.2)) {
     const lw = l[2] - l[0], ld = l[3] - l[1];
@@ -742,8 +742,10 @@ function genHood(b: Block, r: () => number, out: ChunkData): void {
     }
     const walkup = kind > 0.78;
     const yard = walkup ? 2 : 3.2;
-    const x0 = l[0] + yard * (0.6 + r() * 0.4), x1 = l[2] - yard * (0.6 + r() * 0.4);
-    const z0 = l[1] + yard, z1 = l[3] - yard * 1.4;
+    const x0 = l[0] + yard * (0.6 + r() * 0.4);
+    const x1 = Math.min(l[2] - yard * (0.6 + r() * 0.4), x0 + (walkup ? 14 : 8 + r() * 3));
+    const z0 = l[1] + yard;
+    const z1 = Math.min(l[3] - yard * 1.4, z0 + (walkup ? 12 : 7 + r() * 3));
     if (x1 - x0 < 5 || z1 - z0 < 5) continue;
     const h = walkup ? 7.2 + Math.floor(r() * 2) * 3.3 : 3.6;
     const col = pick(r, PAL.faded);

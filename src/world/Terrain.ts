@@ -305,8 +305,8 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
     vec3 asph = mix(vec3(0.078, 0.075, 0.07), vec3(0.11, 0.105, 0.098), nC) * (0.95 + 0.1 * nB);
     {
       vec2 sp = floor(vWPos.xz * 22.0);
-      float spk = step(0.93, n_hash21(sp)) * (1.0 - smoothstep(6.0, 30.0, length(vWPos.xz - cameraPosition.xz)));
-      asph += vec3(0.05) * spk;
+      float spk = step(0.95, n_hash21(sp)) * (1.0 - smoothstep(4.0, 16.0, length(vWPos.xz - cameraPosition.xz)));
+      asph += vec3(0.025) * spk;
       vec2 pc = floor(vWPos.xz / vec2(3.2, 2.1));
       float patchy = step(0.86, n_hash21(pc + 7.0));
       asph *= 1.0 - patchy * 0.22;

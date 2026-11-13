@@ -140,19 +140,60 @@ export class Police {
   /** A crime happened at (x, z). Witnesses (nearby pedestrians, officers) decide whether it counts in full. */
   crime(weight: number, x: number, z: number, o?: { cop?: boolean }): void {
     const { npcs, wanted } = this.d;
+    if (o?.cop) this.hostileT = 40;
     let witnessed = !!o?.cop;
+    let caller: Ped | null = null;
+    let callerD = Infinity;
     if (!witnessed) {
       for (const p of npcs.peds.peds) {
         if (!p.active || p.state === 'down') continue;
-        if (p.role !== 'civ') { if (Math.hypot(p.x - x, p.z - z) < 90) { witnessed = true; break; } continue; }
-        if (Math.hypot(p.x - x, p.z - z) < 32) { witnessed = true; break; }
+        const d = Math.hypot(p.x - x, p.z - z);
+        if (p.role !== 'civ') { if (d < 90) { witnessed = true; caller = null; break; } continue; }
+        if (d < 32 && d < callerD) { callerD = d; caller = p; }
       }
       if (!witnessed && this.helis.length) witnessed = true;
     }
     this.d.combat.byPlayerRecently = true;
     window.setTimeout(() => { this.d.combat.byPlayerRecently = false; }, 4000);
-    wanted.report(weight, x, z, witnessed);
+    // a civilian who saw it has to phone it in first: stop them in time and the police never hear about it
+    if (!witnessed && caller && wanted.stars === 0) {
+      const call = this.calls.find((c) => c.p === caller);
+      if (call) { call.w += weight; return; }
+      caller.accessory = 1;
+      this.calls.push({ p: caller, w: weight, x, z, t: 4 + Math.random() * 1.5 });
+      if (this.calls.length === 1) this.d.hud.say('A witness is calling the police…', 3);
+      return;
+    }
+    wanted.report(weight, x, z, witnessed || !!caller);
   }
+
+  /** Witnesses on the phone to the police. */
+  private readonly calls: { p: Ped; w: number; x: number; z: number; t: number }[] = [];
+  /** Seconds left in which officers shoot on sight because the suspect fired on police. */
+  private hostileT = 0;
+  /** Set each frame by the game: the suspect has a gun out (officers at one star only shoot at armed suspects). */
+  suspectArmed = false;
+
+  private updateCalls(dt: number): void {
+    const { wanted } = this.d;
+    for (let i = this.calls.length - 1; i >= 0; i--) {
+      const c = this.calls[i]!;
+      c.t -= dt;
+      if (!c.p.active || c.p.state === 'down' || c.p.health <= 0) {
+        this.calls.splice(i, 1);
+        wanted.report(c.w, c.x, c.z, false);
+        if (!this.calls.length) this.d.hud.say('The call never went through.', 2.5);
+        continue;
+      }
+      if (c.t <= 0) {
+        this.calls.splice(i, 1);
+        wanted.report(c.w + 2, c.x, c.z, true);
+      }
+    }
+  }
+
+  /** A witness is phoning the police right now (for the HUD). */
+  get callPending(): boolean { return this.calls.length > 0; }
 
   private onStars(s: number, prev: number): void {
     const { hud, world, audio } = this.d;
@@ -229,6 +270,8 @@ export class Police {
     const { wanted, npcs, hud, camera } = this.d;
     this.refreshTarget();
     this.shotsThisFrame = 0;
+    this.updateCalls(dt);
+    this.hostileT = Math.max(0, this.hostileT - dt);
     const stars = wanted.stars;
     const tier = TIERS[stars]!;
 
@@ -446,7 +489,15 @@ export class Police {
       p.sees = d < spec.sight && this.los(p.x, p.y + 1.5, p.z, t.x, t.y, t.z);
       p.onRoad = this.d.world.city.plan.roadAt(p.x, p.z).kind === 'road';
     }
-    if (p.sees && d < spec.range) {
+    // at one star an unarmed suspect is arrested, not shot: officers close in with guns raised
+    const lethal = this.d.wanted.stars >= 2 || this.suspectArmed || this.hostileT > 0 || t.car;
+    if (p.sees && !lethal) {
+      p.aim = true;
+      p.yaw = this.turn(p.yaw, Math.atan2(dx, dz), dt * 9);
+      p.speed = d > 1.8 ? spec.speed : 0;
+      if (p.speed > 0) { this.step(p, p.yaw, p.speed, dt); p.phase += p.speed * dt * 2.6; }
+      if (d < 12 && Math.random() < dt * 0.25) this.d.hud.say(['Police! Hands where I can see them!', 'Get on the ground!', 'Do not move!'][Math.floor(Math.random() * 3)]!, 2);
+    } else if (p.sees && d < spec.range) {
       // stand and shoot; advance a little if far
       p.aim = true;
       p.yaw = this.turn(p.yaw, Math.atan2(dx, dz), dt * 9);
@@ -455,7 +506,11 @@ export class Police {
       if (p.fireT <= 0) this.shoot(p, spec, d);
     } else {
       p.aim = false;
-      const tx = p.sees ? t.x : this.d.wanted.lastX, tz = p.sees ? t.z : this.d.wanted.lastZ;
+      // search: each officer sweeps their own sector of the search zone around the last sighting
+      const w = this.d.wanted;
+      const sa = p.id * 2.39996 + performance.now() * 0.00005;
+      const sr = (0.25 + (p.id % 5) * 0.15) * w.searchRadius * 0.7;
+      const tx = p.sees ? t.x : w.lastX + Math.cos(sa) * sr, tz = p.sees ? t.z : w.lastZ + Math.sin(sa) * sr;
       const base = Math.atan2(tx - p.x, tz - p.z);
       p.speed = spec.speed;
       for (const off of [0, 0.75, -0.75, 1.5, -1.5]) {

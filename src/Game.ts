@@ -994,6 +994,7 @@ export class Game {
       const f = this.mapFwd.set(0, 0, -1).applyQuaternion(cam.quaternion);
       yaw = Math.atan2(-f.x, -f.z);
     }
+    if (this.police) this.police.suspectArmed = !!this.weapon?.isDrawn || !!this.driveBy?.aiming;
     // police on the map while wanted
     if (this.police && this.wanted && this.wanted.stars > 0) {
       const w = this.wanted;
