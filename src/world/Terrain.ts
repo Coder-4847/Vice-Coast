@@ -301,7 +301,18 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
     vec3 pave = mix(vec3(0.46, 0.45, 0.43), vec3(0.54, 0.53, 0.51), nC);
     float joint = smoothstep(0.485, 0.5, max(abs(fract(vWPos.x / 2.0) - 0.5), abs(fract(vWPos.z / 2.0) - 0.5)));
     pave *= 1.0 - 0.14 * joint;
-    vec3 asph = mix(vec3(0.075, 0.075, 0.082), vec3(0.125, 0.125, 0.135), nC) * (0.9 + 0.2 * nB);
+    // asphalt: warm dark grey, stone speckle up close, patched repairs and hairline cracks
+    vec3 asph = mix(vec3(0.078, 0.075, 0.07), vec3(0.11, 0.105, 0.098), nC) * (0.95 + 0.1 * nB);
+    {
+      vec2 sp = floor(vWPos.xz * 22.0);
+      float spk = step(0.93, n_hash21(sp)) * (1.0 - smoothstep(6.0, 30.0, length(vWPos.xz - cameraPosition.xz)));
+      asph += vec3(0.05) * spk;
+      vec2 pc = floor(vWPos.xz / vec2(3.2, 2.1));
+      float patchy = step(0.86, n_hash21(pc + 7.0));
+      asph *= 1.0 - patchy * 0.22;
+      float crack = 1.0 - smoothstep(0.0, 0.012, abs(n_noise(vWPos.xz * 0.35) - 0.5));
+      asph *= 1.0 - crack * 0.35 * (1.0 - smoothstep(20.0, 60.0, length(vWPos.xz - cameraPosition.xz)));
+    }
 
     #ifdef USE_FOG
       float cdist = length(vFogViewPos);
@@ -345,7 +356,7 @@ vSuv = (hp * 0.5 + 0.5) / uHMSize.zw;`);
     cityCol = mix(cityCol, asph, asphaltW);
     cityCol = mix(cityCol, paint * (0.92 + 0.12 * nC), paintW * asphaltW);
     col = mix(col, cityCol, cityMask);
-    rough = mix(rough, mix(0.92, 0.8, asphaltW) , cityMask);
+    rough = mix(rough, mix(0.92, 0.9, asphaltW) , cityMask);
     rough = mix(rough, 0.6, paintW * asphaltW * cityMask);
     float flatMask = smoothstep(0.985, 0.998, n.y);
     parkW = zn.b * (1.0 - sideW);
