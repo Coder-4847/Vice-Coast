@@ -52,9 +52,11 @@ export const PLACES: Record<string, PlaceDef> = {
   'costa.cafe': { x: 520, z: 3150, label: 'Costa Merida cafe', car: true },
   'tower.top': { x: 1010, z: -60, label: 'Meridian Tower plaza', car: true },
   'court': { x: 1060, z: 90, label: 'Valeria Courthouse', car: true },
-  'pro.mill': { x: 960, z: -2255, label: 'Pinecrest sawmill', car: true },
-  'pro.office': { x: 992, z: -2236, label: 'Sawmill payroll office' },
-  'pro.light': { x: 80, z: -2585, label: 'Lighthouse road', car: true },
+  // the opening job: Valeria Savings, 2011
+  'pro.van': { x: 904, z: -138, label: 'Across from Valeria Savings', car: true },
+  'pro.car': { x: 954, z: -134, label: 'The getaway car', car: true },
+  'pro.heli': { x: 1600, z: 380, label: 'East Highway lot', car: true },
+  'pro.land': { x: 80, z: -2585, label: 'Lighthouse field', car: true },
   'highway.east': { x: 2300, z: 420, label: 'East Highway', car: true },
 };
 

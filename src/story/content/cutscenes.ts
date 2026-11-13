@@ -46,7 +46,7 @@ const ACT1_SCENES: Record<string, CutsceneDef> = {
     shots: [
       wide([L('crane', 'Not a scratch. Steady hands, Marcus. I remember that kind of thing.'), L('mack', 'Enjoy your dinner, sir.')]),
       { from: [-6, 1.7, -2], to: [-5.2, 1.7, -1.4], look: [-4.5, 1.6, 3.5], fov: 34, lines: [L('pruitt', 'Mr. Delgado. Walk with me. You parked that car like a man who used to do something more exciting.')] },
-      close(-1.2, [L('mack', 'I don\'t know you.'), L('pruitt', 'Walter Pruitt. State Bureau of Investigation. I know Pinecrest, the winter of 2011. I know the three jobs after it. I know you were never charged.')]),
+      close(-1.2, [L('mack', 'I don\'t know you.'), L('pruitt', 'Walter Pruitt. State Bureau of Investigation. I know Valeria Savings, the spring of 2011. I know the three jobs after it. I know you were never charged.')]),
       close(-4.5, [L('pruitt', 'I can make that file thick or I can make it vanish. All I need is a driver\'s eyes tonight. Follow Mr. Crane\'s car. See where a candidate for governor spends his evening.'), L('mack', 'And if I say no?'), L('pruitt', 'Then you keep parking cars. For a while.')], { look: [-4.5, 1.6, 3.5], from: [-3.2, 1.62, -2.4], to: [-3.4, 1.64, -2.0] }),
     ],
   },

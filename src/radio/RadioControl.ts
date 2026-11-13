@@ -9,6 +9,7 @@ export class RadioControl {
   private readonly cards: HTMLButtonElement[] = [];
   private shown = 0;
   private wasIn = false;
+  private lbT = 0;
 
   constructor(private readonly g: Game) {
     this.radio = new Radio(() => g.audio.context, () => g.audio.output);
@@ -76,9 +77,13 @@ export class RadioControl {
     this.wasIn = inV;
     this.radio.setActive(inV && g.state !== 'paused');
     this.radio.pump(dt);
-    if (inV && g.state === 'playing' && g.input.pressed('radioWheel') && !g.story?.cutscenes.active) {
+    if (inV && g.state === 'playing' && !g.story?.cutscenes.active) {
       const back = (g.input.down('sprint') || false);
-      this.next(back ? -1 : 1);
+      if (g.input.activeDevice === 'gamepad') {
+        // LB is shared with drive-by aiming: a quick tap changes the station, holding it aims
+        if (g.input.down('radioWheel')) this.lbT += dt;
+        else if (this.lbT > 0) { if (this.lbT < 0.28 && !g.driveBy?.usedThisHold) this.next(back ? -1 : 1); this.lbT = 0; }
+      } else if (g.input.pressed('radioWheel')) this.next(back ? -1 : 1);
     }
     if (this.shown > 0) { this.shown -= dt; if (this.shown <= 0 || !inV) this.strip.classList.remove('open'); }
   }

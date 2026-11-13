@@ -74,6 +74,8 @@ export class Driving {
   private idleLook = 0;
   private behind = 0;
   private shake = 0;
+  /** Drive-by aiming: the camera stays where you point it instead of drifting back behind the car. */
+  holdLook = false;
   private fov = 75;
   private clock = 0;
   private enterFrom = new THREE.Vector3();
@@ -105,8 +107,10 @@ export class Driving {
       const rate = (Math.abs(raw) >= Math.abs(this.steer) ? 5.2 - 3 * k : 8 - 3.5 * k) * dt;
       this.steer += clamp(raw - this.steer, -rate, rate);
       v.input.steer = this.steer;
-      v.input.throttle = Math.max(input.analog('fire'), Math.max(0, input.move.y));
-      v.input.brake = Math.max(input.analog('aim'), Math.max(0, -input.move.y));
+      // triggers drive on a controller; the mouse buttons are for shooting out of the window
+      const pad = input.activeDevice === 'gamepad';
+      v.input.throttle = Math.max(pad ? input.analog('fire') : 0, Math.max(0, input.move.y));
+      v.input.brake = Math.max(pad ? input.analog('aim') : 0, Math.max(0, -input.move.y));
       v.input.handbrake = input.down('jump');
       this.hornOn = input.down('horn');
     } else if (v && (this.mode === 'entering' || this.mode === 'exiting' || this.parkBrake)) {
@@ -367,6 +371,7 @@ export class Driving {
       } else {
         this.idleLook += dt;
       }
+      if (this.holdLook) this.idleLook = 0;
       if (this.idleLook > 1.4) {
         this.userYaw = damp(this.userYaw, 0, 2.2, dt);
         this.userPitch = damp(this.userPitch, 0, 2.2, dt);

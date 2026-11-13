@@ -196,6 +196,8 @@ export class Story {
       if (g.wanted) g.wanted.muted = false;
       g.wanted?.clear();
       if (g.driving && g.driving.mode !== 'foot') g.driving.abort();
+      if (g.piloting) { g.piloting.autopilot = null; g.piloting.abort(); }
+      this.hud.setBars(false);
       this.hostiles.clear();
       this.drivers.clear();
       g.world.setWeather('clear', true);
@@ -646,7 +648,7 @@ export class Story {
     this.updateCrew(dt);
     this.markerT -= dt;
     if (!this.mission && !this.cutscenes.active) {
-      if (this.markerT <= 0) { this.markerT = 0.5; this.syncMarkers(); }
+      if (this.markerT <= 0) { this.markerT = 0.5; this.syncMarkers(); this.guideNext(); }
     } else if (this.markerIds.size) this.clearMarkers();
     this.mission?.tick(dt);
     this.queueT -= dt;
@@ -662,6 +664,23 @@ export class Story {
   }
 
   private crewSyncT = 0;
+  private guideShown = false;
+
+  /** Between missions, the HUD names the next story mission and how far away it is, so there is always something to do. */
+  private guideNext(): void {
+    const g = this.g;
+    if (!this.st.introSeen || !g.player) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }
+    const next = MISSIONS.find((d) => !d.activity && this.available(d));
+    if (!next) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }
+    const w = this.place(next.start);
+    const p = g.player.pos;
+    const dm = Math.hypot(w.x - p.x, w.z - p.z);
+    const who = next.char === 'any' ? '' : CHARS[next.char as CharId].nick;
+    const mine = next.char === 'any' || next.char === this.active;
+    const far = dm > 1000 ? `${(dm / 1000).toFixed(1)} km` : `${Math.round(dm / 10) * 10} m`;
+    this.hud.setObjective('Next story mission', next.title, mine ? `${far} · the yellow marker on your map (M)` : `Switch to ${who} (${this.switchKey()}) to play it`);
+    this.guideShown = true;
+  }
 
   private updateCrew(dt: number): void {
     const g = this.g;

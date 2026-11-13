@@ -822,3 +822,10 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 /* pastime panels are fully removed when not in use */
 .ps-hud.is-hidden, .ps-breath.is-hidden { display: none; }
 
+
+/* drive-by crosshair */
+.db-cross { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 11; }
+.db-cross .db-ring { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 6px rgba(0,0,0,0.6); }
+.db-cross .db-dot { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: #fff; }
+.db-cross.hit .db-ring { border-color: #ff5a4a; transform: scale(0.8); }
+.db-cross .db-ammo { position: absolute; left: 22px; top: 12px; white-space: nowrap; font: 600 0.78rem Inter, system-ui; color: #fff; text-shadow: 0 1px 3px #000; }

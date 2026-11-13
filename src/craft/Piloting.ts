@@ -56,6 +56,8 @@ const _q = new THREE.Quaternion();
 export class Piloting {
   mode: PilotMode = 'foot';
   craft: Craft | null = null;
+  /** Scripted flying (cutscenes): replaces the player's stick and lift while set. */
+  autopilot: { fwd: number; steer: number; lift: number } | null = null;
   hint: Craft | null = null;
   camMode: CamMode = 'chase';
   blend = 0;
@@ -98,6 +100,7 @@ export class Piloting {
     const { input } = this.d;
     const i = c.input;
     if (this.mode !== 'flying' || c.exploded) { i.fwd = i.steer = i.lift = i.brake = 0; return; }
+    if (this.autopilot) { const a = this.autopilot; i.fwd = a.fwd; i.steer = a.steer; i.lift = a.lift; i.brake = 0; return; }
     i.fwd = clamp(input.move.y, -1, 1);
     i.steer = Math.sign(input.move.x) * Math.pow(Math.abs(input.move.x), 1.15);
     const fire = input.analog('fire'), aim = input.analog('aim');

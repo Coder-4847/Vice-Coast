@@ -23,6 +23,7 @@ import { GameRenderer } from './core/GameRenderer';
 import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPreset } from './core/Quality';
 import { a11y } from './core/a11y';
 import { AimAssist } from './combat/AimAssist';
+import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
 import { Settings } from './core/Settings';
 import { InputManager } from './input/InputManager';
@@ -308,6 +309,7 @@ export class Game {
       this.phone.onClose = () => this.closePhone();
       this.story = new Story(this);
       this.radio = new RadioControl(this);
+      this.driveBy = new DriveBy(this);
     }
     this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
     this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
@@ -711,6 +713,7 @@ export class Game {
 
   private readonly aimAssist = new AimAssist();
   private soundCues: SoundCues | null = null;
+  driveBy: DriveBy | null = null;
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -763,6 +766,7 @@ export class Game {
       this.effects.update(dt);
     }
     this.commerce?.update(dt);
+    this.driveBy?.update(dt);
     this.story?.update(dt);
     this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
