@@ -698,7 +698,7 @@ vMode = aParam.x;
 vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vLoc;\nvarying vec3 vNrm;\nvarying vec3 vSize;\nvarying float vSeed;\nvarying float vMode;\n${NOISE_GLSL}`)
-      .replace('void main() {', 'float wMask = 0.0;\nfloat wLit = 0.0;\nfloat wEmit = 0.0;\nvec3 wCol = vec3(0.0);\nvec3 neonCol = vec3(0.0);\nvoid main() {')
+      .replace('void main() {', 'float wMask = 0.0;\nfloat wFrame = 0.0;\nfloat wLit = 0.0;\nfloat wEmit = 0.0;\nvec3 wCol = vec3(0.0);\nvec3 neonCol = vec3(0.0);\nvoid main() {')
       .replace('#include <map_fragment>', `#include <map_fragment>
 {
   float md = vMode;
@@ -727,6 +727,7 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
       vec2 f = fract(fc / cs);
       float ground = step(0.2, vLoc.y) * step(vLoc.y, yTop - 0.9);
       wMask = step(0.05, f.x) * step(f.x, 0.95) * step(0.08, f.y) * step(f.y, 0.9) * ground;
+      wFrame = (step(0.02, f.x) * step(f.x, 0.98) * step(0.04, f.y) * step(f.y, 0.94)) * ground - wMask;
       float hh = n_hash21(cell + vSeed * 91.0 + an.x * 7.0);
       wLit = step(hh, fraction);
       glassCol = diffuseColor.rgb * 0.16 + vec3(0.012, 0.02, 0.035);
@@ -738,6 +739,7 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
       vec2 f = fract(fc / cs);
       float ground = step(4.5, vLoc.y) * step(vLoc.y, yTop - 1.2);
       wMask = step(0.16, f.x) * step(f.x, 0.84) * step(0.2, f.y) * step(f.y, 0.82) * ground;
+      wFrame = (step(0.12, f.x) * step(f.x, 0.88) * step(0.14, f.y) * step(f.y, 0.86)) * ground - wMask;
       float hh = n_hash21(cell + vSeed * 91.0 + an.x * 7.0);
       wLit = step(hh, fraction);
       // shopfront band at street level
@@ -755,7 +757,41 @@ vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
       wLit = step(n_hash21(cell + vSeed * 91.0), fraction * 0.6);
       wCol = vec3(1.0, 0.8, 0.5);
     }
+    // facade detail: material, weathering, floor lines, a darker plinth and window frames
+    {
+      float y = vLoc.y;
+      float streak = n_fbm(vec2(fc.x * 0.55 + vSeed * 13.0, y * 0.035));
+      float grime = smoothstep(0.35, 0.95, streak) * smoothstep(yTop - 22.0, yTop, y) * 0.24;
+      float splash = (1.0 - smoothstep(0.0, 2.4, y)) * 0.3;
+      float blotch = (n_fbm(fc * 0.21 + vSeed * 5.0) - 0.5) * 0.18;
+      vec3 wall = diffuseColor.rgb * (1.0 + blotch - grime - splash);
+      if (md > 1.5 && md < 2.5 && vSeed > 0.45) {
+        // brickwork, fading out where the bricks get smaller than a pixel
+        vec2 bc = fc * vec2(1.0 / 0.25, 1.0 / 0.09);
+        bc.x += step(1.0, mod(floor(bc.y), 2.0)) * 0.5;
+        vec2 bf = fract(bc);
+        float aa = clamp(1.0 - max(fwidth(bc.x), fwidth(bc.y)) * 1.2, 0.0, 1.0);
+        float mortar = (1.0 - step(0.05, bf.x) * step(bf.x, 0.95) * step(0.1, bf.y) * step(bf.y, 0.9)) * aa;
+        wall *= 1.0 + (n_hash21(floor(bc) + vSeed) - 0.5) * 0.22 * aa;
+        wall = mix(wall, vec3(0.62, 0.6, 0.56) * (0.6 + 0.4 * diffuseColor.rgb), mortar * 0.55);
+      } else {
+        // rendered or clad walls: panel joints every storey and every few metres
+        vec2 pj = abs(fract(fc / vec2(md < 1.5 ? 2.6 : 4.2, 3.7)) - 0.5);
+        float aa = clamp(1.0 - fwidth(fc.y) * 4.0, 0.0, 1.0);
+        float line = smoothstep(0.484, 0.497, pj.y) * aa;
+        wall *= 1.0 - line * 0.18;
+      }
+      // stone plinth at street level
+      wall = mix(wall, wall * 0.55 + vec3(0.06, 0.06, 0.065), 1.0 - step(0.9, y));
+      vec3 frameCol = md < 1.5 ? vec3(0.32, 0.34, 0.37) : vec3(0.82, 0.8, 0.76) * (0.7 + 0.3 * diffuseColor.rgb);
+      diffuseColor.rgb = mix(wall, frameCol, clamp(wFrame, 0.0, 1.0));
+    }
     diffuseColor.rgb = mix(diffuseColor.rgb, glassCol, wMask);
+  } else if (an.y >= 0.5 && md < 3.5) {
+    // roofs: gravel, tar patches and darker edges
+    float g = n_fbm(vLoc.xz * 0.9 + vSeed * 3.0);
+    float edge = min(min(vLoc.x, vSize.x - vLoc.x), min(vLoc.z, vSize.z - vLoc.z));
+    diffuseColor.rgb *= (0.78 + 0.32 * g) * (0.75 + 0.25 * smoothstep(0.0, 0.8, edge));
   }
 }`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor * (1.0 - 0.3 * uWet), 0.05, wMask);')
