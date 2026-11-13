@@ -263,6 +263,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 
 17. **Pastimes, accessibility and the living city** ✅ — golf, tennis, bowling, hoops and arm wrestling; fishing, hunting and scuba diving; a mixer with music/effects/dialogue/menu buses, ducking, mono and night mode; HUD size, high contrast, readable font, camera-shake and flash controls, aim assist, hold-to-mash and on-screen sound cues; denser traffic and crowds; sun shafts, sharpening and a new grade; police vision cones, search zones and Spray Shacks; a stock market (see docs/ACTIVITIES.md). Still not built: triathlon, base-jumping courses, a treasure hunt, in-game TV and a social feed.
 18. **Desktop only** ✅ — touch controls and gyro aim removed; keyboard + mouse and controller remain, and phones get a notice
-19. **Rework, phase 1** ✅ (this build) — new bank-heist opening with a car chase and a helicopter escape, drive-by shooting, a next-mission guide on the HUD, corrected How to Play keys
+19. **Rework, phase 1** ✅ — new bank-heist opening with a car chase and a helicopter escape, drive-by shooting, a next-mission guide on the HUD, corrected How to Play keys
+20. **Rework, phases 2 + 3** ✅ (this build) — GTA-style HUD (radar bottom-left with health, armour and ability bars; money, weapon and wanted stars top-right; help box top-left; objectives above the subtitles), full-width MISSION PASSED and WASTED / BUSTED screens, main menu with the three leads, building facades with brick, panels, frames, weathering and gravel roofs, patched and cracked asphalt, warmer skin on the first-person hands
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.
