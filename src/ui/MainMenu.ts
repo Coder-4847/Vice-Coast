@@ -2,6 +2,7 @@ import type { SaveData, SlotInfo } from '../economy/types';
 import { money } from '../economy/Economy';
 import { h } from './dom';
 import { MenuNav } from './MenuNav';
+import { CHARS } from '../story/chars';
 
 export interface MainMenuHooks {
   slots(): Promise<SlotInfo[]>;
@@ -128,7 +129,7 @@ export class MainMenu {
       this.list.append(b);
     };
     if (last) item('continue', 'Continue', `Slot ${last.slot} · ${last.label}`, () => void this.load(last.slot));
-    item('new', 'New Game', 'Begin in Pinecrest, nine years ago', () => this.open('new'));
+    item('new', 'New Game', 'Valeria Savings, nine years ago', () => this.open('new'));
     item('load', 'Load Game', `${this.slotsCache.filter((s) => !s.empty).length} of 3 slots in use`, () => this.open('load'));
     item('settings', 'Settings', 'Graphics, controls, audio, accessibility', () => this.hooks.settings());
     item('howto', 'How to Play', 'Controls and the basics', () => this.open('howto'));
@@ -182,7 +183,13 @@ export class MainMenu {
         p.append(card('Continue', h('p', 'mm-big', last.label), h('div', 'mm-stats',
           stat('Cash', money(last.cash)), stat('Bank', money(last.bank)), stat('Properties', String(last.props)), stat('Cars', String(last.cars)), stat('Played', played(last.playSeconds)), stat('Saved', ago(last.savedAt)))));
       } else if (id === 'new') {
-        p.append(card('A new story', h('p', '', 'Winter, 2011. Three men, a sawmill payroll in Pinecrest Bay and a snowstorm. Nine years later, Marcus "Mack" Delgado parks cars for a living — until somebody remembers his name.'), h('p', 'mm-muted', 'Three playable characters · 38 missions · 6 heists · a whole coast to steal from.')));
+        const cast = h('div', 'mm-cast', ...(['mack', 'imani', 'teddy'] as const).map((id) => {
+          const c = CHARS[id];
+          const el = h('div', 'mm-castcard', h('i', 'mm-castglyph', c.nick[0]!), h('b', '', c.nick), h('span', '', c.role), h('em', '', c.ability.name));
+          el.style.setProperty('--c', c.color);
+          return el;
+        }));
+        p.append(card('A new story', cast, h('p', '', 'Spring, 2011. Three men, one downtown bank and a helicopter waiting on the highway. Nine years later, Marcus "Mack" Delgado parks cars for a living — until somebody remembers his name.'), h('p', 'mm-muted', 'Three playable characters · 38 missions · 6 heists · a whole coast to steal from.')));
       } else if (id === 'load') {
         p.append(card('Saved games', ...this.slotsCache.map((s) => h('div', `mm-slotline${s.empty ? ' empty' : ''}`, h('b', '', `Slot ${s.slot}`), h('span', '', s.empty ? 'Empty' : `${s.label} · ${ago(s.savedAt)}`)))));
       } else if (id === 'settings') {
