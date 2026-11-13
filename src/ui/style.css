@@ -897,3 +897,7 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 .hud .vitals .vbar.armour { order: 1; }
 .story-tip, .hud .prompt { max-width: min(320px, 26vw); }
 .story-banner .sb-kicker { font-size: 0.9rem; letter-spacing: 0.3em; color: #e8ebf2; }
+.mm-castglyph { right: 8px; top: -4px; font-size: 4.4rem; }
+/* the first-minutes controls card sits to the right, clear of objectives and subtitles */
+.hud .hints { left: auto; right: calc(var(--hud-pad) + env(safe-area-inset-right)); bottom: auto; top: 50%; transform: translateY(-50%); }
+.hud .hints.is-hidden { transform: translate(8px, -50%); }

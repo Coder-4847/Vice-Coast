@@ -49,6 +49,24 @@ const skin = (): THREE.MeshPhysicalMaterial => {
     sheenColor: new THREE.Color('#ff9a7a'),
   });
   m.fog = false;
+  // skin: light scattering under the surface keeps shadows warm instead of grey, plus faint tone variation
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vSkinP;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSkinP = position;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vSkinP;
+float sk_h(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+float sk_n(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(sk_h(i), sk_h(i + vec3(1,0,0)), f.x), mix(sk_h(i + vec3(0,1,0)), sk_h(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(sk_h(i + vec3(0,0,1)), sk_h(i + vec3(1,0,1)), f.x), mix(sk_h(i + vec3(0,1,1)), sk_h(i + vec3(1,1,1)), f.x), f.y), f.z); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+diffuseColor.rgb *= 0.93 + 0.1 * sk_n(vSkinP * 9.0) + 0.04 * sk_n(vSkinP * 37.0);`)
+      .replace('#include <opaque_fragment>', `outgoingLight += diffuseColor.rgb * vec3(0.55, 0.2, 0.14) * 0.16;
+#include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => 'vc-skin-2';
   return m;
 };
 
