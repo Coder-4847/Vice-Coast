@@ -106,7 +106,16 @@ tracks only when nothing else connects), and a light beam marks the waypoint in 
 
 ### Vehicles
 
-Walk to a car in the lot (east of the range, ~170 m along the beach) and press the interact key.
+Walk to a car in the lot (east of the range, ~170 m along the beach) and press the interact key — or take one off the street:
+
+- **Parked cars** line the side streets around you. About two in three are locked: press `E` to **smash the window** (some cars have
+  an alarm, and a witness may call it in), climb in and the car takes a couple of seconds to **hotwire** before it will start.
+- **Carjacking:** walk up to a car that is stopped at a light or crawling and press `E` to pull the driver out. They run, and anyone
+  watching phones the police. Taking a **police cruiser** is a much bigger crime.
+- A stolen car can be registered to you at Redline Customs, like any other.
+
+Twelve cars and bikes: the Ardent Pico and Stanza, Marlow taxi, Brute Courier van, Stallion 72 and Barrage GT muscle cars, Ridgeback 4x4,
+Huntley S SUV, Kaiser Comet, Veloce SR, the police Interceptor (steal-only), the Sparrow 600 sports bike and the Vandal 450 dirt bike.
 
 | Action | Keyboard + mouse | Gamepad |
 | --- | --- | --- |
@@ -164,8 +173,8 @@ Switch, Dead Ringers) and **two heists**: *The Gilded Counter* (jeweller) and *V
 
 ### Robberies and crew
 
-**Instant robberies.** Little service kiosks (gas stations *Petrolia* and friends, groceries, liquor stores, two jewelry counters, marked `¢` on the
-map) have a clerk behind the counter. Draw a gun, walk up and aim at them: press `E` to **hold them up**, then keep them covered while the bag fills
+**Instant robberies.** Twenty-six little service kiosks (ten gas stations — *Petrolia*, *Kings Gas*, *Merida Fuel* and friends — groceries, liquor stores and three
+jewelry counters, marked `¢` on the map) have a clerk behind the counter. Draw a gun, walk up and aim at them: press `E` to **hold them up**, then keep them covered while the bag fills
 (10–20 seconds). The longer you stay the faster the police respond (one star after a moment, two, then three). A third of clerks trip a silent
 alarm, some have a hidden gun and reach for it if you stop covering them, and a clerk you shoot is a crime. With a gun out, ATMs can be **smashed open**
 (hold `E`). Stores and ATMs cool down for a day or two.
@@ -175,6 +184,9 @@ Silas and Pilar join through the story; the rest are recruited from the **Crew**
 (cameras, vault and lock times, wanted stars). **Gunmen come into the building with you** and answer the command wheel (`B`): follow, hold, attack, or breach.
 Enemies shoot at them too. After a job people can be **hurt** (out for a few days) or **killed** (for good), loyalty moves with how things went, you can
 pay bonuses, and a disloyal crew skims extra before walking away. People learn and improve every few jobs.
+
+**Side heists:** **The Pinecrest Score** (a small-town bank holding the logging-camp payroll; opens after the first heist) and **Halloran Armory**
+(seized cartel gold in a bunker under Fort Halloran; opens after the convoy job), each with loud, quiet and smart approaches and their own prep jobs.
 
 **Heists** now number five: the jeweller, the bank, **The Long Haul** (an armored truck and two escort cars on the East Highway: ram it, spike it or
 spoof its tracker), **Lucky Seven** (the Costa Merida casino vault) and **Night Freight** (a freight train on the Cinder siding). The museum and the
@@ -198,14 +210,14 @@ collectibles, with cash milestones at 10 / 25 / 50 / 75 / 100 %. Details: [docs/
 Walk (or swim) up to one and press the interact key. Boats are moored at the piers and marinas, helicopters and planes wait at
 **Valeria International** (about a kilometre south of the city), the Cinder Airstrip, the Mount Kestrel summit and **Isla Rojo**
 (the private island out in the Pacific, with its own airstrip and dock). **Fort Halloran** (the fenced army base on the desert
-plateau) keeps tanks, APCs and army helicopters in its motor pool — but it is **restricted**: cross the boundary and a countdown
+plateau) keeps tanks, APCs, army helicopters, a **Hornet gunship** and two **Lancer fighter jets** on its new jet strip — but it is **restricted**: cross the boundary and a countdown
 starts, the compound itself (or stealing armour) brings the heavy response straight away.
 
 | Craft | Controls |
 | --- | --- |
 | Boats (Zephyr jet ski, Marlin speedboat, Gull fishing boat, Aurelia yacht) | `W` `S` throttle / reverse · `A` `D` steer · `E` leave (anywhere on the water) |
-| Helicopters (Sparrow, Newsbird) | `W` `S` fly forward / back · `A` `D` turn · `Space` climb · `C` descend · `E` land and exit — or bail out above ~30 m |
-| Planes (Skylark prop, Rook stunt, Meridian jet) | `Space` / `C` throttle up / down · `W` `S` nose down / up · `A` `D` bank (the Rook rolls) · `G` landing gear · `RMB` brake · `E` exit (bail out above ~30 m) |
+| Helicopters (Sparrow, Newsbird, **Hornet** attack helicopter) | `W` `S` fly forward / back · `A` `D` turn · `Space` climb · `C` descend · `R` rockets (Hornet) · `E` land and exit — or bail out above ~30 m |
+| Planes (Skylark prop, Rook stunt, Meridian jet, **Lancer** fighter jet) | `Space` / `C` throttle up / down · `W` `S` nose down / up · `A` `D` bank (the Rook rolls) · `G` landing gear · `RMB` brake · `R` missiles (Lancer) · `E` exit (bail out above ~30 m) |
 | Tank (Bulwark) and APC (Warden) | `W` `S` drive · `A` `D` turn (pivots in place) · mouse aims the turret · `LMB` cannon (APC: autocannon) · `RMB` machine gun · `Space` brake · `E` exit |
 
 `V` switches between chase and cockpit cameras. Planes need a run-up (the airport runway is 840 m; the Skylark leaves the ground
@@ -268,6 +280,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 19. **Rework, phase 1** ✅ — new bank-heist opening with a car chase and a helicopter escape, drive-by shooting, a next-mission guide on the HUD, corrected How to Play keys
 20. **Rework, phases 2 + 3** ✅ — GTA-style HUD (radar bottom-left with health, armour and ability bars; money, weapon and wanted stars top-right; help box top-left; objectives above the subtitles), full-width MISSION PASSED and WASTED / BUSTED screens, main menu with the three leads, building facades with brick, panels, frames, weathering and gravel roofs, patched and cracked asphalt, warmer skin on the first-person hands
 21. **Rework, phases 4–6** ✅ — Southside, a gang neighbourhood of bungalows, chain-link fences, walk-ups, corner stores and courts held by the Southside Kings (neutral until you shoot, aim at them or hurt one; then a gang war with reinforcements); hydrants, bins, benches, news boxes and bus shelters along every street; more traffic and pedestrians on every preset; witnesses phone the police (stop them in time and nobody comes); at one star unarmed suspects are arrested rather than shot; officers sweep their own sectors of the search zone
-22. **Rework, phase 7** ✅ (this build) — switchblade and hatchet (melee with slash animations), RPG-7V with smoke-trailed rockets, Helios LX laser rifle; snacks you carry and eat with `F`; four more gun stores and five more food places across the map; a timed pop-up target challenge with medals at the beach shooting range; number keys 2–9 select weapons
+22. **Rework, phase 7** ✅ — switchblade and hatchet (melee with slash animations), RPG-7V with smoke-trailed rockets, Helios LX laser rifle; snacks you carry and eat with `F`; four more gun stores and five more food places across the map; a timed pop-up target challenge with medals at the beach shooting range; number keys 2–9 select weapons
+23. **Rework, phases 8 + 9** ✅ (this build) — street theft (parked cars, locked doors, window smashing, alarms, hotwiring, carjacking), seven new vehicles (sedan, police Interceptor, van, SUV, muscle car, sports car, dirt bike) with new van and SUV bodies, the Lancer fighter jet and Hornet attack helicopter with rockets plus a jet strip at Fort Halloran, eleven more stores to rob, and two new heists: The Pinecrest Score and Halloran Armory
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

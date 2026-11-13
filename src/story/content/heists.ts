@@ -123,6 +123,36 @@ export const HEISTS: HeistDef[] = [
     prep: { loud: ['h6_charges'], quiet: ['h6_stewards'], smart: ['h6_uplink'] },
     par: { loud: 540, quiet: 660, smart: 600 },
   },
+  {
+    id: 'h7', name: 'The Pinecrest Score', blurb: 'Pinecrest Savings & Loan holds the payroll for every logging camp on the mountain, and the county sheriff has two deputies and a coffee habit. The money goes out on Friday.',
+    door: 'pine.bank',
+    site: { id: 'pinebank', name: 'Pinecrest Savings & Loan', w: 24, d: 18, vault: { w: 9, d: 5 }, cases: 2, cameras: 3, at: { x: SALT.x - 330, z: SALT.z }, tint: 0x6a4a2a },
+    caseValue: 10000, bagValue: 120000, guards: 7,
+    hour: { loud: 10.5, quiet: 23.5, smart: 9 },
+    intro: 'h7_board', done: 'h7_done',
+    approachText: {
+      loud: 'Walk in with rifles and armour, empty the vault and fight through the sheriff, the state troopers and whatever comes up the valley after them.',
+      quiet: 'Go in after midnight as the bank\'s own inspectors. Keep to the back rooms and let the night guard log you in.',
+      smart: 'Case the branch, learn when the drawer counts happen and walk in for the vault while the tellers count.',
+    },
+    prep: { loud: ['h7_truck'], quiet: ['h7_suits'], smart: ['h7_scout'] },
+    par: { loud: 420, quiet: 540, smart: 480 },
+  },
+  {
+    id: 'h8', name: 'Halloran Armory', blurb: 'Fort Halloran keeps seized cartel gold in a bunker under its armory, waiting for a court date that keeps moving. Twelve soldiers, a guard rotation and a base full of very large guns.',
+    door: 'fort.gate',
+    site: { id: 'armory', name: 'Halloran Armory', w: 30, d: 26, vault: { w: 12, d: 7 }, cases: 5, cameras: 5, at: { x: SALT.x + 160, z: SALT.z + 150 }, tint: 0x4a5a3a },
+    caseValue: 20000, bagValue: 250000, guards: 12,
+    hour: { loud: 13, quiet: 2, smart: 22 },
+    intro: 'h8_board', done: 'h8_done',
+    approachText: {
+      loud: 'Burn through the bunker door with thermite and hold the armory while the base wakes up. Then run: the Fort has helicopters.',
+      quiet: 'Go in as a relief squad in army fatigues, on foot, at two in the morning, and never let a camera see your face.',
+      smart: 'Spoof the base radio from the Kestrel relay so the guard rotation sends half the squad to the wrong end of the base.',
+    },
+    prep: { loud: ['h8_thermite'], quiet: ['h8_fatigues'], smart: ['h8_relay'] },
+    par: { loud: 540, quiet: 660, smart: 600 },
+  },
 ];
 
 export const HEIST_BY_ID = Object.fromEntries(HEISTS.map((h) => [h.id, h])) as Record<string, HeistDef>;
@@ -156,9 +186,65 @@ export const PREPS: PrepDef[] = [
   { id: 'h6_charges', title: 'Hull charges', blurb: 'Collect heavy hull charges from the contractor at the Industrial Depot.', approach: 'loud' },
   { id: 'h6_stewards', title: 'Steward uniforms', blurb: 'Lift steward uniforms from the laundry behind the Valeria Sun.', approach: 'quiet' },
   { id: 'h6_uplink', title: 'Satellite uplink', blurb: 'Tap the yacht\'s satellite link at the Dusk Harbor marina.', approach: 'smart' },
+  { id: 'h7_truck', title: 'Getaway van', blurb: 'Steal a heavy Courier van from Dusk Harbor and bring it to the flat.', approach: 'loud' },
+  { id: 'h7_suits', title: 'Inspector suits', blurb: 'Pick up three tailored suits from a tailor on Pinecrest Main Street.', approach: 'quiet' },
+  { id: 'h7_scout', title: 'Case the branch', blurb: 'Watch the Pinecrest branch from three spots and learn when the drawers are counted.', approach: 'smart' },
+  { id: 'h8_thermite', title: 'Thermite', blurb: 'Collect thermite charges from the contractor at the Industrial Depot.', approach: 'loud' },
+  { id: 'h8_fatigues', title: 'Army fatigues', blurb: 'Buy a crate of fatigues off the back of Cinder Surplus.', approach: 'quiet' },
+  { id: 'h8_relay', title: 'Kestrel relay', blurb: 'Clear the guards off the radio relay on Mount Kestrel and plant a spoofer.', approach: 'smart' },
 ];
 
 export const HEIST_PREPS: MissionDef[] = [
+  prep('h7_truck', 'Getaway van', 'Steal a Courier van and bring it home.', [
+    function* (m): Gen {
+      const h = m.at('harbor');
+      const van = m.vehicle('van', 'courier', { x: h.x + 14, z: h.z + 10 }, { color: '#2a2d32' });
+      m.failIf('van', () => van.exploded, 'The van was destroyed.');
+      yield* m.enter('van', 'Steal the Courier van at Dusk Harbor');
+      yield* m.goto('home.mack', 'Drive the van to the Boardwalk Studio', { vehicle: 'van', r: 20 });
+    },
+  ], [GOLD.time(300), GOLD.clean()]),
+  prep('h7_suits', 'Inspector suits', 'Pick up the suits.', [
+    function* (m): Gen {
+      yield* m.goto('pine.tailor', 'Go to the tailor on Pinecrest Main Street', { onFoot: true, r: 4 });
+      yield* m.hold(off(m, 'pine.tailor', 2, 2), 'Collect the suits', 4);
+      m.say('mack', 'Three suits, one tie each. Teddy will lose his by lunch.');
+    },
+  ], [GOLD.time(400), GOLD.clean()]),
+  prep('h7_scout', 'Case the branch', 'Learn when the drawers are counted.', [
+    function* (m): Gen {
+      const b = m.at('pine.bank');
+      const spots: { x: number; z: number }[] = [{ x: b.x + 20, z: b.z + 12 }, { x: b.x - 18, z: b.z + 10 }, { x: b.x + 6, z: b.z - 22 }];
+      for (let i = 0; i < spots.length; i++) {
+        yield* m.goto(spots[i]!, `Vantage point ${i + 1} of 3`, { onFoot: true, r: 4, key: 'v' + i });
+        yield* m.hold(spots[i]!, 'Watch the branch', 3, { key: 'w' + i, glyph: '◉' });
+      }
+      m.say('imani', 'Drawer count at nine sharp. The vault stays open for the whole count.');
+    },
+  ], [GOLD.time(400), GOLD.clean()]),
+  prep('h8_thermite', 'Thermite', 'Collect thermite charges.', [
+    function* (m): Gen {
+      const d = m.at('depot');
+      yield* m.goto({ x: d.x - 18, z: d.z + 14 }, 'Meet the contractor at the Industrial Depot', { r: 6 });
+      yield* m.hold({ x: d.x - 18, z: d.z + 14 }, 'Load the thermite', 4);
+      m.say('teddy', 'Thermite. You light it, it burns through anything. Including Teddy, so do not drop it.');
+    },
+  ]),
+  prep('h8_fatigues', 'Army fatigues', 'Buy fatigues off the back of a surplus store.', [
+    function* (m): Gen {
+      yield* m.goto('surplus', 'Go round the back of Cinder Surplus', { onFoot: true, r: 5 });
+      yield* m.hold(off(m, 'surplus', -4, 6), 'Take the crate of fatigues', 4);
+    },
+  ], [GOLD.time(400), GOLD.clean()]),
+  prep('h8_relay', 'Kestrel relay', 'Plant a radio spoofer on the mountain relay.', [
+    function* (m): Gen {
+      const r = m.at('kestrel.relay');
+      yield* m.goto('kestrel.relay', 'Drive up to the radio relay on Mount Kestrel', { r: 30 });
+      yield* m.kill('relay', [[8, 4], [-6, 10], [12, -8], [-10, -6]].map(([dx, dz]) => ({ ...m.s.snap(r.x + dx!, r.z + dz!), kind: 'smg' as const, look: 'soldier', hp: 80 })), 'Clear the soldiers guarding the relay');
+      yield* m.hold(r, 'Plant the spoofer on the mast', 8);
+      m.say('imani', 'Spoofer is live. When we go in, half the base will be chasing a ghost.');
+    },
+  ], [GOLD.time(360), GOLD.flawless(50)]),
   prep('h1_van', 'Heavy van', 'Steal a reinforced van and bring it home.', [
     function* (m): Gen {
       const d = m.at('depot');

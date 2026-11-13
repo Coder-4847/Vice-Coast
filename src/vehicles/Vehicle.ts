@@ -133,6 +133,12 @@ export class Vehicle {
   home: { x: number; z: number; yaw: number } | null = null;
   /** Set for vehicles the player owns (garage / customisation). */
   ownedUid: string | null = null;
+  /** A parked car on the street (spawned and cleared by the car-theft system). */
+  ambient = false;
+  /** Locked: pressing E smashes the window instead of opening the door. */
+  locked = false;
+  /** Seconds of hotwiring left before the engine will start. */
+  hotwireT = 0;
   custom: import('../economy/types').VehicleCustom | null = null;
 
   static wetness = 0;

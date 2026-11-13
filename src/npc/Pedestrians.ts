@@ -371,7 +371,7 @@ export class Pedestrians {
     this.snapToGraph(p);
   }
 
-  private startFlee(p: Ped, x: number, z: number, secs: number): void {
+  startFlee(p: Ped, x: number, z: number, secs: number): void {
     if (p.state === 'down') return;
     p.state = 'flee';
     p.stateT = secs;

@@ -104,6 +104,44 @@ function boat(spec: CraftSpec, paint: number): Parts {
 function heli(spec: CraftSpec, paint: number): Parts {
   const body = new Mesher(), glass = new Mesher(), glow = new Mesher();
   const y0 = -spec.comHeight;
+  if (spec.id === 'hornet') {
+    // a narrow gunship: tandem cockpit, stub wings with rocket pods, a chin gun and a long tail boom
+    body.loft([
+      { z: -3.4, wTop: 0.3, wBot: 0.25, yTop: 1.1, yBot: 0.6 },
+      { z: -2.4, wTop: 1.0, wBot: 0.9, yTop: 1.9, yBot: 0.3 },
+      { z: 0.4, wTop: 1.3, wBot: 1.1, yTop: 2.2, yBot: 0.2 },
+      { z: 2.0, wTop: 0.9, wBot: 0.7, yTop: 2.0, yBot: 0.5 },
+    ], paint, { y: y0 + 0.1 });
+    body.loft([
+      { z: 1.8, wTop: 0.6, wBot: 0.5, yTop: 1.9, yBot: 0.9 },
+      { z: 6.4, wTop: 0.22, wBot: 0.2, yTop: 1.7, yBot: 1.2 },
+    ], paint, { y: y0 + 0.1 });
+    body.box(0.08, 1.6, 1.1, paint, { y: y0 + 2.4, z: 6.3 });
+    body.box(2.2, 0.06, 0.6, paint, { y: y0 + 1.5, z: 5.8 });
+    body.box(1.2, 0.9, 2.6, 0x2a2d32, { y: y0 + 2.5, z: 0.4 });
+    for (const sx of [-1, 1]) {
+      body.box(1.5, 0.12, 0.9, paint, { x: sx * 1.3, y: y0 + 1.2, z: 0.2 }); // stub wing
+      body.cyl(0.22, 0.22, 1.5, 0x2a2d32, { x: sx * 1.75, y: y0 + 0.95, z: 0.1, rx: Math.PI / 2 }); // rocket pod
+      body.cyl(0.18, 0.18, 0.05, 0x111214, { x: sx * 1.75, y: y0 + 0.95, z: -0.66, rx: Math.PI / 2 });
+      body.box(0.2, 0.06, 2.6, 0x2a2d32, { x: sx * 0.55, y: y0 + 0.05, z: 0.0 }); // wheel struts
+      body.cyl(0.24, 0.24, 0.14, 0x15171a, { x: sx * 0.75, y: y0 + 0.24, z: -1.2, rz: Math.PI / 2 }, 10);
+    }
+    body.cyl(0.24, 0.24, 0.14, 0x15171a, { y: y0 + 0.24, z: 5.6, rz: Math.PI / 2 }, 10);
+    body.sphere(0.22, 0x2a2d32, { y: y0 + 0.35, z: -2.6 });
+    body.cyl(0.04, 0.04, 1.0, 0x111214, { y: y0 + 0.3, z: -3.1, rx: Math.PI / 2 }); // chin gun
+    glass.loft([
+      { z: -3.3, wTop: 0.25, wBot: 0.2, yTop: 1.15, yBot: 0.8 },
+      { z: -2.3, wTop: 0.9, wBot: 0.85, yTop: 2.15, yBot: 1.2 },
+      { z: -0.4, wTop: 0.95, wBot: 0.9, yTop: 2.35, yBot: 1.3 },
+    ], 0xffffff, { y: y0 + 0.12 });
+    glow.box(0.12, 0.12, 0.12, 0xff3030, { y: y0 + 3.0, z: 6.6 });
+    const rotor = new Mesher();
+    const R = spec.heli!.rotorRadius;
+    for (let i = 0; i < 4; i++) rotor.box(R * 2, 0.05, 0.36, 0x15171a, { ry: (i * Math.PI) / 4 });
+    rotor.cyl(0.28, 0.28, 0.3, 0x2a2d32);
+    const tail = new Mesher().box(2.0, 0.05, 0.18, 0x15171a).box(0.05, 2.0, 0.18, 0x15171a);
+    return { body, glass, glow, spin: [{ mesh: rotor, axis: 'y', at: [0, y0 + 3.15, 0.4], speed: 'rotor' }, { mesh: tail, axis: 'z', at: [0.25, y0 + 2.4, 6.4], speed: 'tail' }], pilot: figure(0x3c4a3a, y0 + 1.1, -1.6, 0.05) };
+  }
   const news = spec.id === 'newsbird';
   const s = news ? 1.2 : 1;
   const stripe = news ? 0xc23a2a : 0xf0ede6;
@@ -202,6 +240,31 @@ function plane(spec: CraftSpec, paint: number): Parts {
     mkGear([0, -1.9], [1.1, 0.3], 0.24);
     const prop = new Mesher().box(0.11, 1.7, 0.06, 0x15171a).box(0.11, 0.06, 0.06, 0x15171a).sphere(0.16, 0xe8c050);
     return { body, glass, glow, gear, spin: [{ mesh: prop, axis: 'z', at: [0, y0 + 0.95, -3.1], speed: 'prop' }], pilot: figure(0x2a2d32, y0 + 0.8, -0.3, 0.05) };
+  }
+  if (id === 'lancer') {
+    // a single-seat fighter: pointed nose, side intakes, cropped delta wings and twin canted fins
+    body.loft([
+      { z: -8.0, wTop: 0.05, wBot: 0.05, yTop: 1.45, yBot: 1.35 },
+      { z: -6.0, wTop: 0.8, wBot: 0.7, yTop: 2.05, yBot: 0.95 },
+      { z: -3.0, wTop: 1.3, wBot: 1.3, yTop: 2.35, yBot: 0.8 },
+      { z: 2.0, wTop: 2.0, wBot: 1.9, yTop: 2.2, yBot: 0.85 },
+      { z: 6.6, wTop: 1.5, wBot: 1.4, yTop: 2.0, yBot: 1.0 },
+      { z: 7.6, wTop: 1.1, wBot: 1.0, yTop: 1.85, yBot: 1.15 },
+    ], paint, { y: y0 });
+    for (const sx of [-1, 1]) {
+      body.box(4.2, 0.12, 4.6, paint, { x: sx * 2.9, y: y0 + 1.45, z: 2.2, ry: -sx * 0.32 }); // wings
+      body.box(1.3, 0.1, 1.6, paint, { x: sx * 2.0, y: y0 + 1.5, z: 7.0, ry: -sx * 0.25 }); // tailplanes
+      body.box(0.1, 2.0, 1.8, paint, { x: sx * 0.9, y: y0 + 2.9, z: 6.4, rz: sx * 0.32 }); // fins
+      body.box(0.6, 0.75, 2.6, 0x2a2d32, { x: sx * 1.15, y: y0 + 1.25, z: -2.0 }); // intakes
+      body.cyl(0.12, 0.12, 2.6, 0xdfe2e6, { x: sx * 4.6, y: y0 + 1.25, z: 2.6, rx: Math.PI / 2 }); // wingtip missiles
+      body.cyl(0.14, 0.14, 2.4, 0xdfe2e6, { x: sx * 2.6, y: y0 + 1.05, z: 2.0, rx: Math.PI / 2 });
+    }
+    body.cyl(0.65, 0.55, 0.6, 0x15171a, { y: y0 + 1.5, z: 7.9, rx: Math.PI / 2 }); // exhaust
+    glass.sphere(0.55, 0xffffff, { y: y0 + 2.4, z: -4.0, sy: 0.75, sz: 2.6 });
+    glow.box(0.12, 0.12, 0.12, 0xff3030, { x: -4.9, y: y0 + 1.5, z: 3.4 }).box(0.12, 0.12, 0.12, 0x30ff60, { x: 4.9, y: y0 + 1.5, z: 3.4 });
+    glow.cyl(0.42, 0.42, 0.05, 0xff8a3a, { y: y0 + 1.5, z: 8.2, rx: Math.PI / 2 });
+    mkGear([0, -4.6], [1.4, 0.9], 0.34);
+    return { body, glass, glow, gear, pilot: figure(0x3c4a3a, y0 + 1.6, -4.1, 0) };
   }
   // meridian jet
   body.loft([

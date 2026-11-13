@@ -23,6 +23,17 @@ export const STORES: StoreDef[] = [
   { id: 'liq-hills', kind: 'liquor', name: 'Crestview Cellar', near: { x: 1085, z: -880 } },
   { id: 'jew-mall', kind: 'jewel', name: 'Gem Counter', near: { x: 1205, z: 155 } },
   { id: 'jew-costa', kind: 'jewel', name: 'Joyería Dorada', near: { x: 535, z: 3335 } },
+  { id: 'gas-south', kind: 'gas', name: 'Kings Gas', near: { x: 1480, z: 420 } },
+  { id: 'gas-down', kind: 'gas', name: 'Petrolia Gas', near: { x: 870, z: -40 } },
+  { id: 'gas-costa', kind: 'gas', name: 'Merida Fuel', near: { x: 650, z: 3420 } },
+  { id: 'gas-air', kind: 'gas', name: 'Runway Fuel', near: { x: 980, z: 860 } },
+  { id: 'gas-hills', kind: 'gas', name: 'Crestview Fuel', near: { x: 1150, z: -820 } },
+  { id: 'mart-south', kind: 'grocery', name: 'Kwik Stop', near: { x: 1430, z: 380 } },
+  { id: 'mart-pine', kind: 'grocery', name: 'Pinecrest Grocer', near: { x: 680, z: -2330 } },
+  { id: 'mart-harbor', kind: 'grocery', name: 'Harbor 24/7', near: { x: 520, z: 1780 } },
+  { id: 'liq-south', kind: 'liquor', name: 'Corner Spirits', near: { x: 1350, z: 520 } },
+  { id: 'liq-costa', kind: 'liquor', name: 'Bodega Merida', near: { x: 470, z: 3380 } },
+  { id: 'jew-down', kind: 'jewel', name: 'Vanderlyn Diamonds', near: { x: 1050, z: -120 } },
 ];
 
 const STYLE: Record<StoreKind, { color: number; sign: string; take: [number, number]; secs: number; glyph: string }> = {

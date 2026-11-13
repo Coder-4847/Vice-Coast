@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import type { Game } from '../Game';
 import { GROUP } from '../physics/Physics';
 import { terrainHeight } from '../world/Terrain';
+import type { Collider } from '@dimforge/rapier3d-compat';
 
-interface Rocket { pos: THREE.Vector3; vel: THREE.Vector3; mesh: THREE.Group; life: number; smokeT: number }
+interface Rocket { pos: THREE.Vector3; vel: THREE.Vector3; mesh: THREE.Group; life: number; smokeT: number; exclude?: Collider }
 interface Beam { mesh: THREE.Mesh; life: number }
 
 const _d = new THREE.Vector3();
@@ -27,7 +28,7 @@ export class Ordnance {
   constructor(private readonly g: Game) {}
 
   /** Launch a rocket from `from` along `dir` (normalised). */
-  rocket(from: THREE.Vector3, dir: THREE.Vector3): void {
+  rocket(from: THREE.Vector3, dir: THREE.Vector3, speed = 62, exclude?: Collider): void {
     const grp = new THREE.Group();
     const body = new THREE.Mesh(this.bodyGeo, this.bodyMat);
     const tip = new THREE.Mesh(this.tipGeo, this.bodyMat);
@@ -39,7 +40,7 @@ export class Ordnance {
     grp.lookAt(_d.copy(from).add(dir));
     grp.rotateY(Math.PI);
     this.g.world.scene.add(grp);
-    this.rockets.push({ pos: from.clone(), vel: dir.clone().multiplyScalar(62), mesh: grp, life: 6, smokeT: 0 });
+    this.rockets.push({ pos: from.clone(), vel: dir.clone().multiplyScalar(speed), mesh: grp, life: 6, smokeT: 0, exclude });
     this.g.audio.sport('thwack', 1.2, from);
   }
 
@@ -74,7 +75,7 @@ export class Ordnance {
       r.vel.y -= 1.2 * dt;
       const step = r.vel.length() * dt;
       _d.copy(r.vel).normalize();
-      const hit = g.physics?.raycast(r.pos, _d, step + 0.3, undefined, GROUP.WORLD | GROUP.PROP) ?? null;
+      const hit = g.physics?.raycast(r.pos, _d, step + 0.3, r.exclude, GROUP.WORLD | GROUP.PROP) ?? null;
       const npc = g.npcs?.rayHit(r.pos.x, r.pos.y, r.pos.z, _d.x, _d.y, _d.z, hit ? hit.distance : step + 0.3) ?? null;
       let boom: THREE.Vector3 | null = null;
       if (npc) boom = r.pos.clone().addScaledVector(_d, npc.t);

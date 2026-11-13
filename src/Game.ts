@@ -24,6 +24,7 @@ import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPrese
 import { a11y } from './core/a11y';
 import { AimAssist } from './combat/AimAssist';
 import { Snacks } from './player/Snacks';
+import { CarTheft } from './crime/CarTheft';
 import { Ordnance } from './combat/Ordnance';
 import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
@@ -315,6 +316,7 @@ export class Game {
       this.story = new Story(this);
       this.radio = new RadioControl(this);
       this.driveBy = new DriveBy(this);
+      this.theft = new CarTheft(this);
     }
     this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
     this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
@@ -383,6 +385,7 @@ export class Game {
       baseFov: () => this.baseFov, toast: (m) => this.ui.toast(m),
       physics: this.physics!, effects: this.effects!, combat: () => this.combat, npcs: () => this.npcs,
       bail: (vx, vy, vz) => this.onBail(vx, vy, vz),
+      rocket: (f, d, s, ex) => this.ordnance?.rocket(f, d, s, ex),
     });
     const canopy = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
     this.world.rig.register(canopy);
@@ -721,6 +724,7 @@ export class Game {
   driveBy: DriveBy | null = null;
   ordnance: Ordnance | null = null;
   readonly snacks = new Snacks(this);
+  theft: CarTheft | null = null;
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -776,6 +780,7 @@ export class Game {
     this.driveBy?.update(dt);
     this.ordnance?.update(dt);
     this.snacks.update(dt);
+    this.theft?.update(dt);
     this.story?.update(dt);
     this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
@@ -816,7 +821,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : driving?.hint ? `Enter ${driving.hint.spec.name}` : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
+        enter: this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : driving?.hint ? `${driving.hint.locked ? 'Break into' : 'Enter'} ${driving.hint.spec.name}` : this.theft?.prompt ? this.theft.prompt : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }

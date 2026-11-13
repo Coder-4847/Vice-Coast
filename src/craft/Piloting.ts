@@ -35,6 +35,8 @@ export interface PilotingDeps {
   effects: Effects;
   combat: () => Combat | null;
   npcs: () => Npcs | null;
+  /** Launch a rocket (armed aircraft). */
+  rocket?: (from: THREE.Vector3, dir: THREE.Vector3, speed: number, exclude: import('@dimforge/rapier3d-compat').Collider) => void;
   /** The player jumped out of an aircraft in the air. */
   bail: (vx: number, vy: number, vz: number) => void;
 }
@@ -75,6 +77,8 @@ export class Piloting {
   private idle = 0;
   private fov = 75;
   private shake = 0;
+  private rocketT = 0;
+  private rocketSide = 1;
   private readonly chasePos = new THREE.Vector3();
   private readonly chaseQuat = new THREE.Quaternion();
   private chaseFov = 75;
@@ -164,7 +168,7 @@ export class Piloting {
     this.d.audio.mech('cloth');
     this.camYaw = Math.atan2(-_f.set(0, 0, -1).applyQuaternion(c.quaternion).x, -_f.z);
     if (c.spec.ground) { c.aimYaw = this.camYaw; c.aimPitch = 0; c.turretYaw = 0; c.gunPitch = 0; }
-    this.d.hud.setHint(c.spec.kind === 'ground' ? 'W/S drive · A/D turn · mouse aims the turret · LMB fire · RMB machine gun · Space brake · E exit' : c.spec.kind === 'plane' ? 'W/S pitch · A/D roll · Space/C throttle · RMB brake · G gear · E exit' : c.spec.kind === 'heli' ? 'W/S fly · A/D turn · Space climb · C descend · E exit' : 'W/S throttle · A/D steer · E exit');
+    this.d.hud.setHint(c.spec.kind === 'ground' ? 'W/S drive · A/D turn · mouse aims the turret · LMB fire · RMB machine gun · Space brake · E exit' : c.spec.kind === 'plane' ? `W/S pitch · A/D roll · Space/C throttle · RMB brake · G gear${c.spec.weapons ? ' · R missiles' : ''} · E exit` : c.spec.kind === 'heli' ? `W/S fly · A/D turn · Space climb · C descend${c.spec.weapons ? ' · R rockets' : ''} · E exit` : 'W/S throttle · A/D steer · E exit');
   }
 
   private seat(c: Craft, out: THREE.Vector3): THREE.Vector3 {
@@ -229,6 +233,7 @@ export class Piloting {
     }
     if (input.pressed('interact')) this.tryExit(c);
     if (c.spec.kind === 'ground') this.fireControl(c, dt);
+    if (c.spec.weapons) this.fireRockets(c, dt);
     // keep the player's body with the craft so police, NPCs and sounds follow it
     const seat = this.seat(c, _a);
     player.placeAt(seat.x, seat.y - 0.9, seat.z);
@@ -366,6 +371,25 @@ export class Piloting {
     else if (h) { out.copy(h.point); normal = h.normal.clone(); }
     else out.copy(_a).addScaledVector(dir, range * 0.6);
     return { npc, collider: !npc && h?.collider ? h.collider.handle : null, dir, hit: !!h || !!npc, normal, surface: h?.surface ?? 'concrete' };
+  }
+
+  /** Armed aircraft: rockets (or missiles) from alternating sides along the nose while R is held. */
+  private fireRockets(c: Craft, dt: number): void {
+    this.rocketT -= dt;
+    if (this.mode !== 'flying' || this.autopilot || !this.d.input.down('reload') || this.rocketT > 0 || !this.d.rocket) return;
+    this.rocketT = c.spec.weapons!.interval;
+    this.rocketSide = -this.rocketSide;
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(c.quaternion);
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(c.quaternion);
+    const heli = c.spec.kind === 'heli';
+    const from = c.position.clone().addScaledVector(fwd, heli ? 1.0 : c.spec.hull.l / 2 - 1).addScaledVector(right, this.rocketSide * (heli ? 1.75 : 2.6));
+    from.y -= heli ? 0.1 : 0.4;
+    // helicopters aim a touch below the nose, where the gunner's sight looks
+    if (heli) fwd.y -= 0.12;
+    fwd.normalize();
+    this.d.rocket(from, fwd, Math.max(75, Math.abs(c.speed) + 70), c.collider);
+    this.shake = Math.min(1, this.shake + 0.15);
+    this.d.npcs()?.alarm(from.x, from.z);
   }
 
   private fireCannon(c: Craft): void {

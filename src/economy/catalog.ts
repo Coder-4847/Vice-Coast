@@ -241,7 +241,7 @@ export function defaultCustom(color: string, accent: string, plate: string): Veh
 }
 
 /** Dealer stock (ids of VEHICLES) and what the dealership marks them up by. */
-export const SHOWROOM = ['pico', 'marlow', 'barrage', 'ridgeback', 'sparrow', 'veloce'];
+export const SHOWROOM = ['pico', 'stanza', 'marlow', 'courier', 'stallion', 'barrage', 'ridgeback', 'huntley', 'vandal', 'sparrow', 'comet', 'veloce'];
 export const FOOD_HEAL_CAP = 100;
 
 export const START_CASH = 5000;

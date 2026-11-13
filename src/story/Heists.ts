@@ -33,7 +33,13 @@ export class Heists {
 
   unlocked(id: string): boolean { return !!this.s.st.flags[`heist:${id}`]; }
 
-  list(): HeistDef[] { return HEISTS.filter((x) => this.unlocked(x.id)); }
+  list(): HeistDef[] {
+    // saves from before the side jobs existed: open them if their trigger heist is already done
+    const st = this.s.st;
+    if (st.heists['h1']?.done && !st.flags['heist:h7']) st.flags['heist:h7'] = true;
+    if (st.heists['h3']?.done && !st.flags['heist:h8']) st.flags['heist:h8'] = true;
+    return HEISTS.filter((x) => this.unlocked(x.id));
+  }
 
   /** A heist just finished. */
   finishJob(hd: HeistDef, approach: Approach, net: number): void {
@@ -43,8 +49,15 @@ export class Heists {
     rec.approach = approach;
     rec.take = Math.max(rec.take, net);
     if (hd.id === 'h1') this.s.g.commerce?.eco.message('Pruitt', 'The jeweller made the news. Brandt is asking questions. Stop by Redline Customs: she is already there.');
+    // side jobs: Pinecrest opens after the first score, the armory after the convoy
+    const side = hd.id === 'h1' ? 'h7' : hd.id === 'h3' ? 'h8' : null;
+    if (side && !this.unlocked(side)) {
+      this.unlock(side);
+      const sd = HEISTS.find((x) => x.id === side)!;
+      this.s.g.commerce?.eco.message('Pruitt', `A side job, if you want it: ${sd.name}. The file is on the heist board.`);
+    }
     const next = HEISTS[HEISTS.findIndex((x) => x.id === hd.id) + 1];
-    if (next && next.id !== 'h6' && !this.unlocked(next.id)) {
+    if (next && !['h6', 'h7', 'h8'].includes(next.id) && !this.unlocked(next.id)) {
       this.unlock(next.id);
       this.s.g.commerce?.eco.message('Pruitt', next.id === 'h2' ? 'Two for two soon, I hope. Silas Quinn, a hacker I trust, has asked to join you. The bank is next.' : `${next.name}: the file is on the heist board.`);
     }

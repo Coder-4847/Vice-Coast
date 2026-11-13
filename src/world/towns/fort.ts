@@ -4,7 +4,10 @@ import { Kit, MODE, PAL, VEG, pick } from './kit';
 export const FORT_SPAWNS = {
   tanks: [[-70, -20], [-45, -20]] as [number, number][],
   apcs: [[-70, 8], [-45, 8]] as [number, number][],
-  helis: [[120, 90], [160, 90]] as [number, number][],
+  helis: [[120, 90], [160, 90], [200, 90]] as [number, number][],
+  /** The jet strip: runs east–west across the south side of the base. */
+  runway: { x0: -260, x1: 160, z: -75, w: 30 },
+  jets: [[-238, -82], [-238, -68]] as [number, number][],
 };
 
 /**
@@ -62,6 +65,13 @@ export function buildFortHalloran(): Kit {
   // hangar and helipads beyond the parade ground
   k.hangar(cx + 120, cz + 150, 50, 18, Math.PI / 2, 0x8a8f86, 0x5f6358);
   for (const [dx, dz] of FORT_SPAWNS.helis) { k.cyl(cx + dx, cz + dz, 18, 0.3, 0x4a4f3a, { y0: H, solid: false }); k.box(cx + dx, cz + dz, 10, 1.4, 0.1, 0xf0ede6, { y0: H + 0.3, solid: false }); }
+  // the jet strip: asphalt, edge lines, centre dashes and threshold bars
+  const RW = FORT_SPAWNS.runway;
+  const rwx = cx + (RW.x0 + RW.x1) / 2, rwl = RW.x1 - RW.x0;
+  k.box(rwx, cz + RW.z, rwl, RW.w, 0.12, 0x34373a, { y0: H, solid: false });
+  for (const s of [-1, 1]) k.box(rwx, cz + RW.z + s * (RW.w / 2 - 1), rwl, 0.5, 0.14, 0xf0ede6, { y0: H, solid: false });
+  for (let x = RW.x0 + 30; x < RW.x1 - 20; x += 24) k.box(cx + x, cz + RW.z, 12, 0.6, 0.14, 0xf0ede6, { y0: H, solid: false });
+  for (const ex of [RW.x0 + 6, RW.x1 - 6]) for (let i = -5; i <= 5; i++) if (i) k.box(cx + ex, cz + RW.z + i * 2.4, 8, 1.2, 0.14, 0xf0ede6, { y0: H, solid: false });
   // fuel depot, radar dome and ammo bunkers
   for (let i = 0; i < 4; i++) k.cyl(cx + 200 + (i % 2) * 22, cz + 130 + Math.floor(i / 2) * 22, 16, 8, 0xb8b9b0, { y0: H });
   k.cyl(cx + 210, cz + 10, 3, 14, 0xcfd0c8); k.cyl(cx + 210, cz + 10, 12, 0.5, 0x8a8f86, { y0: H + 14, solid: false });

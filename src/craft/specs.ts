@@ -86,6 +86,8 @@ export interface CraftSpec {
   plane?: PlaneParams;
   ground?: GroundParams;
   paints: number[];
+  /** Rocket pods / missiles, fired with R (controller X). */
+  weapons?: { interval: number; name: string };
   /** Min speed / altitude rules for exits are checked by the pilot controller; boats can always be left. */
   maxExitSpeed: number;
 }
@@ -147,6 +149,21 @@ export const CRAFT: Record<string, CraftSpec> = {
       pitchPower: 3.4, rollPower: 3.0, yawPower: 1.4, ctrlSpeed: 52, stallSpeed: 46, gear: { nose: [0, -5.2], main: [1.8, 0.8], strut: 1.1 }, propRadius: 0, level: 0.7,
     },
     paints: [0xf4f2ec, 0x1c2a44], maxExitSpeed: 6,
+  },
+  lancer: {
+    id: 'lancer', name: 'Lancer fighter jet', kind: 'plane', mass: 9800, size: { length: 15.5, width: 10.2, height: 4.6 }, comHeight: 1.6,
+    hull: { w: 1.9, h: 1.8, l: 13.5, y: 1.4 }, camera: { distance: 22, height: 5.5, lookHeight: 1.6 }, seat: { x: 0, y: 1.1, z: -4.2 }, doorSide: -1,
+    plane: {
+      wingArea: 38, cl0: 0.12, clSlope: 4.6, clMax: 1.4, stallAlpha: 0.3, cd0: 0.022, kInduced: 0.07, thrust: 62000, vmaxThrust: 330, jet: true,
+      pitchPower: 6.5, rollPower: 9, yawPower: 2.2, ctrlSpeed: 60, stallSpeed: 55, gear: { nose: [0, -4.6], main: [1.4, 0.9], strut: 1.0 }, propRadius: 0, level: 0.35,
+    },
+    paints: [0x5d6670], maxExitSpeed: 6, weapons: { interval: 0.45, name: 'Missiles' },
+  },
+  hornet: {
+    id: 'hornet', name: 'Hornet attack helicopter', kind: 'heli', mass: 5200, size: { length: 13.5, width: 3.2, height: 3.8 }, comHeight: 0.9,
+    hull: { w: 1.6, h: 1.7, l: 7.0, y: 0.95 }, camera: { distance: 16, height: 5, lookHeight: 1.4 }, seat: { x: 0, y: 0.95, z: -1.6 }, doorSide: -1,
+    heli: { climb: 10, descend: 9, pitchMax: 0.48, rollMax: 0.44, yawRate: 1.6, drag: 0.011, rotorRadius: 6.2 }, paints: [0x3c4a3a], maxExitSpeed: 99,
+    weapons: { interval: 0.22, name: 'Rockets' },
   },
   bulwark: {
     id: 'bulwark', name: 'Bulwark battle tank', kind: 'ground', mass: 26000, size: { length: 8.2, width: 3.5, height: 2.9 }, comHeight: 1.0,

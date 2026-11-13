@@ -88,6 +88,34 @@ export const ACT3_SCENES: Record<string, CutsceneDef> = {
       wide([L('pruitt', 'The ledgers are the last piece. Brandt has already called a lawyer. It is going to be a very short week.'), L('teddy', 'So what do we do now?'), L('mack', 'We decide what we are going to be afterwards.')], { look: [0, 1.4, 2] }),
     ],
   },
+  h7_board: {
+    id: 'h7_board', anchor: 'home.mack', heading: -90,
+    actors: crew(),
+    shots: [
+      wide([L('pruitt', 'Pinecrest Savings & Loan. The payroll for every logging camp on the mountain sits in one small vault on a Friday morning.'), L('teddy', 'A small-town bank. What could go wrong?'), L('imani', 'Small town, one road out, and the state troopers own that road.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h7_done: {
+    id: 'h7_done', anchor: 'home.mack', heading: -90,
+    actors: crew(),
+    shots: [
+      wide([L('mack', 'Every trooper in the county came up that road.'), L('teddy', 'And every one of them went home with a story.'), L('pruitt', 'Pinecrest will remember you. Try to make sure nobody else does.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h8_board: {
+    id: 'h8_board', anchor: 'home.mack', heading: -90,
+    actors: crew(),
+    shots: [
+      wide([L('pruitt', 'Fort Halloran. Under the armory there is a bunker, and in the bunker is the gold the army seized from the Ortega cartel. Two hundred million, waiting on a judge.'), L('mack', 'You want us to rob the army.'), L('pruitt', 'I want you to rob a filing cabinet that happens to be guarded by the army.')], { look: [0, 1.4, 2] }),
+    ],
+  },
+  h8_done: {
+    id: 'h8_done', anchor: 'home.mack', heading: -90,
+    actors: crew(),
+    shots: [
+      wide([L('imani', 'We robbed a military base. Out loud. With our faces.'), L('teddy', 'Masks. We had masks.'), L('pruitt', 'Somewhere a general is writing a very long report. Spend slowly.')], { look: [0, 1.4, 2] }),
+    ],
+  },
   m38_choice: {
     id: 'm38_choice', anchor: 'home.mack', heading: -90, hour: 21,
     actors: crew(),

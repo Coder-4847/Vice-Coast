@@ -39,6 +39,16 @@ function silhouettes(kind: BodyStyle['kind'], L: number): { body: P2[]; cabin: P
         body: [[0, 0.45], [0, 0.98], [0.12, 1.1], [1.35, 1.22], [3.4, 1.2], [3.5, 1.16], [L, 1.15], [L, 0.52], [L - 0.2, 0.45]],
         cabin: [[1.4, 1.2], [1.95, 1.78], [2.1, 1.83], [3.05, 1.83], [3.35, 1.2], [3.4, 1.2]], belt: 1.2, roof: 1.83,
       };
+    case 'van':
+      return {
+        body: [[0, 0.4], [0, 0.9], [0.12, 1.02], [0.9, 1.12], [1.65, 1.98], [L - 0.06, 2.02], [L, 1.92], [L, 0.46], [L - 0.2, 0.4]],
+        cabin: [[0.92, 1.12], [1.5, 1.86], [1.6, 1.9], [2.2, 1.9], [2.25, 1.3], [2.3, 1.12]], belt: 1.12, roof: 1.9,
+      };
+    case 'suv':
+      return {
+        body: [[0, 0.45], [0, 0.86], [0.14, 0.99], [1.1, 1.13], [3.9, 1.16], [L - 0.1, 1.16], [L, 1.02], [L, 0.5], [L - 0.2, 0.45]],
+        cabin: [[1.15, 1.13], [1.85, 1.68], [2.0, 1.72], [L - 0.7, 1.72], [L - 0.3, 1.26], [L - 0.24, 1.16]], belt: 1.13, roof: 1.72,
+      };
     default:
       return { body: [], cabin: [], belt: 0, roof: 0 };
   }
@@ -550,8 +560,30 @@ export class CarModel {
         add(new THREE.Mesh(new THREE.BoxGeometry(W * 1.0, 0.18, 0.2), trim), 0, 0.5, 0.05);
         break;
       }
+      case 'van':
+        // side windows on the cargo box, a roof rack and a rear bumper step
+        for (const x of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.42, 1.0), dark), x * (W / 2 + 0.005), 1.55, 2.6);
+        add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.8, 0.05, L * 0.5), trim), 0, 2.08, L * 0.62);
+        add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.9, 0.12, 0.22), trim), 0, 0.5, L - 0.02);
+        break;
+      case 'suv':
+        for (const x of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, L * 0.55), trim), x * W * 0.36, sil.roof + 0.06, L * 0.5);
+        add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.86, 0.16, 0.2), trim), 0, 0.55, 0.04);
+        add(new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.24, 16).rotateX(Math.PI / 2), dark), 0, 0.95, L + 0.1);
+        break;
       case 'sedan':
-        if (st.livery) {
+        if (st.livery === 'POLICE') {
+          // light bar: red and blue lamps, and a push bar on the nose
+          const red = new THREE.MeshStandardMaterial({ color: 0x400000, emissive: 0xff2020, emissiveIntensity: 1.6 });
+          const blue = new THREE.MeshStandardMaterial({ color: 0x000040, emissive: 0x2050ff, emissiveIntensity: 1.6 });
+          red.fog = blue.fog = false;
+          this.materials.push(red, blue);
+          add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.62, 0.06, 0.24), dark), 0, sil.roof + 0.04, 2.5);
+          add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.28, 0.09, 0.2), red), -W * 0.16, sil.roof + 0.1, 2.5);
+          add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.28, 0.09, 0.2), blue), W * 0.16, sil.roof + 0.1, 2.5);
+          add(new THREE.Mesh(new THREE.BoxGeometry(W * 0.7, 0.32, 0.1), dark), 0, 0.55, -0.06);
+          for (const x of [-1, 1]) add(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.34, 1.6), new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.4 })), x * (W / 2 + 0.01), 0.72, 2.3);
+        } else if (st.livery) {
           const sign = new THREE.MeshStandardMaterial({ map: labelTex('TAXI', '#fff6c0', '#111'), emissive: new THREE.Color(1, 0.9, 0.45), emissiveMap: labelTex('TAXI', '#222', '#ffffff'), emissiveIntensity: 0.3 });
           sign.fog = false;
           this.materials.push(sign);

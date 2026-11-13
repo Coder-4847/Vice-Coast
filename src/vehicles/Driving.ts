@@ -87,6 +87,8 @@ export class Driving {
   private chaseFov = 75;
   private parkBrake = false;
   hornOn = false;
+  /** Pressing E at a locked vehicle (the car-theft system breaks in). */
+  onLocked: ((v: Vehicle) => void) | null = null;
 
   constructor(private readonly d: DrivingDeps) {}
 
@@ -110,6 +112,8 @@ export class Driving {
       // triggers drive on a controller; the mouse buttons are for shooting out of the window
       const pad = input.activeDevice === 'gamepad';
       v.input.throttle = Math.max(pad ? input.analog('fire') : 0, Math.max(0, input.move.y));
+      // a hotwired car will not start until the wires are crossed
+      if (v.hotwireT > 0) { v.hotwireT = Math.max(0, v.hotwireT - dt); v.input.throttle = 0; }
       v.input.brake = Math.max(pad ? input.analog('aim') : 0, Math.max(0, -input.move.y));
       v.input.handbrake = input.down('jump');
       this.hornOn = input.down('horn');
@@ -137,7 +141,10 @@ export class Driving {
 
     if (this.mode === 'foot') {
       this.hint = !player.mantle && player.state === 'ground' && !player.noclip ? vehicles.nearestEnterable(player.pos) : null;
-      if (this.hint && input.pressed('interact')) this.beginEnter(this.hint);
+      if (this.hint && input.pressed('interact')) {
+        if (this.hint.locked && this.onLocked) this.onLocked(this.hint);
+        else this.beginEnter(this.hint);
+      }
       return;
     }
     this.hint = null;
@@ -175,6 +182,9 @@ export class Driving {
     player.teleport(door.x + side.x * 0.8, door.z + side.z * 0.8, 0);
     this.beginEnter(v);
   }
+
+  /** Climb into a vehicle from where the player stands (after a break-in or a carjack). */
+  enter(v: Vehicle): void { if (this.mode === 'foot') this.beginEnter(v); }
 
   private beginEnter(v: Vehicle): void {
     const { player, weapon, viewmodel, vehicles } = this.d;

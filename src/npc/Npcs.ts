@@ -83,7 +83,9 @@ export class Npcs {
     const drv = ctx.driving;
     for (const v of ctx.vehicles) {
       const lv = v.body.linvel();
-      t.addObstacle(v.position.x, v.position.z, v === drv ? 2.3 : 2.1, lv.x, lv.z, 'player');
+      // cars parked at the kerb are thin obstacles, so traffic slips past them in its lane
+      const kerb = v.ambient && !v.occupied && Math.abs(lv.x) + Math.abs(lv.z) < 0.5;
+      t.addObstacle(v.position.x, v.position.z, v === drv ? 2.3 : kerb ? 0.6 : 2.1, lv.x, lv.z, 'player');
     }
     if (!drv) t.addObstacle(ctx.pos.x, ctx.pos.z, 0.55, 0, 0, 'player');
     for (const p of this.peds.peds) if (p.active && (p.onRoad || p.state === 'down') && p.dist < 130) t.addObstacle(p.x, p.z, 0.5, 0, 0, 'ped');

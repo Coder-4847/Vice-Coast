@@ -38,6 +38,10 @@ export function spawnCrafts(c: CraftManager): void {
   const army = 0x3c4a3a;
   c.spawn('sparrow', F.x + 120, F.z + 90, west, { paint: army }); // Fort Halloran pads
   c.spawn('newsbird', F.x + 160, F.z + 90, west, { paint: army });
+  c.spawn('hornet', F.x + FORT_SPAWNS.helis[2]![0], F.z + FORT_SPAWNS.helis[2]![1], west); // the gunship pad
+  c.spawn('hornet', A.x + 120, A.apronZ + 78, east);           // a National Guard bird on the airport apron
+  // ---- jets: the Fort Halloran flight line ------------------------------------------------------------------------
+  for (const [dx, dz] of FORT_SPAWNS.jets) c.spawn('lancer', F.x + dx, F.z + dz, east);
 
   // ---- planes ------------------------------------------------------------------------------------------------
   c.spawn('skylark', A.x - 330, A.z, east);              // Valeria International
