@@ -893,3 +893,7 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 .mm-castcard span { font-size: 0.72rem; color: #c9cfda; line-height: 1.25; }
 .mm-castcard em { font-style: normal; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--c); margin-top: 4px; }
 .mm-castglyph { position: absolute; right: -6px; top: -18px; font-family: var(--display); font-style: normal; font-size: 5.5rem; line-height: 1; color: color-mix(in srgb, var(--c) 60%, transparent); opacity: 0.55; }
+.hud .vitals .vbar.health { order: 0; }
+.hud .vitals .vbar.armour { order: 1; }
+.story-tip, .hud .prompt { max-width: min(320px, 26vw); }
+.story-banner .sb-kicker { font-size: 0.9rem; letter-spacing: 0.3em; color: #e8ebf2; }

@@ -475,7 +475,10 @@ export class Story {
     g.wanted?.clear();
     this.protagonists.applyPassives();
     cm.refreshMarkers();
-    if (!def.noSummary) this.hud.showBanner(def.activity ? (run.stats.extra.win === 0 ? 'Finished' : 'Won') : 'Mission passed', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
+    if (!def.noSummary) {
+      if (def.activity) this.hud.showBanner(run.stats.extra.win === 0 ? 'Finished' : 'Won', def.title.toUpperCase(), pay ? `+${money(pay)}` : '', 'good', 4);
+      else this.hud.showBanner(def.title, 'MISSION PASSED', pay ? `+${money(pay)}` : '', 'good', 4.5);
+    }
     void cm.save(cm.slot ?? 1, true);
     // a summary card
     const goldRows = def.gold.map((d) => ({ d, ok: medals.includes(d.id) }));
