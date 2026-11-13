@@ -102,6 +102,8 @@ export interface Profile {
   home: string | null;
   /** Missions, heists and the three protagonists. */
   story: StoryState;
+  /** Snacks in your pockets, by id (see SNACKS). */
+  snacks: Record<string, number>;
 }
 
 export interface SaveData {

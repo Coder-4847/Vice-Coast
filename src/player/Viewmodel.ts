@@ -5,7 +5,7 @@ import type { Player } from './Player';
 import { Pistol } from './Pistol';
 import { LongGun, type GunModel } from './LongGun';
 import type { Outfit, WeaponKit } from '../economy/types';
-import type { WeaponId } from './Weapons';
+import { WEAPONS, type WeaponId } from './Weapons';
 import { DRAW_TIME, HOLSTER_TIME, INSPECT_TIME, RELOAD, type WeaponSystem } from './WeaponSystem';
 
 /** Layer used for everything the first-person camera draws on top of the world. */
@@ -100,6 +100,9 @@ export class Viewmodel {
   private readonly kickPitch = new Spring(0);
   private readonly kickRoll = new Spring(0);
   private readonly landDip = new Spring(0);
+  /** Melee slash progress (seconds since the swing started; large when idle). */
+  private swingT = 9;
+  private swingSide = 1;
 
   private lastYaw = 0;
   private lastPitch = 0;
@@ -161,7 +164,7 @@ export class Viewmodel {
     this.materials.push(skin, sleeve, cuff, ...this.pistol.materials);
 
     this.gun.add(this.pistol.group);
-    for (const id of ['smg', 'shotgun', 'rifle'] as const) {
+    for (const id of ['smg', 'shotgun', 'rifle', 'knife', 'hatchet', 'rpg', 'laser'] as const) {
       const lg = new LongGun(id);
       lg.group.visible = false;
       this.longs.set(id, lg);
@@ -227,6 +230,7 @@ export class Viewmodel {
 
   /** Weapon fired: kick, flash. */
   kick(strength: number): void {
+    if (WEAPONS[this.currentId].melee) { this.swingT = 0; this.swingSide = -this.swingSide; return; }
     this.kickZ.velocity += 1.25 * strength;
     this.kickPitch.velocity += 5.2 * strength;
     this.kickRoll.velocity += (Math.random() - 0.5) * 3.2;
@@ -322,11 +326,28 @@ export class Viewmodel {
     gp.p.x += this.swayX.value;
     gp.p.y += this.swayY.value + this.landDip.value * 0.02;
     gp.p.z += this.kickZ.value * 0.05;
+    // melee: a fast diagonal slash across the screen, alternating sides, then a slower recovery
+    this.swingT += dt;
+    let sx = 0, sy = 0, sz = 0, sYaw = 0, sRoll = 0, sPitch = 0;
+    const SW = 0.34;
+    if (this.swingT < SW) {
+      const u = this.swingT / SW;
+      const cut = u < 0.4 ? Math.sin((u / 0.4) * Math.PI * 0.5) : 1 - (u - 0.4) / 0.6;
+      const arc = u < 0.4 ? u / 0.4 : 1;
+      const side = this.swingSide;
+      sx = side * (0.1 - 0.26 * arc) * cut;
+      sy = (0.05 - 0.1 * arc) * cut;
+      sz = -0.12 * Math.sin(Math.min(1, u / 0.4) * Math.PI) * cut;
+      sYaw = side * (0.5 - 1.1 * arc) * cut;
+      sRoll = side * 0.9 * cut;
+      sPitch = -0.5 * Math.sin(Math.min(1, u / 0.4) * Math.PI) * cut;
+    }
+    gp.p.x += sx; gp.p.y += sy; gp.p.z += sz;
     const lean = clamp(-p.roll * 6, -0.1, 0.1);
     _e.set(
-      this.kickPitch.value * 0.1 + this.swayPitch.value + Math.sin(this.breathe * 1.5 + 0.7) * 0.0035,
-      this.swayYaw.value,
-      this.kickRoll.value * 0.05 + lean + p.roll * 1.2,
+      this.kickPitch.value * 0.1 + this.swayPitch.value + Math.sin(this.breathe * 1.5 + 0.7) * 0.0035 + sPitch,
+      this.swayYaw.value + sYaw,
+      this.kickRoll.value * 0.05 + lean + p.roll * 1.2 + sRoll,
       'YXZ',
     );
     _q.setFromEuler(_e);

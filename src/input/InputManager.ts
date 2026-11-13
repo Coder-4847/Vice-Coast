@@ -56,6 +56,8 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
   readonly nav = { x: 0, y: 0, confirm: false, back: false, start: false };
 
   private keys = new Set<string>();
+  /** Number keys 2-9 pick a weapon by slot (0-7); read and cleared by the weapon system. */
+  quickSlot: number | null = null;
   /** Keys/buttons pressed since the last frame, and releases deferred until a frame has seen them down. */
   private keysUnseen = new Set<string>();
   private keysDeferred = new Set<string>();
@@ -324,6 +326,7 @@ export class InputManager extends Emitter<InputEvents> implements BindingSource 
     w.addEventListener('keydown', (e) => {
       this.setDevice('kbm');
       this.pressKey(e.code);
+      if (!e.repeat && this.gameplayEnabled && /^Digit[2-9]$/.test(e.code)) this.quickSlot = Number(e.code.slice(5)) - 2;
       if (!e.repeat) this.emit('anyinput', 'kbm');
       if (this.gameplayEnabled && !e.ctrlKey && !e.metaKey && !e.altKey && this.isBoundKey(e.code)) e.preventDefault();
     });

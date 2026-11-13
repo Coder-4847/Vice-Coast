@@ -17,13 +17,18 @@ export const newProfile = (): Profile => ({
     smg: { owned: false, ammo: 0, reserve: 0 },
     shotgun: { owned: false, ammo: 0, reserve: 0 },
     rifle: { owned: false, ammo: 0, reserve: 0 },
+    knife: { owned: true, ammo: 1, reserve: 0 },
+    hatchet: { owned: false, ammo: 1, reserve: 0 },
+    rpg: { owned: false, ammo: 0, reserve: 0 },
+    laser: { owned: false, ammo: 0, reserve: 0 },
   },
-  kits: { vc9: { ...DEFAULT_KIT }, smg: { ...DEFAULT_KIT }, shotgun: { ...DEFAULT_KIT }, rifle: { ...DEFAULT_KIT } },
+  kits: { vc9: { ...DEFAULT_KIT }, smg: { ...DEFAULT_KIT }, shotgun: { ...DEFAULT_KIT }, rifle: { ...DEFAULT_KIT }, knife: { ...DEFAULT_KIT }, hatchet: { ...DEFAULT_KIT }, rpg: { ...DEFAULT_KIT }, laser: { ...DEFAULT_KIT } },
   messages: [{ id: 1, from: 'Valeria Savings', text: 'Welcome to Valeria Savings. Your account is open: use any ATM, or the Bank app on your phone.', day: 1, read: false }],
   stats: { spent: 0, earned: 0, playSeconds: 0, carsBought: 0, kills: 0 },
   seq: 2,
   home: null,
   story: newStory(),
+  snacks: { bar: 2 },
 });
 
 /** Fill any fields a save from an older build is missing. */
@@ -36,6 +41,7 @@ export function migrate(p: Partial<Profile>): Profile {
     weapons: { ...base.weapons, ...(p.weapons ?? {}) },
     kits: { ...base.kits, ...(p.kits ?? {}) },
     stats: { ...base.stats, ...(p.stats ?? {}) } as Stats,
+    snacks: { ...(p.snacks ?? base.snacks) },
     props: p.props ?? [],
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,

@@ -21,6 +21,8 @@ export interface HudState {
   drawn: boolean;
   reloading: boolean;
   lowAmmo: boolean;
+  /** Knife or hatchet: no ammunition to show. */
+  melee?: boolean;
   hitMarker: number;
   stamina: number;
   /** Contextual prompt, e.g. "Vault" / "Climb". */
@@ -245,11 +247,12 @@ export class UI {
         this.ammoShown += Math.sign(this.ammoTarget - this.ammoShown);
       }
     }
-    if (this.shownAmmo !== this.ammoShown) {
+    if (st.melee) { this.shownAmmo = -1; this.ammoNum.textContent = '—'; }
+    else if (this.shownAmmo !== this.ammoShown) {
       this.shownAmmo = this.ammoShown;
       this.ammoNum.textContent = String(this.ammoShown);
     }
-    const res = `/ ${st.reserve}`;
+    const res = st.melee ? 'melee' : `/ ${st.reserve}`;
     if (this.ammoRes.textContent !== res) this.ammoRes.textContent = res;
     this.ammoName.textContent = st.weaponName;
     this.ammoEl.classList.toggle('is-hidden', !st.drawn);
@@ -262,7 +265,7 @@ export class UI {
     this.hitEl.style.opacity = String(Math.min(1, st.hitMarker / 0.12));
 
     // reload prompt
-    const want = st.drawn && !st.reloading && st.lowAmmo && st.reserve > 0;
+    const want = st.drawn && !st.melee && !st.reloading && st.lowAmmo && st.reserve > 0;
     this.reloadPrompt.classList.toggle('on', want);
     if (want) this.reloadPrompt.innerHTML = `<kbd>${this.input.glyph('reload')}</kbd> Reload`;
 

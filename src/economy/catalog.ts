@@ -60,6 +60,15 @@ export const SHOPS: ShopDef[] = [
   { id: 'redline', name: 'Redline Customs', kind: 'tuning', near: { x: 830, z: 140 }, blurb: 'Paint, wheels, power. Drive in.' },
   { id: 'burger', name: 'Brass Monkey Burgers', kind: 'food', near: { x: 120, z: -60 }, blurb: 'Fast food by the beach.' },
   { id: 'taco', name: 'Cinder Taqueria', kind: 'food', near: { x: 3320, z: 600 }, blurb: 'Tacos al pastor, all day.' },
+  { id: 'brass3', name: 'Kings Pawn & Arms', kind: 'weapons', near: { x: 1380, z: 430 }, blurb: 'Southside pawn shop. Do not ask where it came from.' },
+  { id: 'brass4', name: 'Dockside Arms', kind: 'weapons', near: { x: 540, z: 1700 }, blurb: 'Off the boat and onto the shelf.' },
+  { id: 'brass5', name: 'Armeria Merida', kind: 'weapons', near: { x: 640, z: 3240 }, blurb: 'Fine firearms by the canals.' },
+  { id: 'brass6', name: 'Pinecrest Outfitters', kind: 'weapons', near: { x: 650, z: -2250 }, blurb: 'Hunting, fishing, and the other kind of hunting.' },
+  { id: 'chicken', name: 'Cluckin\' Kings', kind: 'food', near: { x: 1460, z: 520 }, blurb: 'Southside fried chicken. Open till four.' },
+  { id: 'coffee', name: 'Grindhouse Coffee', kind: 'food', near: { x: 1010, z: -70 }, blurb: 'Downtown espresso and sandwiches.' },
+  { id: 'diner', name: 'Dock Diner', kind: 'food', near: { x: 430, z: 1740 }, blurb: 'Eggs, coffee and longshoremen.' },
+  { id: 'diner2', name: 'Bayside Diner', kind: 'food', near: { x: 740, z: -2320 }, blurb: 'Pie of the day, every day.' },
+  { id: 'cantina', name: 'Canal Cantina', kind: 'food', near: { x: 560, z: 3300 }, blurb: 'Street food on the water.' },
 ];
 
 export const ATMS: { id: string; near: { x: number; z: number } }[] = [
@@ -132,16 +141,20 @@ export const DEFAULT_OUTFIT: Outfit = { top: '#3d4248', cuff: '#2a2d31', gloves:
 export interface ShopWeapon { id: WeaponId; price: number; ammoPrice: number; ammoPack: number }
 
 export const SHOP_WEAPONS: ShopWeapon[] = [
+  { id: 'knife', price: 0, ammoPrice: 0, ammoPack: 0 },
+  { id: 'hatchet', price: 350, ammoPrice: 0, ammoPack: 0 },
   { id: 'vc9', price: 0, ammoPrice: 60, ammoPack: 24 },
   { id: 'smg', price: 1500, ammoPrice: 90, ammoPack: 60 },
   { id: 'shotgun', price: 1900, ammoPrice: 110, ammoPack: 16 },
   { id: 'rifle', price: 3600, ammoPrice: 150, ammoPack: 60 },
+  { id: 'rpg', price: 14000, ammoPrice: 1200, ammoPack: 2 },
+  { id: 'laser', price: 26000, ammoPrice: 400, ammoPack: 40 },
 ];
 
 export const ATTACHMENTS = {
-  ext: { name: 'Extended magazine', blurb: '+50% magazine capacity', price: { vc9: 300, smg: 450, shotgun: 400, rifle: 600 } as Record<WeaponId, number> },
-  supp: { name: 'Suppressor', blurb: 'Much quieter: nobody hears, nobody calls it in', price: { vc9: 500, smg: 650, shotgun: 0, rifle: 900 } as Record<WeaponId, number> },
-  scope: { name: 'Optic', blurb: 'Tighter aim-down-sights zoom', price: { vc9: 0, smg: 500, shotgun: 0, rifle: 800 } as Record<WeaponId, number> },
+  ext: { name: 'Extended magazine', blurb: '+50% magazine capacity', price: { vc9: 300, smg: 450, shotgun: 400, rifle: 600, knife: 0, hatchet: 0, rpg: 0, laser: 900 } satisfies Record<WeaponId, number> },
+  supp: { name: 'Suppressor', blurb: 'Much quieter: nobody hears, nobody calls it in', price: { vc9: 500, smg: 650, shotgun: 0, rifle: 900, knife: 0, hatchet: 0, rpg: 0, laser: 0 } satisfies Record<WeaponId, number> },
+  scope: { name: 'Optic', blurb: 'Tighter aim-down-sights zoom', price: { vc9: 0, smg: 500, shotgun: 0, rifle: 800, knife: 0, hatchet: 0, rpg: 0, laser: 700 } satisfies Record<WeaponId, number> },
 } as const;
 
 export const WEAPON_TINTS: ClothingItem[] = [
@@ -159,6 +172,15 @@ export const SUPPLIES = [
   { id: 'medkit', name: 'Medkit', price: 120, blurb: 'Restores health' },
   { id: 'armour', name: 'Body armour', price: 450, blurb: 'Full armour vest' },
 ] as const;
+
+/** Snacks you carry and eat anywhere with F (controller: B). */
+export const SNACKS = [
+  { id: 'bar', name: 'Choco bar', price: 4, heal: 15 },
+  { id: 'chips', name: 'Bag of chips', price: 5, heal: 20 },
+  { id: 'sandwich', name: 'Club sandwich', price: 11, heal: 40 },
+  { id: 'energy', name: 'Energy drink', price: 8, heal: 25 },
+] as const;
+export const SNACK_LIMIT = 10;
 
 export const FOOD = [
   { id: 'burger', name: 'Double cheeseburger', price: 12, heal: 25 },

@@ -23,6 +23,8 @@ import { GameRenderer } from './core/GameRenderer';
 import { detectPreset, PRESETS, type GpuInfo, type PresetName, type QualityPreset } from './core/Quality';
 import { a11y } from './core/a11y';
 import { AimAssist } from './combat/AimAssist';
+import { Snacks } from './player/Snacks';
+import { Ordnance } from './combat/Ordnance';
 import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
 import { Settings } from './core/Settings';
@@ -254,6 +256,9 @@ export class Game {
         canvas: this.canvas, camera: this.camera, toast: (m) => this.ui.toast(m),
       });
       this.weapon.onColliderHit = (h, d) => this.combat!.hitCollider(h, d);
+      this.ordnance = new Ordnance(this);
+      this.weapon.onRocket = (f, d) => this.ordnance!.rocket(f, d);
+      this.weapon.onBeam = (f, t) => this.ordnance!.beam(f, t);
       this.combat.crafts = this.crafts;
       this.combat.piloting = this.piloting;
       this.wanted = new Wanted();
@@ -714,6 +719,8 @@ export class Game {
   private readonly aimAssist = new AimAssist();
   private soundCues: SoundCues | null = null;
   driveBy: DriveBy | null = null;
+  ordnance: Ordnance | null = null;
+  readonly snacks = new Snacks(this);
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -767,6 +774,8 @@ export class Game {
     }
     this.commerce?.update(dt);
     this.driveBy?.update(dt);
+    this.ordnance?.update(dt);
+    this.snacks.update(dt);
     this.story?.update(dt);
     this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
@@ -799,7 +808,8 @@ export class Game {
         ads: weapon.ads,
         drawn: weapon.isDrawn && !inCar && driving?.mode !== 'entering' && !piloting?.busy,
         reloading: weapon.state === 'reloading',
-        lowAmmo: weapon.ammo <= 3,
+        lowAmmo: weapon.ammo <= 3 && !weapon.def.melee,
+        melee: !!weapon.def.melee,
         hitMarker: weapon.hitMarker,
         stamina: player.stamina,
         prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,

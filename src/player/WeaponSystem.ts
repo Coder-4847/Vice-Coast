@@ -6,7 +6,7 @@ import { GROUP, type Physics, type RayHit } from '../physics/Physics';
 import type { Effects } from '../world/Effects';
 import type { Props } from '../world/Props';
 import type { Player } from './Player';
-import { WEAPONS, type WeaponDef, type WeaponId } from './Weapons';
+import { WEAPONS, WEAPON_ORDER, type WeaponDef, type WeaponId } from './Weapons';
 
 export type WeaponState = 'holstered' | 'drawing' | 'ready' | 'reloading' | 'holstering' | 'inspecting';
 
@@ -51,6 +51,10 @@ export class WeaponSystem {
     smg: { ammo: 0, reserve: 0, owned: false },
     shotgun: { ammo: 0, reserve: 0, owned: false },
     rifle: { ammo: 0, reserve: 0, owned: false },
+    knife: { ammo: 1, reserve: 0, owned: true },
+    hatchet: { ammo: 1, reserve: 0, owned: false },
+    rpg: { ammo: 0, reserve: 0, owned: false },
+    laser: { ammo: 0, reserve: 0, owned: false },
   };
   private pendingId: WeaponId | null = null;
   /** Called when the held weapon changes (HUD, audio). */
@@ -115,8 +119,8 @@ export class WeaponSystem {
   /** 0 hip … 1 fully aimed. */
   ads = 0;
   /** Attachments bought in the weapon shop. */
-  readonly suppressed: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false };
-  readonly scoped: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false };
+  readonly suppressed: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false, knife: true, hatchet: true, rpg: false, laser: false };
+  readonly scoped: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false, knife: false, hatchet: false, rpg: false, laser: false };
   /** Trigger pull 0–1 (visual). */
   trigger = 0;
   /** Slide position 0 forward … 1 back (visual, includes lock-back on empty). */
@@ -141,6 +145,9 @@ export class WeaponSystem {
   npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null; hurt(target: unknown, dx: number, dz: number, damage: number, head: boolean): void; alarm(x: number, z: number): void } | null = null;
   /** Bullets that hit a vehicle collider (installed by the combat system). */
   onColliderHit: ((handle: number, damage: number) => boolean) | null = null;
+  /** RPG launch and laser beam drawing (installed by the ordnance system). */
+  onRocket: ((from: THREE.Vector3, dir: THREE.Vector3) => void) | null = null;
+  onBeam: ((from: THREE.Vector3, to: THREE.Vector3) => void) | null = null;
   /** Total shots fired this session. */
   shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
@@ -261,6 +268,11 @@ export class WeaponSystem {
       this.audio.mech('inspect');
     }
     if (this.state === 'ready' && inp.pressed('reload') && !busy) this.startReload();
+    if (inp.quickSlot !== null) {
+      const id = WEAPON_ORDER[inp.quickSlot];
+      inp.quickSlot = null;
+      if (id && !busy && this.inv[id].owned) this.select(id);
+    }
 
     // --- aiming -------------------------------------------------------------------------------
     const wantAim = inp.active('aim') && this.state === 'ready' && !busy && !sprintBlocked;
@@ -358,8 +370,10 @@ export class WeaponSystem {
   }
 
   private shoot(): void {
-    const p = this.player;
     const def = this.def;
+    if (def.melee) { this.swing(); return; }
+    if (def.rocket) { this.launch(); return; }
+    const p = this.player;
     this.ammo--;
     this.shotsFired++;
     this.firedThisFrame = true;
@@ -388,10 +402,12 @@ export class WeaponSystem {
       // pedestrians (and aircraft) are not physics bodies: test them separately and keep whichever is nearer
       const npcHit = this.npc?.rayHit(_origin.x, _origin.y, _origin.z, _dir.x, _dir.y, _dir.z, hit ? hit.distance : def.range * 2.5) ?? null;
       const end = npcHit ? new THREE.Vector3().copy(_origin).addScaledVector(_dir, npcHit.t) : hit ? hit.point : new THREE.Vector3().copy(_origin).addScaledVector(_dir, 120);
-      if (k < 3) this.effects.tracer(this.muzzleWorld, end);
+      if (def.beam) this.onBeam?.(this.muzzleWorld, end);
+      else if (k < 3) this.effects.tracer(this.muzzleWorld, end);
       if (npcHit) {
         const n = new THREE.Vector3().copy(_dir).negate();
-        this.effects.impact(end, n, 'flesh', false);
+        // paper targets on the range splinter instead of bleeding
+        this.effects.impact(end, n, (npcHit.target as { rangeTarget?: boolean } | null)?.rangeTarget ? 'wood' : 'flesh', false);
         // damage falls off past the gun's effective range
         const fall = npcHit.t > def.range ? Math.max(0.35, 1 - (npcHit.t - def.range) / (def.range * 1.5)) : 1;
         this.npc?.hurt(npcHit.target, _dir.x, _dir.z, def.damage * fall, npcHit.head);
@@ -410,10 +426,11 @@ export class WeaponSystem {
 
     // --- brass ---------------------------------------------------------------------------------
     _right.set(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
-    this.effects.casing(this.ejectWorld, _right, _up.set(0, 1, 0), _dir.set(-Math.sin(p.yaw), 0, -Math.cos(p.yaw)).negate());
+    if (!def.beam) this.effects.casing(this.ejectWorld, _right, _up.set(0, 1, 0), _dir.set(-Math.sin(p.yaw), 0, -Math.cos(p.yaw)).negate());
 
     // --- sound, haptics, recoil ----------------------------------------------------------------
-    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, def.sound, quiet ? 0.22 : 1);
+    if (def.beam) { this.audio.sport('snap', 0.9, this.ejectWorld); this.audio.gunshot(0.2, this.ejectWorld, 'smg', 0.25); }
+    else this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, def.sound, quiet ? 0.22 : 1);
     this.input.rumble(Math.min(1, 0.55 * def.kick), 0.35, 70);
     // Recoil pattern: a reliable climb with a gentle sideways drift that flips now and then.
     const n = Math.min(this.shotsInBurst, 7);
@@ -424,5 +441,64 @@ export class WeaponSystem {
     p.addRecoil(pitch, yaw);
     this.bloom = Math.min(3.2, this.bloom + 0.55 * Math.min(1.6, def.recoil));
     this.onFire?.((1 + n * 0.06) * def.kick);
+  }
+
+  /** Knife or hatchet: a short reach in front of you. Quiet, needs no ammunition. */
+  private swing(): void {
+    const p = this.player;
+    const def = this.def;
+    this.firedThisFrame = true;
+    this.cooldown = def.interval;
+    this.sinceShot = 0;
+    this.slide = 1;
+    p.lookDirection(_aim);
+    _origin.copy(p.eyePosition);
+    this.audio.sport('swish', 0.9, _origin);
+    const hit = this.physics.raycast(_origin, _aim, def.range, undefined, GROUP.WORLD | GROUP.PROP);
+    const npcHit = this.npc?.rayHit(_origin.x, _origin.y, _origin.z, _aim.x, _aim.y, _aim.z, hit ? hit.distance : def.range + 0.4) ?? null;
+    if (npcHit) {
+      const end = new THREE.Vector3().copy(_origin).addScaledVector(_aim, npcHit.t);
+      const n = new THREE.Vector3().copy(_aim).negate();
+      this.effects.impact(end, n, 'flesh', false);
+      this.npc?.hurt(npcHit.target, _aim.x, _aim.z, def.damage, npcHit.head);
+      this.audio.sport('hit', 0.8, _origin);
+      this.hitMarker = 0.18;
+      this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
+      this.input.rumble(0.45, 0.3, 60);
+    } else if (hit) {
+      if (hit.collider && this.onColliderHit) this.onColliderHit(hit.collider.handle, def.damage * 0.25);
+      const target = !!hit.body && !!this.props()?.hit(hit.body, hit.point, _aim, 10);
+      this.effects.impact(hit.point, hit.normal, hit.surface, !hit.body);
+      this.audio.sport('thwack', 0.6, _origin);
+      this.hitThisFrame = this.lastHit = { hit, target };
+      this.input.rumble(0.3, 0.2, 40);
+    }
+    p.addRecoil(-0.004, (Math.random() - 0.5) * 0.006);
+    this.onFire?.(def.kick);
+  }
+
+  /** RPG: one rocket, then a reload. */
+  private launch(): void {
+    const p = this.player;
+    const def = this.def;
+    this.ammo--;
+    this.shotsFired++;
+    this.firedThisFrame = true;
+    this.cooldown = def.interval;
+    this.sinceShot = 0;
+    p.lookDirection(_aim);
+    // aim where the crosshair points: from the eye, then fly from the muzzle toward that point
+    const hit = this.physics.raycast(p.eyePosition, _aim, 400, undefined, GROUP.WORLD | GROUP.PROP);
+    const target = new THREE.Vector3().copy(p.eyePosition).addScaledVector(_aim, hit ? hit.distance : 400);
+    const from = new THREE.Vector3().copy(this.muzzleWorld).addScaledVector(_aim, 0.4);
+    _dir.copy(target).sub(from).normalize();
+    this.onRocket?.(from, _dir.clone());
+    this.npc?.alarm(from.x, from.z);
+    this.effects.smoke(new THREE.Vector3().copy(this.muzzleWorld).addScaledVector(_aim, -1.2), false);
+    this.audio.gunshot(this.physics.openness(p.eyePosition), this.ejectWorld, 'shotgun', 0.7);
+    this.input.rumble(1, 0.6, 160);
+    p.addRecoil(0.03, (Math.random() - 0.5) * 0.01);
+    this.onFire?.(def.kick);
+    if (this.ammo === 0 && this.reserve > 0) this.startReload();
   }
 }

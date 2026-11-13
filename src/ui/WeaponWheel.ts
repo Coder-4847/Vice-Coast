@@ -43,7 +43,7 @@ export class WeaponWheel {
     for (const [id, el] of this.slots) {
       const s = inv[id];
       el.classList.toggle('locked', !s.owned);
-      (el.lastElementChild as HTMLElement).textContent = s.owned ? `${s.ammo} / ${s.reserve}` : 'not owned';
+      (el.lastElementChild as HTMLElement).textContent = s.owned ? (WEAPONS[id].melee ? 'melee' : `${s.ammo} / ${s.reserve}`) : 'not owned';
     }
   }
 

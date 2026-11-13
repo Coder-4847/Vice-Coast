@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { h } from '../ui/dom';
-import { btn, row, section, stepper, swatches, type Page } from '../ui/Modal';
+import { btn, row, section, stepper, swatches, type Page, type PageHost } from '../ui/Modal';
 import { VEHICLES, type VehicleSpec } from '../vehicles/specs';
 import type { Vehicle } from '../vehicles/Vehicle';
 import { WEAPONS } from '../player/Weapons';
 import { avatar } from './Avatar';
 import {
   ARMOUR_PRICE, ATTACHMENTS, FINISHES, FOOD, GLOVES, HAIR_COLORS, HAIR_STYLES, NEONS, PAINTS, PERF_COST, PERF_NAMES, PROPERTY_BY_ID, RIMS,
-  RUNFLAT_PRICE, SHOP_WEAPONS, SHOWROOM, SKINS, SPOILERS, SUPPLIES, TINTS, TOPS, WEAPON_TINTS, type ClothingItem, type PropertyDef,
+  RUNFLAT_PRICE, SHOP_WEAPONS, SNACKS, SNACK_LIMIT, SHOWROOM, SKINS, SPOILERS, SUPPLIES, TINTS, TOPS, WEAPON_TINTS, type ClothingItem, type PropertyDef,
 } from './catalog';
 import type { Commerce } from './Commerce';
 import { money } from './Economy';
@@ -254,12 +254,12 @@ export function weaponShop(c: Commerce, name: string): Page {
           onClick: () => {
             if (have) return;
             if (!e.spend(sw.price, `Bought ${def.name}`)) return;
-            st.owned = true; st.ammo = def.mag; st.reserve = sw.ammoPack * 2;
+            st.owned = true; st.ammo = def.mag; st.reserve = Math.min(def.reserveMax, sw.ammoPack * 2);
             w.inv[sw.id].owned = true; w.inv[sw.id].ammo = st.ammo; w.inv[sw.id].reserve = st.reserve;
             host.refresh();
           },
         }));
-        if (!have) continue;
+        if (!have || def.melee) continue;
         const cur = w.def.id === sw.id;
         const reserve = cur ? w.reserve : w.inv[sw.id].reserve;
         b.append(row({
@@ -300,9 +300,23 @@ export function weaponShop(c: Commerce, name: string): Page {
           },
         }));
       }
+      snackRows(c, host);
     },
     onClose: () => { void c.save(c.slot ?? 1, true); },
   };
+}
+
+/** Snacks to carry: eaten later with F (controller: B). */
+function snackRows(c: Commerce, host: PageHost): void {
+  const bag = c.eco.p.snacks;
+  const carried = Object.values(bag).reduce((a, b) => a + b, 0);
+  host.body.append(section(`Snacks to go · ${carried} / ${SNACK_LIMIT} carried`));
+  for (const sn of SNACKS) {
+    host.body.append(row({
+      label: sn.name, sub: `Restores ${sn.heal} health. Eat it any time with F (controller: B)`, badge: bag[sn.id] ? `×${bag[sn.id]}` : '', right: money(sn.price), disabled: carried >= SNACK_LIMIT || !c.eco.canAfford(sn.price),
+      onClick: () => { if (carried >= SNACK_LIMIT || !c.eco.spend(sn.price, sn.name)) return; bag[sn.id] = (bag[sn.id] ?? 0) + 1; c.game.audio.mech('cloth'); host.refresh(); },
+    }));
+  }
 }
 
 export function foodShop(c: Commerce, name: string): Page {
@@ -310,12 +324,14 @@ export function foodShop(c: Commerce, name: string): Page {
     title: name,
     kicker: 'Eat in',
     render(host) {
+      host.body.append(section('Eat here'));
       for (const f of FOOD) {
         host.body.append(row({
           label: f.name, sub: `Restores ${f.heal} health`, right: money(f.price), disabled: !c.eco.canAfford(f.price),
           onClick: () => { if (!c.eco.spend(f.price, f.name)) return; c.game.combat?.vitals.heal(f.heal); c.game.audio.mech('cloth'); host.toast(`Mmm. ${f.name}.`); host.refresh(); },
         }));
       }
+      snackRows(c, host);
     },
   };
 }

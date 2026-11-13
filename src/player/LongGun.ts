@@ -104,6 +104,63 @@ export class LongGun implements GunModel {
       rightPos = new THREE.Vector3(0.027, -0.075, 0.075); leftPos = new THREE.Vector3(-0.062, -0.04, -0.27);
       g.add(box(0.034, 0.08, 0.04, 0, -0.05, 0.075, wood));
       gripRake = 0.18;
+    } else if (this.id === 'knife') {
+      // switchblade: a short grip and a long, thin blade pointing down-range
+      const steel = mat(0xb9bec4, 0.32, 0.55);
+      this.materials.push(steel);
+      g.add(box(0.026, 0.034, 0.13, 0, -0.02, 0.06, poly));
+      g.add(box(0.03, 0.01, 0.02, 0, -0.02, -0.01, metal));
+      const blade = box(0.006, 0.03, 0.17, 0, -0.016, -0.1, steel);
+      g.add(blade, box(0.006, 0.016, 0.03, 0, -0.008, -0.195, steel));
+      this.muzzle.set(0, -0.016, -0.21);
+      this.sightPoint.set(0, 0.06, -0.05);
+      magZ = 0.0; this.magLength = 0.0001;
+      rightPos = new THREE.Vector3(0.026, -0.07, 0.07); leftPos = new THREE.Vector3(-0.03, -0.075, 0.1);
+      gripRake = 0.1;
+    } else if (this.id === 'hatchet') {
+      // hatchet: a hickory handle and a steel head with a bright edge
+      const steel = mat(0x3e4247, 0.55, 0.25), edge = mat(0x9aa0a6, 0.35, 0.4);
+      this.materials.push(steel, edge);
+      g.add(box(0.028, 0.034, 0.42, 0, -0.02, -0.04, wood));
+      g.add(box(0.022, 0.05, 0.05, 0, 0.0, -0.24, steel));
+      g.add(box(0.016, 0.06, 0.06, 0, 0.05, -0.24, steel), box(0.01, 0.05, 0.075, 0, 0.09, -0.24, steel));
+      g.add(box(0.012, 0.014, 0.08, 0, 0.12, -0.24, edge));
+      this.muzzle.set(0, 0.11, -0.24);
+      this.sightPoint.set(0, 0.08, -0.05);
+      magZ = 0.0; this.magLength = 0.0001;
+      rightPos = new THREE.Vector3(0.026, -0.07, 0.12); leftPos = new THREE.Vector3(-0.03, -0.075, 0.03);
+      gripRake = 0.1;
+    } else if (this.id === 'rpg') {
+      // RPG: a long launch tube on the shoulder, grip and trigger under it, a finned warhead poking out the front
+      const olive = mat(0x4f5a3a, 0.75, 0.15), tube = mat(0x2e3328, 0.6, 0.3);
+      this.materials.push(olive, tube);
+      g.add(cyl(0.032, 0.8, 0, 0.035, -0.2, tube));
+      g.add(cyl(0.037, 0.18, 0, 0.035, -0.1, olive));
+      g.add(cyl(0.04, 0.06, 0, 0.035, 0.18, dark));
+      const head = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.16, 14), olive);
+      head.rotation.x = -Math.PI / 2; head.position.set(0, 0.035, -0.68); head.frustumCulled = false;
+      g.add(head, cyl(0.02, 0.1, 0, 0.035, -0.6, olive), box(0.014, 0.04, 0.04, 0.04, 0.08, -0.16, dark));
+      this.muzzle.set(0, 0.035, -0.78);
+      this.sightPoint.set(0.04, 0.11, -0.16);
+      magZ = 0.0; this.magLength = 0.0001;
+      rightPos = new THREE.Vector3(0.027, -0.04, 0.04); leftPos = new THREE.Vector3(-0.06, 0.01, -0.3);
+      g.add(box(0.032, 0.09, 0.04, 0, -0.01, 0.04, poly));
+    } else if (this.id === 'laser') {
+      // laser rifle: a white shell, a dark core and glowing emitter strips
+      const shell = mat(0xe8ecef, 0.35, 0.2), glow = new THREE.MeshStandardMaterial({ color: 0xff2a5a, emissive: 0xff2a5a, emissiveIntensity: 2.2, roughness: 0.4 });
+      glow.fog = false;
+      this.materials.push(shell, glow);
+      g.add(box(0.05, 0.08, 0.34, 0, 0.012, -0.06, shell));
+      g.add(box(0.04, 0.05, 0.22, 0, 0.012, -0.32, dark));
+      g.add(box(0.052, 0.012, 0.3, 0, 0.034, -0.08, glow), box(0.006, 0.02, 0.2, 0.026, 0.012, -0.3, glow), box(0.006, 0.02, 0.2, -0.026, 0.012, -0.3, glow));
+      g.add(cyl(0.016, 0.1, 0, 0.012, -0.48, shell), cyl(0.01, 0.02, 0, 0.012, -0.535, glow));
+      g.add(box(0.04, 0.07, 0.18, 0, 0.0, 0.2, shell));
+      g.add(box(0.034, 0.03, 0.1, 0, 0.074, -0.05, dark));
+      this.muzzle.set(0, 0.012, -0.55);
+      this.sightPoint.set(0, 0.092, -0.05);
+      magZ = -0.02; this.magLength = 0.1;
+      rightPos = new THREE.Vector3(0.027, -0.075, 0.07); leftPos = new THREE.Vector3(-0.06, -0.022, -0.26);
+      g.add(box(0.032, 0.09, 0.04, 0, -0.05, 0.075, shell));
     } else {
       g.add(box(0.046, 0.075, 0.26, 0, 0.01, 0.0, metal));
       g.add(box(0.05, 0.052, 0.24, 0, 0.012, -0.24, poly));
@@ -125,7 +182,7 @@ export class LongGun implements GunModel {
     const magFrame = new THREE.Group();
     magFrame.position.set(0, magTop, magZ);
     magFrame.rotation.x = rake;
-    if (this.id !== 'shotgun') {
+    if (this.id !== 'shotgun' && this.id !== 'knife' && this.id !== 'hatchet' && this.id !== 'rpg') {
       const body = box(0.026, this.magLength, 0.04, 0, -this.magLength / 2, 0, dark);
       const base = box(0.03, 0.01, 0.046, 0, -this.magLength - 0.002, 0, poly);
       this.magazine.add(body, base);

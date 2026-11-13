@@ -11,6 +11,7 @@ import { resultPage } from './arena';
 import { Fishing, FISH_SPOTS } from './Fishing';
 import { Hunting, HUNT } from './Hunting';
 import { Diving, DIVE_SHOP, DIVE_SITES } from './Diving';
+import { RangeChallenge, RANGE, RANGE_MEDALS } from './Range';
 
 interface Venue { id: string; name: string; x: number; z: number; glyph: string; color: string; open: (p: Pastimes) => Page }
 
@@ -19,6 +20,7 @@ const VENUES: Venue[] = [
   { id: 'tennis', name: 'Costa Merida Tennis Club', x: 700, z: 3150, glyph: '◐', color: '#d7f25a', open: (p) => p.tennisMenu() },
   { id: 'bowling', name: 'Starlite Lanes', x: 1210, z: 210, glyph: '●', color: '#8fb8ff', open: (p) => p.bowlingMenu() },
   { id: 'hoops', name: 'Seaside courts', x: 250, z: 90, glyph: '◍', color: '#ff9a4a', open: (p) => p.hoopsMenu() },
+  { id: 'range', name: 'Beach shooting range', x: RANGE.x - 3, z: RANGE.z + 6, glyph: '⌖', color: '#ff7a59', open: (p) => p.rangeMenu() },
   { id: 'arm', name: 'Muscle Beach', x: 180, z: -60, glyph: '✊', color: '#ff7a7a', open: (p) => p.armMenu() },
 ];
 
@@ -55,6 +57,7 @@ export class Pastimes {
   readonly fishing: Fishing;
   readonly hunting: Hunting;
   readonly diving: Diving;
+  readonly range: RangeChallenge;
   private readonly spots = new Map<string, { x: number; z: number }>();
   private readonly signs: { s: THREE.Sprite; x: number; z: number }[] = [];
   private signT = 0;
@@ -63,18 +66,20 @@ export class Pastimes {
     this.fishing = new Fishing(s);
     this.hunting = new Hunting(s);
     this.diving = new Diving(s);
+    this.range = new RangeChallenge(s);
     const g = s.g;
     const npcs = g.npcs;
     if (npcs) {
       // bullets can hit animals; gunfire on the hunting grounds is not a crime and spooks the game
       const prevRay = npcs.extraRay, prevHurt = npcs.extraHurt, prevShot = npcs.onGunshot;
       npcs.extraRay = (ox, oy, oz, dx, dy, dz, max) => {
-        const a = this.hunting.active ? this.hunting.rayHit(ox, oy, oz, dx, dy, dz, max) : null;
+        const a = this.hunting.active ? this.hunting.rayHit(ox, oy, oz, dx, dy, dz, max) : this.range.active ? this.range.rayHit(ox, oy, oz, dx, dy, dz, max) : null;
         const p = prevRay?.(ox, oy, oz, dx, dy, dz, a ? a.t : max) ?? null;
         if (p && (!a || p.t < a.t)) return p;
         return a;
       };
       npcs.extraHurt = (t, dmg) => {
+        if (this.range.hurt(t)) return true;
         if (t && typeof t === 'object' && 'animal' in t) { this.hunting.hurt(t as Parameters<Hunting['hurt']>[0], dmg); return true; }
         return prevHurt?.(t, dmg) ?? false;
       };
@@ -97,7 +102,7 @@ export class Pastimes {
   }
 
   /** True while an activity owns the controls (no other prompts). */
-  get busy(): boolean { return this.fishing.active; }
+  get busy(): boolean { return this.fishing.active || this.range.active; }
 
   private spot(id: string, x: number, z: number): { x: number; z: number } {
     let p = this.spots.get(id);
@@ -133,6 +138,7 @@ export class Pastimes {
     this.fishing.update(dt);
     this.hunting.update(dt);
     this.diving.update(dt);
+    this.range.update(dt);
     this.signT -= dt;
     if (this.signT <= 0) {
       this.signT = 0.5;
@@ -182,6 +188,13 @@ export class Pastimes {
       title, kicker,
       render: (host) => { host.body.append(h('p', 'm-info', blurb), ...rows(host), btn('Leave', '', () => host.close())); },
     };
+  }
+
+  rangeMenu(): Page {
+    const best = this.rec('sport.range').best;
+    return this.menu('Beach shooting range', 'Shooting range', 'Forty-five seconds of pop-up targets. Red targets score one, bullseyes two; shooting a blue civilian costs three. Each medal pays the first time you earn it.', (host) => [
+      row({ label: 'Pop-up targets', sub: RANGE_MEDALS.map((m) => `${m.name} ${m.at} (${money(m.pay)})`).join(' · '), right: best ? `Best ${best}` : 'Free', onClick: () => { host.close(); this.range.start(); } }),
+    ]);
   }
 
   golfMenu(): Page {

@@ -50,7 +50,8 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) |
 | Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` |
 | Draw / holster · inspect | `1` · `G` | D-pad ↓ · — |
-| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`5` (pistol, SMG, shotgun, rifle) | `LB` + right stick |
+| Eat a snack from your pockets | `F` | `B` (○) |
+| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`9` (knife, hatchet, pistol, SMG, shotgun, rifle, RPG, laser) | `LB` + right stick |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same |
 | Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` |
 | Crew commands (hold / follow / attack / breach) | `B` | D-pad → |
@@ -62,7 +63,8 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 ### Combat, police and the wanted level
 
 Walk over the glowing crates beside the spawn point for the SMG, shotgun and rifle, body armour and a medkit (they come back after
-75 s). Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
+75 s). Melee weapons (the switchblade you always carry and a hatchet from gun stores) are quiet and need no ammo; the RPG fires a
+rocket that explodes on contact (stand well back); the laser rifle fires a hitscan beam with no casings and no drop. Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
 running people down and blowing things up add *heat*; it only counts in full if somebody saw it. Each star brings a bigger response:
 
 | ★ | Response |
@@ -76,7 +78,7 @@ running people down and blowing things up add *heat*; it only counts in full if 
 
 Break line of sight and the stars flash while the search timer runs down (water halves it). Officers who reach you while you stand
 still arrest you (up to 3 stars) — **Busted** costs most of your spare ammo and drops you at police HQ; dying is **Wasted** and sends
-you to St. Aurelia Medical Center. The beach shooting range is a safe place to practise.
+you to St. Aurelia Medical Center. The beach shooting range is a safe place to practise; walk up to its sign and press `E` for the **pop-up target challenge** (45 s; red targets score, bullseyes double, blue civilians cost three; bronze, silver and gold each pay once).
 
 ### The world
 
@@ -129,8 +131,8 @@ You start with $5,000 in cash and $2,500 in the bank. Coloured beams mark things
 | Valeria Motors (showroom) | Browse the six cars in an orbit view, pick a paint, **buy** (delivered to a garage with space, or parked outside) or **test drive** for two minutes |
 | Redline Customs | Drive a car in and press `E`: register it to you (25% of its price) or sell it to the back room (30%). Owned cars get paint (18 colours, 5 finishes incl. pearlescent and chrome), trim, rims, glass tint, spoilers, underglow, plates, engine / brakes / suspension / turbo, run-flat tyres and bulletproof plating, previewed live |
 | Threadline, Costa Rags, The Clip Joint, Pinecrest Barbers | Jackets, gloves, sunglasses, hair style and colour (the figure preview updates as you choose; you see sleeves and gloves in first person and the whole figure in a car) |
-| Brass & Barrel, Cinder Surplus | Weapons, ammo, extended magazines, suppressors, optics, finishes, medkits and armour |
-| Burger and taco joints | Food heals |
+| Gun stores: Brass & Barrel (downtown), Kings Pawn & Arms (Southside), Dockside Arms (Dusk Harbor), Armeria Merida (Costa), Pinecrest Outfitters, Cinder Surplus | Switchblade, hatchet, pistol, SMG, shotgun, rifle, **RPG-7V** ($14,000) and the **Helios LX laser rifle** ($26,000); ammo, extended magazines, suppressors, optics, finishes, medkits, body armour and snacks to go |
+| Food places: burgers by the beach, Grindhouse Coffee downtown, Cluckin' Kings in Southside, Dock Diner, Bayside Diner in Pinecrest, Canal Cantina in Costa, Cinder Taqueria | Eat in to heal, or buy snacks to carry (up to ten) and eat them anywhere with `F` |
 | **Phone** (`T` · D-pad up) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), **online car dealer**, realty listings, insurance claims for written-off cars, and a **camera** that saves a PNG |
 
 Money comes from wallets dropped by people you take down, cars sold at the back room, and property sales; steadier income arrives
@@ -265,6 +267,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 18. **Desktop only** ✅ — touch controls and gyro aim removed; keyboard + mouse and controller remain, and phones get a notice
 19. **Rework, phase 1** ✅ — new bank-heist opening with a car chase and a helicopter escape, drive-by shooting, a next-mission guide on the HUD, corrected How to Play keys
 20. **Rework, phases 2 + 3** ✅ — GTA-style HUD (radar bottom-left with health, armour and ability bars; money, weapon and wanted stars top-right; help box top-left; objectives above the subtitles), full-width MISSION PASSED and WASTED / BUSTED screens, main menu with the three leads, building facades with brick, panels, frames, weathering and gravel roofs, patched and cracked asphalt, warmer skin on the first-person hands
-21. **Rework, phases 4–6** ✅ (this build) — Southside, a gang neighbourhood of bungalows, chain-link fences, walk-ups, corner stores and courts held by the Southside Kings (neutral until you shoot, aim at them or hurt one; then a gang war with reinforcements); hydrants, bins, benches, news boxes and bus shelters along every street; more traffic and pedestrians on every preset; witnesses phone the police (stop them in time and nobody comes); at one star unarmed suspects are arrested rather than shot; officers sweep their own sectors of the search zone
+21. **Rework, phases 4–6** ✅ — Southside, a gang neighbourhood of bungalows, chain-link fences, walk-ups, corner stores and courts held by the Southside Kings (neutral until you shoot, aim at them or hurt one; then a gang war with reinforcements); hydrants, bins, benches, news boxes and bus shelters along every street; more traffic and pedestrians on every preset; witnesses phone the police (stop them in time and nobody comes); at one star unarmed suspects are arrested rather than shot; officers sweep their own sectors of the search zone
+22. **Rework, phase 7** ✅ (this build) — switchblade and hatchet (melee with slash animations), RPG-7V with smoke-trailed rockets, Helios LX laser rifle; snacks you carry and eat with `F`; four more gun stores and five more food places across the map; a timed pop-up target challenge with medals at the beach shooting range; number keys 2–9 select weapons
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

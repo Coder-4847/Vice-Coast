@@ -18,7 +18,7 @@ import { SaveStore } from './SaveStore';
 import type { OwnedVehicle, SaveData, SlotInfo } from './types';
 import * as screens from './screens';
 
-const BASE_MAG: Record<WeaponId, number> = { vc9: WEAPONS.vc9.mag, smg: WEAPONS.smg.mag, shotgun: WEAPONS.shotgun.mag, rifle: WEAPONS.rifle.mag };
+const BASE_MAG = Object.fromEntries(Object.values(WEAPONS).map((w) => [w.id, w.mag])) as Record<WeaponId, number>;
 const AUTOSAVE_EVERY = 240;
 const _v = new THREE.Vector3();
 

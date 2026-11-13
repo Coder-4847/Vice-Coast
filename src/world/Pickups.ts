@@ -13,7 +13,7 @@ interface Item {
   respawn: number;
 }
 
-const COLORS: Record<PickupKind, number> = { vc9: 0xffffff, smg: 0xffb02e, shotgun: 0xff5a3c, rifle: 0x4dff9a, armour: 0x6aa8ff, medkit: 0xff4f6a };
+const COLORS: Record<PickupKind, number> = { vc9: 0xffffff, smg: 0xffb02e, shotgun: 0xff5a3c, rifle: 0x4dff9a, armour: 0x6aa8ff, medkit: 0xff4f6a, knife: 0xdddddd, hatchet: 0xc08a50, rpg: 0x6a7a4a, laser: 0xff3a6a };
 
 /** Weapon crates, body armour and medkits laid out on the beach next to the spawn point; they come back after a while. */
 export class Pickups {

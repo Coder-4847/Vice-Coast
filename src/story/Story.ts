@@ -676,6 +676,8 @@ export class Story {
   /** Between missions, the HUD names the next story mission and how far away it is, so there is always something to do. */
   private guideNext(): void {
     const g = this.g;
+    // an activity on the range (or the fishing line) owns the objective box while it runs
+    if (this.pastimes.busy) { this.guideShown = false; return; }
     if (!this.st.introSeen || !g.player) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }
     const next = MISSIONS.find((d) => !d.activity && this.available(d));
     if (!next) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }
