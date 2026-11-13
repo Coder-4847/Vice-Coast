@@ -32,12 +32,13 @@ const CONTROLS: [string, string, string][] = [
   ['Sprint · crouch · jump', 'Shift · C · Space', 'L3 · R3 · A'],
   ['Aim · fire · reload', 'Right · left mouse · R', 'LT · RT · X'],
   ['Weapon wheel', 'Tab (hold)', 'LB (hold)'],
-  ['Enter / exit vehicle', 'F', 'Y'],
-  ['Interact', 'E', 'X'],
-  ['Phone', 'Up arrow', 'D-pad ↑'],
+  ['Enter / exit vehicle · interact', 'E', 'Y'],
+  ['Drive · brake · handbrake', 'W · S · Space', 'RT · LT · A'],
+  ['Shoot from a vehicle', 'Hold right mouse, left mouse fires', 'Hold LB, RB fires'],
+  ['Phone', 'T', 'D-pad ↑'],
   ['Map', 'M', 'View'],
   ['Switch character · ability', 'Z · X', 'D-pad ← · RB'],
-  ['Radio (in a vehicle)', 'Q', 'LB'],
+  ['Radio (in a vehicle)', 'Q', 'LB (tap)'],
   ['Pause', 'Esc', 'Start'],
 ];
 
