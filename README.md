@@ -5,7 +5,7 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **1.0 — complete.** Start from the main menu, play the snowbound prologue *Pinecrest, 2011*, then three switchable
+> Status: **1.0 — complete.** Start from the main menu, play the bank-job prologue *Valeria Savings, 2011*, then three switchable
 > protagonists, 38 story missions with six heists and a three-ending finale, 15 races, jobs, casino and bar games, a 107-piece
 > collectible hunt, six synthesized radio stations and a photo mode, across a 6 × 8 km state. See the [roadmap](#roadmap).
 
@@ -13,8 +13,10 @@ Everything — name, world, characters, brands, music, art — is original.
 
 * **Main menu**: *Continue* loads your most recent save; *New Game* asks for one of three slots; *Load Game*, *Settings*,
   *How to Play* and *Credits* are there too. Keyboard, mouse and controller are supported; phones and tablets are not (there are no on-screen touch controls).
-* **Prologue**: a new game opens nine years earlier in the snow at the Pinecrest sawmill. It teaches walking, shooting and
-  driving and ends outside Mack's flat on the Seaside boardwalk. You can abandon it from the failure screen and lose nothing.
+* **Prologue**: a new game opens nine years earlier with a daylight raid on Valeria Savings downtown: hold up the lobby, cover
+  the vault drill, shoot past the first police, outrun the cruisers while shooting out of the window (hold right mouse / LB),
+  and escape by helicopter. It teaches walking, shooting, driving, drive-bys and flying, and ends outside Mack's flat on the
+  Seaside boardwalk. Between missions the HUD always names the next story mission and how far away it is. You can abandon it from the failure screen and lose nothing.
 * **Pause menu** (`Esc` / Start): Resume, Map, Progress, Save Game, **Photo Mode**, Settings, Quit to Main Menu.
 * **Photo mode**: the world freezes; fly the camera with `WASD`, mouse, `Space` / `C`, `Shift`; set field of view, roll,
   time of day and a filter (Natural, Vivid, Vintage, Cool, Noir); `H` hides the panel; *Take photo* saves a PNG.
@@ -260,6 +262,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 16. **Polish** ✅ — main menu, pause menu and photo mode, the prologue, spawn in the city, see-through gun and viewmodel shadow fixes, long-gun support-hand pose, queued saves, a UI restyle
 
 17. **Pastimes, accessibility and the living city** ✅ — golf, tennis, bowling, hoops and arm wrestling; fishing, hunting and scuba diving; a mixer with music/effects/dialogue/menu buses, ducking, mono and night mode; HUD size, high contrast, readable font, camera-shake and flash controls, aim assist, hold-to-mash and on-screen sound cues; denser traffic and crowds; sun shafts, sharpening and a new grade; police vision cones, search zones and Spray Shacks; a stock market (see docs/ACTIVITIES.md). Still not built: triathlon, base-jumping courses, a treasure hunt, in-game TV and a social feed.
-18. **Desktop only** ✅ (this build) — touch controls and gyro aim removed; keyboard + mouse and controller remain, and phones get a notice
+18. **Desktop only** ✅ — touch controls and gyro aim removed; keyboard + mouse and controller remain, and phones get a notice
+19. **Rework, phase 1** ✅ (this build) — new bank-heist opening with a car chase and a helicopter escape, drive-by shooting, a next-mission guide on the HUD, corrected How to Play keys
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.
