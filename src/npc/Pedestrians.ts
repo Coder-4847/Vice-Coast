@@ -300,7 +300,7 @@ export class Pedestrians {
       _p.set(x, G + 1, z);
       if (d < 130 && this.frustum.containsPoint(_p)) continue;
       const dist = this.districtAt(x, z);
-      const weight = dist === 'downtown' ? 1 : dist === 'boardwalk' || dist === 'beach' ? 0.9 : dist === 'midtown' ? 0.7 : dist === 'residential' ? 0.5 : 0.3;
+      const weight = dist === 'downtown' ? 1 : dist === 'boardwalk' || dist === 'beach' ? 0.9 : dist === 'midtown' ? 0.7 : dist === 'residential' ? 0.5 : dist === 'hood' ? 0.65 : 0.3;
       if (this.rnd() > weight) continue;
       p.active = true;
       p.id = this.nextId++;

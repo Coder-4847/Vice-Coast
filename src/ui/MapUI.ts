@@ -13,7 +13,7 @@ const STEP = 8;
 const ACCENT = '#ff7a59';
 
 const DISTRICT_FILL: Record<string, string> = {
-  downtown: '#434c5c', midtown: '#3b4350', boardwalk: '#46485a', residential: '#38453f', industrial: '#4a443c', hills: '#38453f',
+  downtown: '#434c5c', midtown: '#3b4350', boardwalk: '#46485a', residential: '#38453f', industrial: '#4a443c', hills: '#38453f', hood: '#4a4038',
 };
 const LANDMARK_GLYPH: Record<Landmark['kind'], string> = {
   stadium: 'S', hospital: '+', police: 'P', mall: 'M', pier: '≈', funfair: '★', hills: '▲', beach: '~',

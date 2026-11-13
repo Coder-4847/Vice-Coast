@@ -29,6 +29,7 @@ import { Completion } from '../collect/Completion';
 import { Venues } from '../minigames/Venues';
 import { Pastimes } from '../pastimes/Pastimes';
 import { SprayShops } from '../combat/SprayShops';
+import { GangTurf } from '../crime/GangTurf';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
 
 import { ACT_BY_ID } from '../activities/defs';
@@ -57,6 +58,7 @@ export class Story {
   readonly venues: Venues;
   readonly pastimes: Pastimes;
   readonly spray: SprayShops;
+  readonly gangs: GangTurf;
   readonly crewWheel: CrewWheel;
   mission: MissionRun | null = null;
   /** The text for the interact prompt when a mission start or heist board is in reach. */
@@ -89,6 +91,7 @@ export class Story {
     this.venues = new Venues(this);
     this.pastimes = new Pastimes(this);
     this.spray = new SprayShops(this);
+    this.gangs = new GangTurf(this);
     this.crewWheel = new CrewWheel(root, g.ui.hudRoot);
     this.crewWheel.onPick = (c) => this.allies.command(c);
     this.crewWheel.onClose = () => { g.loop.timeScale = this.protagonists.timeScaleNow(); };
@@ -661,6 +664,7 @@ export class Story {
     this.collect.update(dt);
     this.pastimes.update(dt);
     this.spray.update(dt);
+    this.gangs.update(dt);
     this.completion.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();

@@ -33,9 +33,11 @@ export interface HostileOpts {
   yaw?: number;
   /** Damage multiplier (mission difficulty). */
   power?: number;
+  /** Street gangs: unaware people who never wake just from seeing you, only from shots, hits or an alert. */
+  neutral?: boolean;
 }
 
-interface Meta { kind: GunKind; tag: string; hold: boolean; unaware: boolean; alert: number; patrol: [number, number][]; pi: number; power: number; fireT: number; burst: number; home: { x: number; z: number }; seen: number }
+interface Meta { kind: GunKind; tag: string; hold: boolean; unaware: boolean; neutral: boolean; alert: number; patrol: [number, number][]; pi: number; power: number; fireT: number; burst: number; home: { x: number; z: number }; seen: number }
 
 const _o = new THREE.Vector3();
 const _d = new THREE.Vector3();
@@ -87,7 +89,7 @@ export class Hostiles {
     else p.look = { ...lookFor({ cast: 'thug' }), shirt: CAST.thug!.look.shirt + (Math.floor(Math.random() * 3) - 1) * 0x101010, h: 0.96 + Math.random() * 0.14 };
     p.look.sleeve = p.look.shirt;
     const m: Meta = {
-      kind, tag: o.tag ?? 'x', hold: !!o.hold, unaware: !!o.unaware, alert: o.unaware ? 0 : 1, patrol: o.patrol ?? [], pi: 0, power: o.power ?? 0.7,
+      kind, tag: o.tag ?? 'x', hold: !!o.hold, unaware: !!o.unaware, neutral: !!o.neutral, alert: o.unaware ? 0 : 1, patrol: o.patrol ?? [], pi: 0, power: o.power ?? 0.7,
       fireT: 0.8 + Math.random() * 0.9, burst: 0, home: { x: o.x, z: o.z }, seen: 0,
     };
     this.meta.set(p, m);
@@ -185,7 +187,7 @@ export class Hostiles {
       p.stateT = 0.2 + Math.random() * 0.15;
       p.sees = d < spec.sight && this.los(p.x, p.y + 1.55, p.z, tx, ty, tz);
       // an unaware guard spots you inside a short cone, closer if you are crouched
-      if (m.unaware && p.sees) {
+      if (m.unaware && p.sees && !m.neutral) {
         const facing = Math.atan2(dx, dz) - p.yaw;
         const dang = Math.abs(Math.atan2(Math.sin(facing), Math.cos(facing)));
         const reach = (pl.crouchBlend > 0.5 ? 9 : 17) * this.stealthScale;

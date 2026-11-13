@@ -46,14 +46,14 @@ export class Npcs {
 
   constructor(private readonly world: World, physics: Physics, private readonly audio: AudioEngine, preset: QualityPreset) {
     this.preset = preset;
-    this.traffic = new Traffic(world.city.plan, world.signals, 150);
+    this.traffic = new Traffic(world.city.plan, world.signals, 180);
     this.traffic.attachPhysics(physics);
     this.trafficView = new TrafficRenderer(96, radialTexture());
     for (const m of this.trafficView.materials) world.rig.register(m);
     world.rig.register(this.trafficView.lightMat, World.glow);
     world.scene.add(this.trafficView.group);
     world.pipeline.hideForAO.push(this.trafficView.poolMesh);
-    this.peds = new Pedestrians(world.city.plan, world.signals, 330);
+    this.peds = new Pedestrians(world.city.plan, world.signals, 360);
     this.pedView = new PedRenderer(210);
     for (const m of this.pedView.materials) world.rig.register(m);
     world.scene.add(this.pedView.group);

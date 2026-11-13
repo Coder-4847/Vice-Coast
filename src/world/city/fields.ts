@@ -83,7 +83,7 @@ export function buildCityFields(plan: CityPlan): CityFields {
         break;
       }
       default:
-        if (b.district === 'residential') paint(0, b.x0, b.z0, b.x1, b.z1);
+        if (b.district === 'residential' || b.district === 'hood') paint(0, b.x0, b.z0, b.x1, b.z1);
         else if (b.district === 'industrial') paint(2, b.x0, b.z0, b.x1, b.z1);
         else if (b.district === 'downtown') paint(1, b.x0, b.z0, b.x1, b.z1);
     }

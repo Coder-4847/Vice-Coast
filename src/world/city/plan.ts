@@ -12,7 +12,7 @@ export const STREET_HW = 7.5;
 export const ARTERIAL_HW = 12.5;
 export const PLAN_RADIUS = 725;
 
-export type District = 'boardwalk' | 'downtown' | 'midtown' | 'residential' | 'industrial' | 'hills';
+export type District = 'boardwalk' | 'downtown' | 'midtown' | 'residential' | 'industrial' | 'hills' | 'hood';
 export type BlockKind = 'normal' | 'park' | 'plaza' | 'stadium' | 'hospital' | 'police' | 'mall';
 
 /** Facade/appearance mode, sent to the building shader per instance. */
@@ -114,6 +114,7 @@ const PAL = {
   container: [0xb3472f, 0x2f6b8a, 0xc9a227, 0x4a7a4a, 0x8a3a3a, 0x3b4d6b, 0xd0d0cc],
   neon: [0xff2e88, 0x27e6ff, 0xffb02e, 0x8a5cff, 0x39ff88, 0xff5a3c],
   dark: [0x40454c, 0x363b42, 0x4b4f55],
+  faded: [0xc9b79a, 0xb7a58c, 0xa9b2a0, 0xc4a48e, 0x9fa8b2, 0xd2c3a4, 0xb59a86, 0x8f9a86],
 };
 
 // -------------------------------------------------------------------------------------------- the plan
@@ -216,6 +217,8 @@ export class CityPlan {
     if (x < 345) return 'boardwalk';
     if (d < 290) return 'downtown';
     if ((x + n > 1330 && z < 40) || (z + n < -430 && x > 880)) return 'industrial';
+    // Southside: the old neighbourhood south-east of the core, where the gangs hold the corners
+    if (z + n * 0.5 > 300 && x + n * 0.5 > 1180 && x - n * 0.5 < 1620) return 'hood';
     if (z + n > 210 || x + n > 1470) return 'residential';
     return 'midtown';
   }
@@ -313,6 +316,7 @@ export class CityPlan {
       { name: 'Midtown', x: 790, z: -150 },
       { name: 'Orchard Row', x: 1000, z: 470 },
       { name: 'Rustwater', x: 1520, z: -290 },
+      { name: 'Southside', x: 1400, z: 480 },
       { name: 'Crestview Hills', x: HILL.x, z: HILL.z },
     );
   }
@@ -358,7 +362,7 @@ export class CityPlan {
     for (let j = 0; j < this.Z.length - 1; j++) if (z > this.Z[j]!.pos + this.Z[j]!.hw && z < this.Z[j + 1]!.pos - this.Z[j + 1]!.hw) { bj = j; break; }
     const b = this.blockAt.get(`${bi},${bj}`);
     if (!b) return 'dirt';
-    if (b.kind === 'park' || b.district === 'residential') return 'dirt';
+    if (b.kind === 'park' || b.district === 'residential' || b.district === 'hood') return 'dirt';
     if (b.kind === 'mall' || b.kind === 'police' || b.district === 'industrial') return 'asphalt';
     return 'concrete';
   }
@@ -380,6 +384,7 @@ export class CityPlan {
       case 'downtown': return 'Valeria Core';
       case 'midtown': return 'Midtown';
       case 'residential': return 'Orchard Row';
+      case 'hood': return 'Southside';
       case 'industrial': return 'Rustwater';
       default: return 'Crestview Hills';
     }
@@ -417,6 +422,7 @@ export class CityPlan {
       case 'midtown': genMidtown(b, r, out); break;
       case 'boardwalk': genSeaside(b, r, out); break;
       case 'residential': genResidential(b, r, out); break;
+      case 'hood': genHood(b, r, out); break;
       case 'industrial': genIndustrial(b, r, out); break;
       default: break;
     }
@@ -443,6 +449,15 @@ export class CityPlan {
         if (inX(lx)) out.lamps.push({ x: lx, z, yaw: side < 0 ? 0 : Math.PI, y: G });
       }
       const palm = rd.idx === 0;
+      for (let k = Math.ceil(z0 / 13); k * 13 < z1; k++) {
+        const z = k * 13 + 4;
+        if (!inZ(z) || !this.inCity(rd.pos, z) || crossing(this.Z, z, 7)) continue;
+        for (const side of [-1, 1]) {
+          const fx = rd.pos + side * (rd.hw + 1.7);
+          const hh = hash2(k, rd.idx, side + 77);
+          if (inX(fx) && hh % 3 !== 0) furniture(out, fx, z, side < 0 ? Math.PI / 2 : -Math.PI / 2, hh, rd.arterial);
+        }
+      }
       const kt0 = Math.ceil(z0 / treeStep);
       for (let k = kt0; k * treeStep < z1; k++) {
         const z = k * treeStep + treeStep * 0.5;
@@ -467,6 +482,15 @@ export class CityPlan {
         const side = k % 2 === 0 ? -1 : 1;
         const lz = rd.pos + side * (rd.hw + 1.0);
         if (inZ(lz)) out.lamps.push({ x, z: lz, yaw: side < 0 ? -Math.PI / 2 : Math.PI / 2, y: G });
+      }
+      for (let k = Math.ceil(x0 / 13); k * 13 < x1; k++) {
+        const x = k * 13 + 9;
+        if (!inX(x) || !this.inCity(x, rd.pos) || crossing(this.X, x, 7)) continue;
+        for (const side of [-1, 1]) {
+          const fz = rd.pos + side * (rd.hw + 1.7);
+          const hh = hash2(k, rd.idx, side + 91);
+          if (inZ(fz) && hh % 3 !== 0) furniture(out, x, fz, side < 0 ? 0 : Math.PI, hh, rd.arterial);
+        }
       }
       const kt0 = Math.ceil(x0 / treeStep);
       for (let k = kt0; k * treeStep < x1; k++) {
@@ -690,6 +714,72 @@ function genResidential(b: Block, r: () => number, out: ChunkData): void {
     }
     if (r() < 0.8) treeAt(out, lerp(l[0] + 2, l[2] - 2, r()), l[1] + 2 + r() * 1.5, r, 0);
     if (r() < 0.5) treeAt(out, lerp(l[0] + 2, l[2] - 2, r()), l[3] - 2 - r() * 1.5, r, r() < 0.3 ? 2 : 0);
+  }
+}
+
+/** Southside: one-storey houses behind chain-link fences, a few walk-ups, a corner store and a basketball court. */
+function genHood(b: Block, r: () => number, out: ChunkData): void {
+  const nx = Math.max(1, Math.round(b.w / 18)), nz = b.d > 50 ? 2 : 1;
+  let court = r() < 0.18;
+  for (const l of lots(b.x0 + 0.6, b.z0 + 0.6, b.x1 - 0.6, b.z1 - 0.6, nx, nz, 1.2)) {
+    const lw = l[2] - l[0], ld = l[3] - l[1];
+    if (court && lw > 16 && ld > 12) {
+      // fenced court with two hoops
+      court = false;
+      box(out.boxes, l[0] + 1, l[1] + 1, l[2] - 1, l[3] - 1, G, 0.06, 0x3a5a7a, MODE.WALL, false);
+      const cxm = (l[0] + l[2]) / 2;
+      for (const zz of [l[1] + 2, l[3] - 2]) { cyl(out.cyls, cxm, G, zz, 0.08, 3.4, 0x8a8f96, MODE.METAL); boxC(out.boxes, cxm, G + 3.0, zz, 1.6, 1.0, 0.08, 0xf2f2f2, MODE.WALL); }
+      for (const [ax, az, bx, bz] of [[l[0], l[1], l[2], l[1]], [l[0], l[3], l[2], l[3]], [l[0], l[1], l[0], l[3]], [l[2], l[1], l[2], l[3]]] as const) box(out.boxes, Math.min(ax, bx) - 0.04, Math.min(az, bz) - 0.04, Math.max(ax, bx) + 0.04, Math.max(az, bz) + 0.04, G, 3.2, 0x9aa0a6, MODE.METAL, true);
+      continue;
+    }
+    const kind = r();
+    if (kind < 0.12 && lw > 10) {
+      // corner liquor store with a lit sign
+      const x0 = l[0] + 1, x1 = l[2] - 1, z0 = l[1] + 1, z1 = l[3] - 3;
+      box(out.boxes, x0, z0, x1, z1, G, 4.6, pick(r, PAL.faded), MODE.PUNCHED);
+      neonSign(out, r, x0, z1 - 0.2, x1, z1, G + 3.2, Math.min(6, x1 - x0 - 1));
+      continue;
+    }
+    const walkup = kind > 0.78;
+    const yard = walkup ? 2 : 3.2;
+    const x0 = l[0] + yard * (0.6 + r() * 0.4), x1 = l[2] - yard * (0.6 + r() * 0.4);
+    const z0 = l[1] + yard, z1 = l[3] - yard * 1.4;
+    if (x1 - x0 < 5 || z1 - z0 < 5) continue;
+    const h = walkup ? 7.2 + Math.floor(r() * 2) * 3.3 : 3.6;
+    const col = pick(r, PAL.faded);
+    box(out.boxes, x0, z0, x1, z1, G, h, col, MODE.PUNCHED);
+    box(out.boxes, x0 - 0.4, z0 - 0.4, x1 + 0.4, z1 + 0.4, G + h, 0.35, pick(r, PAL.dark), MODE.WALL, false);
+    if (walkup) roofClutter(out, r, x0, z0, x1, z1, G + h + 0.35, 1);
+    // chain-link fence along the front and a gate gap; some yards have a beat-up car or an old couch
+    const fz = l[1] + 0.4;
+    const gx = lerp(l[0] + 2, l[2] - 3, r());
+    if (gx - l[0] > 0.6) box(out.boxes, l[0] + 0.2, fz - 0.03, gx, fz + 0.03, G, 1.3, 0x9aa0a6, MODE.METAL, true);
+    if (l[2] - (gx + 1.4) > 0.6) box(out.boxes, gx + 1.4, fz - 0.03, l[2] - 0.2, fz + 0.03, G, 1.3, 0x9aa0a6, MODE.METAL, true);
+    if (r() < 0.3) boxC(out.boxes, lerp(l[0] + 2, l[2] - 2, r()), G, l[1] + 1.8, 2.0, 0.8, 0.8, pick(r, [0x6a4a3a, 0x3a4a5a, 0x5a5a3a]), MODE.WALL, true);
+    if (r() < 0.6) treeAt(out, lerp(l[0] + 1.5, l[2] - 1.5, r()), l[3] - 1.2, r, r() < 0.4 ? 2 : 0);
+    // a utility pole on the lot line
+    if (r() < 0.45) cyl(out.cyls, l[0] + 0.5, G, l[1] + 0.6, 0.12, 8.5, 0x5a4636, MODE.WALL);
+  }
+}
+
+/** Sidewalk furniture: hydrants, bins, benches, news boxes and the odd bus shelter. `ry` turns it to face the road. */
+function furniture(out: ChunkData, x: number, z: number, ry: number, h: number, arterial: boolean): void {
+  const k = h % 11;
+  if (k === 0 || k === 6) {
+    cyl(out.cyls, x, G, z, 0.16, 0.62, 0xb8322a, MODE.WALL);
+    cyl(out.cyls, x, G + 0.62, z, 0.11, 0.14, 0xd8d8d0, MODE.METAL, false);
+  } else if (k === 1 || k === 7) {
+    cyl(out.cyls, x, G, z, 0.3, 0.95, 0x2f4a3a, MODE.WALL);
+  } else if (k === 2) {
+    boxC(out.boxes, x, G + 0.42, z, 1.9, 0.08, 0.5, 0x6b4a2e, MODE.WALL, true, ry);
+    boxC(out.boxes, x, G, z, 1.7, 0.42, 0.12, 0x34383e, MODE.METAL, false, ry);
+  } else if (k === 3) {
+    boxC(out.boxes, x, G, z, 0.5, 1.05, 0.45, [0x2a5aa8, 0xc4302b, 0xe6b422][h % 3]!, MODE.WALL, true, ry);
+  } else if (k === 4 && arterial) {
+    // bus shelter: roof, back panel and an ad box
+    boxC(out.boxes, x, G + 2.4, z, 3.6, 0.12, 1.6, 0x3a3f46, MODE.METAL, false, ry);
+    boxC(out.boxes, x, G, z, 3.4, 2.3, 0.08, 0x9ab4c8, MODE.GLASS, true, ry);
+    boxC(out.boxes, x, G + 0.2, z, 1.2, 1.9, 0.22, 0xf0e6d2, MODE.GLOW, false, ry);
   }
 }
 
