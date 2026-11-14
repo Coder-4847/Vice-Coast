@@ -255,10 +255,10 @@ export class Empire {
   /** Operations work through their supplies as game hours pass. */
   private produce(): void {
     const tod = this.g.world.tod;
-    const abs = this.eco.p.day * 24 + tod.hour;
-    if (this.lastAbs < 0 || abs < this.lastAbs) { this.lastAbs = abs; return; }
-    const dh = Math.min(72, abs - this.lastAbs);
-    this.lastAbs = abs;
+    // hours since the last tick, wrapping at midnight (sleeping skips the clock forward, never back)
+    if (this.lastAbs < 0) { this.lastAbs = tod.hour; return; }
+    const dh = (tod.hour - this.lastAbs + 24) % 24;
+    this.lastAbs = tod.hour;
     if (dh <= 0) return;
     for (const d of this.owned()) {
       if (d.legal) continue;
