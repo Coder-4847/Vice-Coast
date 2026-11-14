@@ -928,3 +928,10 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 .db-cross[data-kind="down"].hit .db-ring { border-color: #ffd23a; }
 .db-cross[data-kind="kill"].hit .db-ring { border-color: #ff3b30; }
 .screen-blood { position: absolute; inset: 0; pointer-events: none; opacity: 0; background-size: 100% 100%; background-repeat: no-repeat; mix-blend-mode: multiply; }
+/* ---- sniper scope ------------------------------------------------------------------------------------------------ */
+.scope { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 50%, transparent 0, transparent min(36vh, 36vw), rgba(0, 0, 0, 0.6) calc(min(36vh, 36vw) + 1px), #000 calc(min(36vh, 36vw) + 10px)); }
+.scope i { position: absolute; background: rgba(0, 0, 0, 0.85); }
+.scope-h { left: calc(50% - min(36vh, 36vw)); right: calc(50% - min(36vh, 36vw)); top: 50%; height: 1px; }
+.scope-v { top: calc(50% - min(36vh, 36vw)); bottom: calc(50% - min(36vh, 36vw)); left: 50%; width: 1px; }
+.scope-dot { left: calc(50% - 2px); top: calc(50% - 2px); width: 4px; height: 4px; border-radius: 50%; background: #ff3b30 !important; }
+.cross.scoped { opacity: 0 !important; }

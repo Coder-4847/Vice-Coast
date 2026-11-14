@@ -115,6 +115,9 @@ export class Vehicle {
   airborne = false;
   /** Impact strength of the last collision (0 if none this frame). */
   impact = 0;
+  /** Every crash bumps this; the model reads it to dent the body at `impactDir` (world, the way the car was going). */
+  impactSeq = 0;
+  readonly impactDir = new THREE.Vector3();
   /** 0–1 engine load for audio. */
   load = 0;
   /** Set on a gear change this frame. */
@@ -278,7 +281,11 @@ export class Vehicle {
     // collision detection: a sudden velocity change that isn't from the tyres or gravity
     const dv = Math.hypot(_vel.x - this.lastVel.x, _vel.z - this.lastVel.z);
     this.impact = dv > 4.5 && !this.airborne ? dv : 0;
-    if (this.impact > 0) this.health = Math.max(0, this.health - this.impact * this.impact * 0.9);
+    if (this.impact > 0) {
+      this.health = Math.max(0, this.health - this.impact * this.impact * 0.9);
+      this.impactDir.set(this.lastVel.x - _vel.x, 0, this.lastVel.z - _vel.z).normalize();
+      this.impactSeq++;
+    }
     this.lastVel.copy(_vel);
 
     // --- driver intent ----------------------------------------------------------------------------------

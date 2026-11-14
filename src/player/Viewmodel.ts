@@ -5,7 +5,7 @@ import type { Player } from './Player';
 import { Pistol } from './Pistol';
 import { LongGun, type GunModel } from './LongGun';
 import type { Outfit, WeaponKit } from '../economy/types';
-import { WEAPONS, type WeaponId } from './Weapons';
+import { WEAPONS, WEAPON_ORDER, type WeaponId } from './Weapons';
 import { DRAW_TIME, HOLSTER_TIME, INSPECT_TIME, RELOAD, type WeaponSystem } from './WeaponSystem';
 
 /** Layer used for everything the first-person camera draws on top of the world. */
@@ -49,8 +49,8 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
   return out;
 };
 
-export type ActKind = 'smash' | 'jack' | 'eat';
-const ACT_DUR: Record<ActKind, number> = { smash: 0.75, jack: 0.9, eat: 1.25 };
+export type ActKind = 'smash' | 'jack' | 'eat' | 'throw';
+const ACT_DUR: Record<ActKind, number> = { smash: 0.75, jack: 0.9, eat: 1.25, throw: 0.6 };
 
 const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
 const SPRINT = pose(0.12, -0.2, -0.38, -0.66, 0.44, 0.18);
@@ -89,6 +89,7 @@ export class Viewmodel {
   private readonly right = new HandRig();
   /** A scripted hand action (car break-ins, carjacks, eating) that takes over both hands for a moment. */
   private act: { kind: ActKind; t: number; dur: number } | null = null;
+  private scopeHid = false;
   /** Something held in the right hand during an action (a snack). */
   private held: THREE.Object3D | null = null;
   private readonly left: HandRig;
@@ -171,7 +172,7 @@ export class Viewmodel {
     this.materials.push(skin, sleeve, cuff, ...this.pistol.materials);
 
     this.gun.add(this.pistol.group);
-    for (const id of ['smg', 'shotgun', 'rifle', 'knife', 'hatchet', 'rpg', 'laser'] as const) {
+    for (const id of WEAPON_ORDER.filter((w): w is Exclude<WeaponId, 'vc9'> => w !== 'vc9')) {
       const lg = new LongGun(id);
       lg.group.visible = false;
       this.longs.set(id, lg);
@@ -275,6 +276,10 @@ export class Viewmodel {
   update(dt: number, p: Player, w: WeaponSystem, cam: THREE.PerspectiveCamera, aspect: number): void {
     const dbg = this.debug;
     if (w.def.id !== this.currentId) this.setWeapon(w.def.id);
+    // looking through a sniper scope: no gun or hands in the way
+    const scoped = !!w.def.sniper && w.ads > 0.85;
+    if (scoped && this.group.visible) { this.group.visible = false; this.scopeHid = true; }
+    else if (!scoped && this.scopeHid) { this.group.visible = true; this.scopeHid = false; }
     // follow the main camera exactly; only the FOV differs
     this.group.position.copy(cam.position);
     this.group.quaternion.copy(cam.quaternion);
@@ -545,6 +550,11 @@ export class Viewmodel {
       R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.12, -0.08, -0.7, 0.4, 0, 0.6], [0.45, 0.12, -0.1, -0.68, 0.4, 0, 0.6], [0.8, 0.26, -0.24, -0.26, 0.2, -0.4, 0.4], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
       L = [[0, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3], [0.3, -0.1, -0.06, -0.7, 0.4, 0, -0.6], [0.45, -0.1, -0.08, -0.68, 0.4, 0, -0.6], [0.8, -0.26, -0.22, -0.26, 0.2, 0.4, -0.4], [1, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3]];
       pr = u < 0.3 ? POSES.flat : POSES.hook; pl = pr;
+    } else if (kind === 'throw') {
+      // wind up behind the shoulder, whip forward and release, follow through low
+      R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.3, 0.08, -0.05, -0.6, -0.3, 0.4], [0.55, 0.05, 0.02, -0.6, 0.5, 0.1, 0.1], [0.75, -0.02, -0.2, -0.55, 0.8, 0.2, 0], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
+      L = [[0, -0.2, -0.3, -0.43, 0.35, 0.2, -0.28], [0.3, -0.2, -0.05, -0.6, 0.2, 0.3, -0.6], [0.7, -0.24, -0.3, -0.35, 0.3, 0.2, -0.3], [1, -0.2, -0.3, -0.43, 0.35, 0.2, -0.28]];
+      pr = u < 0.5 ? POSES.fist : POSES.flat; pl = POSES.flat;
     } else {
       // eat: the right hand brings the snack up to the mouth, two bites, and away
       R = [[0, 0.2, -0.36, -0.36, 0.4, -0.3, 0.3], [0.3, 0.05, -0.1, -0.2, 1.1, -0.5, 0.6], [0.45, 0.04, -0.07, -0.17, 1.15, -0.5, 0.6], [0.55, 0.05, -0.1, -0.2, 1.1, -0.5, 0.6], [0.65, 0.04, -0.07, -0.17, 1.15, -0.5, 0.6], [1, 0.2, -0.36, -0.36, 0.4, -0.3, 0.3]];

@@ -1,7 +1,7 @@
 import { Emitter } from '../core/Emitter';
 import { DEFAULT_KIT, DEFAULT_OUTFIT, INSURANCE_FEE, PROPERTY_BY_ID, REPAIR_COST, SELL_RATE, START_BANK, START_CASH } from './catalog';
 import type { OwnedProperty, OwnedVehicle, Profile, SaveData, Stats, VehicleCustom } from './types';
-import { WEAPONS, type WeaponId } from '../player/Weapons';
+import { WEAPONS, perWeapon, type WeaponId } from '../player/Weapons';
 import { newStory } from '../story/types';
 
 export const newProfile = (): Profile => ({
@@ -12,17 +12,8 @@ export const newProfile = (): Profile => ({
   vehicles: [],
   outfit: { ...DEFAULT_OUTFIT },
   clothes: ['top-grey', 'gl-none', 'hs-short', 'hc-black', 'skin-2'],
-  weapons: {
-    vc9: { owned: true, ammo: WEAPONS.vc9.mag, reserve: 60 },
-    smg: { owned: false, ammo: 0, reserve: 0 },
-    shotgun: { owned: false, ammo: 0, reserve: 0 },
-    rifle: { owned: false, ammo: 0, reserve: 0 },
-    knife: { owned: true, ammo: 1, reserve: 0 },
-    hatchet: { owned: false, ammo: 1, reserve: 0 },
-    rpg: { owned: false, ammo: 0, reserve: 0 },
-    laser: { owned: false, ammo: 0, reserve: 0 },
-  },
-  kits: { vc9: { ...DEFAULT_KIT }, smg: { ...DEFAULT_KIT }, shotgun: { ...DEFAULT_KIT }, rifle: { ...DEFAULT_KIT }, knife: { ...DEFAULT_KIT }, hatchet: { ...DEFAULT_KIT }, rpg: { ...DEFAULT_KIT }, laser: { ...DEFAULT_KIT } },
+  weapons: perWeapon((id) => id === 'vc9' ? { owned: true, ammo: WEAPONS.vc9.mag, reserve: 60 } : { owned: id === 'knife', ammo: WEAPONS[id].melee ? 1 : 0, reserve: 0 }),
+  kits: perWeapon(() => ({ ...DEFAULT_KIT })),
   messages: [{ id: 1, from: 'Valeria Savings', text: 'Welcome to Valeria Savings. Your account is open: use any ATM, or the Bank app on your phone.', day: 1, read: false }],
   stats: { spent: 0, earned: 0, playSeconds: 0, carsBought: 0, kills: 0 },
   seq: 2,

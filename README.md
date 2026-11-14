@@ -51,7 +51,8 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` |
 | Draw / holster · inspect | `1` · `G` | D-pad ↓ · — |
 | Eat a snack from your pockets | `F` | `B` (○) |
-| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`9` (knife, hatchet, pistol, SMG, shotgun, rifle, RPG, laser) | `LB` + right stick |
+| Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`9` by group: melee, pistols, SMGs, shotguns, rifles, heavy, launchers, thrown (press again to cycle) | `LB` + right stick |
+| Throw (grenade, molotov, sticky) · set off sticky charges | `LMB` · `R` | `RT` · `X` |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same |
 | Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` |
 | Crew commands (hold / follow / attack / breach) | `B` | D-pad → |
@@ -64,7 +65,13 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 
 Walk over the glowing crates beside the spawn point for the SMG, shotgun and rifle, body armour and a medkit (they come back after
 75 s). Melee weapons (the switchblade you always carry and a hatchet from gun stores) are quiet and need no ammo; the RPG fires a
-rocket that explodes on contact (stand well back); the laser rifle fires a hitscan beam with no casings and no drop. Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
+rocket that explodes on contact (stand well back); the laser rifle fires a hitscan beam with no casings and no drop.
+The gun stores also stock guns modelled on real ones under the coast's own names: the **Ranger .44** revolver, **Viper MP** machine
+pistol, **Breacher S12** semi-auto shotgun, **Sentinel C4** carbine, **Hammerhead M60** belt-fed machine gun and the **Longbow M338**
+bolt-action sniper rifle (aim to look through an 8× scope; it is wildly inaccurate from the hip), a **Slugger bat**, and three throwables:
+**frag grenades** (bounce, then explode after three seconds), **molotovs** (a sheet of fire that burns people and cars) and **sticky
+charges** (they stick to walls and cars, and `R` sets every one of them off). A grenade and the sniper rifle also wait in crates on the range.
+Cars now take visible damage: crashes dent the body where they hit, bullets leave holes, windows craze and then shatter. Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
 running people down and blowing things up add *heat*; it only counts in full if somebody saw it. Each star brings a bigger response:
 
 | ★ | Response |
@@ -290,6 +297,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 22. **Rework, phase 7** ✅ — switchblade and hatchet (melee with slash animations), RPG-7V with smoke-trailed rockets, Helios LX laser rifle; snacks you carry and eat with `F`; four more gun stores and five more food places across the map; a timed pop-up target challenge with medals at the beach shooting range; number keys 2–9 select weapons
 23. **Rework, phases 8 + 9** ✅ — street theft (parked cars, locked doors, window smashing, alarms, hotwiring, carjacking), seven new vehicles (sedan, police Interceptor, van, SUV, muscle car, sports car, dirt bike) with new van and SUV bodies, the Lancer fighter jet and Hornet attack helicopter with rockets plus a jet strip at Fort Halloran, eleven more stores to rob, and two new heists: The Pinecrest Score and Halloran Armory
 24. **Rework, phases 10 + 11** ✅ — a fourth ending, **All In** (all three together: a car chase, a tank through a roadblock and a gunship hunt for Crane's convoy, then Brandt's last stand), final fights added to Clean Slate and Clear Skies, epilogue texts, an end-credits roll with your numbers and endings seen; random street events (security vans to rob, purse snatchers to chase); an eating animation for snacks
-25. **Living world, phase A** ✅ (this build) — hit markers by result (white hit, yellow downed, red kill, bigger for head shots, with sounds); people flinch when hit, limp and clutch wounds, fall the way the shot pushes them with flailing limbs and a sprawl, or go down writhing and crawling before they bleed out (a downed person counts as neutralised and can be finished); blood splatters on walls and pavement behind wounds, pools spread under bodies, blood at the screen edges when you are hurt; first-person hand animations for smashing a car window, pulling a driver out and eating, and sparks under the dash while hotwiring
+25. **Living world, phase A** ✅ — hit markers by result (white hit, yellow downed, red kill, bigger for head shots, with sounds); people flinch when hit, limp and clutch wounds, fall the way the shot pushes them with flailing limbs and a sprawl, or go down writhing and crawling before they bleed out (a downed person counts as neutralised and can be finished); blood splatters on walls and pavement behind wounds, pools spread under bodies, blood at the screen edges when you are hurt; first-person hand animations for smashing a car window, pulling a driver out and eating, and sparks under the dash while hotwiring
+26. **Living world, phase B** ✅ (this build) — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

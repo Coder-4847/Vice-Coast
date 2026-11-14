@@ -15,6 +15,9 @@ export interface VehicleVisual {
   applyOutfit?(o: Outfit): void;
   applyCustom?(c: VehicleCustom): void;
   setLights(headlights: boolean, braking: boolean, reversing: boolean, night: number): void;
+  /** Bullet hits (world point) and crashes leave marks; `repair` takes them all away. */
+  shot?(p: THREE.Vector3): void;
+  repair?(): void;
 }
 
 export function createVisual(v: Vehicle): VehicleVisual {
@@ -96,6 +99,7 @@ export class VehicleManager {
     for (const v of this.vehicles) {
       if (v.occupied || !v.home) continue;
       v.health = 1000;
+      this.models.get(v)?.repair?.();
       v.exploded = false;
       for (const w of v.wheels) w.popped = false;
       v.teleport(v.home.x, Math.max(terrainHeight(v.home.x, v.home.z), 0), v.home.z, v.home.yaw);

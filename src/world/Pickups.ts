@@ -13,7 +13,7 @@ interface Item {
   respawn: number;
 }
 
-const COLORS: Record<PickupKind, number> = { vc9: 0xffffff, smg: 0xffb02e, shotgun: 0xff5a3c, rifle: 0x4dff9a, armour: 0x6aa8ff, medkit: 0xff4f6a, knife: 0xdddddd, hatchet: 0xc08a50, rpg: 0x6a7a4a, laser: 0xff3a6a };
+const COLORS: Partial<Record<PickupKind, number>> = { vc9: 0xffffff, smg: 0xffb02e, shotgun: 0xff5a3c, rifle: 0x4dff9a, armour: 0x6aa8ff, medkit: 0xff4f6a, knife: 0xdddddd, hatchet: 0xc08a50, rpg: 0x6a7a4a, laser: 0xff3a6a };
 
 /** Weapon crates, body armour and medkits laid out on the beach next to the spawn point; they come back after a while. */
 export class Pickups {
@@ -28,7 +28,7 @@ export class Pickups {
     this.materials.push(crate);
     for (const l of layout) {
       const g = new THREE.Group();
-      const glow = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: new THREE.Color(COLORS[l.kind]), emissiveIntensity: 1.6, roughness: 0.4 });
+      const glow = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: new THREE.Color(COLORS[l.kind] ?? 0xffffff), emissiveIntensity: 1.6, roughness: 0.4 });
       this.materials.push(glow);
       const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.55), crate);
       base.position.y = 0.09;

@@ -23,10 +23,14 @@ export interface HudState {
   lowAmmo: boolean;
   /** Knife or hatchet: no ammunition to show. */
   melee?: boolean;
+  /** Grenades and the like: show how many are left, nothing to reload. */
+  thrown?: boolean;
   hitMarker: number;
   /** 'hit' (white), 'down' (yellow) or 'kill' (red). */
   hitKind?: 'hit' | 'down' | 'kill';
   hitHead?: boolean;
+  /** Looking through a sniper scope. */
+  scope?: boolean;
   stamina: number;
   /** Contextual prompt, e.g. "Vault" / "Climb". */
   prompt: { action: 'jump'; label: string } | null;
@@ -84,6 +88,7 @@ export class UI {
   private readonly reloadPrompt: HTMLElement;
   private readonly crossEl: HTMLElement;
   private readonly hitEl: HTMLElement;
+  private readonly scopeEl: HTMLElement;
   private readonly staminaEl: HTMLElement;
   private readonly staminaBar: HTMLElement;
   private readonly promptEl: HTMLElement;
@@ -130,6 +135,7 @@ export class UI {
     this.deviceChip = h('div', 'device panel-glass');
     this.crossEl = h('div', 'cross', ...['t', 'b', 'l', 'r'].map((k) => h('i', `c-${k}`)), h('i', 'c-dot'));
     this.hitEl = h('div', 'hitmarker', ...[0, 1, 2, 3].map((i) => h('i', `h${i}`)));
+    this.scopeEl = h('div', 'scope is-hidden', h('i', 'scope-h'), h('i', 'scope-v'), h('i', 'scope-dot'));
     this.ammoNum = h('b', 'ammo-num', '13');
     this.ammoRes = h('span', 'ammo-res', '/ 60');
     this.ammoName = h('span', 'ammo-name', 'VC-9');
@@ -144,7 +150,7 @@ export class UI {
     this.rpmBar = h('i');
     this.speedFlags = h('span', 'speed-flags', '');
     this.speedoEl = h('div', 'speedo panel-glass is-hidden', h('div', 'speed-row', this.speedNum, h('span', 'speed-unit', 'km/h'), this.speedGear), h('div', 'rpm', this.rpmBar), h('div', 'speed-foot', this.speedName, this.speedFlags));
-    this.hud = h('div', 'hud is-hidden', this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl, this.speedoEl);
+    this.hud = h('div', 'hud is-hidden', this.scopeEl, this.crossEl, this.hitEl, this.stats, this.hints, this.capture, this.deviceChip, this.ammoEl, this.reloadPrompt, this.staminaEl, this.promptEl, this.speedoEl);
 
     this.toasts = h('div', 'toasts');
 
@@ -255,7 +261,7 @@ export class UI {
       this.shownAmmo = this.ammoShown;
       this.ammoNum.textContent = String(this.ammoShown);
     }
-    const res = st.melee ? 'melee' : `/ ${st.reserve}`;
+    const res = st.melee ? 'melee' : st.thrown ? 'left' : `/ ${st.reserve}`;
     if (this.ammoRes.textContent !== res) this.ammoRes.textContent = res;
     this.ammoName.textContent = st.weaponName;
     this.ammoEl.classList.toggle('is-hidden', !st.drawn);
@@ -266,6 +272,8 @@ export class UI {
     this.crossEl.style.setProperty('--gap', `${Math.max(3, Math.min(90, px)).toFixed(1)}px`);
     this.crossEl.style.opacity = st.drawn ? String(1 - st.ads) : '0.55';
     this.hitEl.style.opacity = String(Math.min(1, st.hitMarker / 0.12));
+    this.scopeEl.classList.toggle('is-hidden', !st.scope);
+    this.crossEl.classList.toggle('scoped', !!st.scope);
     const hk = st.hitKind ?? 'hit';
     if (this.hitEl.dataset.kind !== hk) this.hitEl.dataset.kind = hk;
     const hh = st.hitHead ? '1' : '';

@@ -15,12 +15,9 @@ export class WeaponWheel {
   constructor(root: HTMLElement, private readonly inv: () => Record<WeaponId, { ammo: number; reserve: number; owned: boolean }>, private readonly choose: (id: WeaponId) => void) {
     this.centre = h('div', 'wheel-centre', '');
     this.root = h('div', 'wheel is-hidden', this.centre);
-    WEAPON_ORDER.forEach((id, i) => {
-      const a = (i / WEAPON_ORDER.length) * Math.PI * 2 - Math.PI / 2;
+    WEAPON_ORDER.forEach((id) => {
       const el = h('button', 'wslot', h('b', '', WEAPONS[id].name), h('span', '', ''));
       el.type = 'button';
-      el.style.left = `calc(50% + ${Math.cos(a) * 112}px)`;
-      el.style.top = `calc(50% + ${Math.sin(a) * 112}px)`;
       el.addEventListener('pointerdown', (e) => { e.stopPropagation(); this.selected = id; this.finish(); });
       this.slots.set(id, el);
       this.root.append(el);
@@ -38,12 +35,27 @@ export class WeaponWheel {
     this.refresh();
   }
 
+  /** The owned weapons, in order, around the ring (the ring widens as the arsenal grows). */
+  private shown: WeaponId[] = [];
+
   private refresh(): void {
     const inv = this.inv();
+    this.shown = WEAPON_ORDER.filter((id) => inv[id].owned);
+    const n = Math.max(1, this.shown.length);
+    const R = 112 + Math.max(0, n - 8) * 10;
+    for (const [id, el] of this.slots) {
+      const i = this.shown.indexOf(id);
+      el.style.display = i < 0 ? 'none' : '';
+      if (i >= 0) {
+        const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+        el.style.left = `calc(50% + ${Math.cos(a) * R}px)`;
+        el.style.top = `calc(50% + ${Math.sin(a) * R}px)`;
+      }
+    }
     for (const [id, el] of this.slots) {
       const s = inv[id];
       el.classList.toggle('locked', !s.owned);
-      (el.lastElementChild as HTMLElement).textContent = s.owned ? (WEAPONS[id].melee ? 'melee' : `${s.ammo} / ${s.reserve}`) : 'not owned';
+      (el.lastElementChild as HTMLElement).textContent = s.owned ? (WEAPONS[id].melee ? 'melee' : WEAPONS[id].throwable ? `×${s.ammo + s.reserve}` : `${s.ammo} / ${s.reserve}`) : 'not owned';
     }
   }
 
@@ -59,12 +71,13 @@ export class WeaponWheel {
     this.selected = null;
     if (Math.hypot(dx, dy) > 36) {
       let best = 0, bd = -2;
-      WEAPON_ORDER.forEach((_id, i) => {
-        const a = (i / WEAPON_ORDER.length) * Math.PI * 2 - Math.PI / 2;
+      const list = this.shown.length ? this.shown : WEAPON_ORDER;
+      list.forEach((_id, i) => {
+        const a = (i / list.length) * Math.PI * 2 - Math.PI / 2;
         const d = (Math.cos(a) * dx + Math.sin(a) * dy) / (Math.hypot(dx, dy) || 1);
         if (d > bd) { bd = d; best = i; }
       });
-      this.selected = WEAPON_ORDER[best]!;
+      this.selected = list[best]!;
     }
     for (const [id, el] of this.slots) el.classList.toggle('on', id === this.selected);
     this.centre.textContent = this.selected ? WEAPONS[this.selected].blurb : 'Move to choose';

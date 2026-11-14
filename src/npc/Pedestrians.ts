@@ -1,3 +1,4 @@
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import * as THREE from 'three';
 import { CITY, terrainHeight } from '../world/Terrain';
 import { mulberry32, type CityPlan, type District } from '../world/city/plan';
@@ -750,10 +751,69 @@ export class Pedestrians {
 
 interface PartSpec { geo: THREE.BufferGeometry; cap: number; mat: THREE.Material }
 
+/** Every vertex the same shade (1 = the instance colour as is). */
+function tint(g: THREE.BufferGeometry, k: number): THREE.BufferGeometry {
+  const n = g.getAttribute('position').count;
+  const c = new Float32Array(n * 3).fill(k);
+  g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  return g;
+}
+
+/** Shade a part a fixed colour regardless of the instance colour (eyes, brows, lips), relative to a mid skin tone. */
+function shade(g: THREE.BufferGeometry, r: number, gg: number, b: number): THREE.BufferGeometry {
+  const n = g.getAttribute('position').count;
+  const c = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { c[i * 3] = r; c[i * 3 + 1] = gg; c[i * 3 + 2] = b; }
+  g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  return g;
+}
+
+/** A head with a face: a smoother skull, ears, a nose, darker eyes and brows, and lips (the skin colour is the instance colour). */
+function headGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const nonIdx = (g: THREE.BufferGeometry): THREE.BufferGeometry => (g.index ? g.toNonIndexed() : g);
+  parts.push(tint(nonIdx(new THREE.SphereGeometry(0.115, 18, 14).scale(0.95, 1.15, 1.05)), 1));
+  // jaw and chin
+  parts.push(tint(nonIdx(new THREE.SphereGeometry(0.08, 12, 8).scale(1, 0.75, 1).translate(0, -0.065, 0.03)), 0.97));
+  // nose
+  parts.push(tint(nonIdx(new THREE.ConeGeometry(0.022, 0.05, 8).rotateX(Math.PI / 2 + 0.35).translate(0, -0.005, 0.12)), 0.96));
+  for (const sx of [-1, 1]) {
+    // ears
+    parts.push(tint(nonIdx(new THREE.SphereGeometry(0.03, 8, 6).scale(0.45, 1, 0.75).translate(sx * 0.11, 0.0, 0.0)), 0.93));
+    // eyes and brows
+    parts.push(shade(nonIdx(new THREE.SphereGeometry(0.016, 8, 6).scale(1, 0.7, 0.5).translate(sx * 0.04, 0.025, 0.104)), 0.08, 0.07, 0.07));
+    parts.push(shade(nonIdx(new THREE.BoxGeometry(0.042, 0.009, 0.012).rotateZ(sx * -0.12).translate(sx * 0.04, 0.052, 0.104)), 0.3, 0.22, 0.18));
+  }
+  // lips
+  parts.push(shade(nonIdx(new THREE.CapsuleGeometry(0.008, 0.03, 2, 6).rotateZ(Math.PI / 2).translate(0, -0.052, 0.103)), 0.72, 0.42, 0.4));
+  for (const p of parts) p.deleteAttribute('uv');
+  return mergeGeometries(parts)!;
+}
+
+/** A torso that tapers to the waist with rounded shoulders, instead of a box. */
+function torsoGeometry(): THREE.BufferGeometry {
+  const nonIdx = (g: THREE.BufferGeometry): THREE.BufferGeometry => (g.index ? g.toNonIndexed() : g);
+  const body = nonIdx(new THREE.CylinderGeometry(0.2, 0.165, 0.5, 14, 2).scale(1, 1, 0.56).translate(0, -0.03, 0));
+  const shoulders = nonIdx(new THREE.CapsuleGeometry(0.075, 0.27, 4, 10).rotateZ(Math.PI / 2).scale(1, 1, 0.85).translate(0, 0.21, 0));
+  const neck = nonIdx(new THREE.CylinderGeometry(0.05, 0.058, 0.1, 10).translate(0, 0.3, 0));
+  for (const p of [body, shoulders, neck]) p.deleteAttribute('uv');
+  return mergeGeometries([body, shoulders, neck])!;
+}
+
+/** A leg: thigh tapering to the ankle. */
+function legGeometry(): THREE.BufferGeometry {
+  const nonIdx = (g: THREE.BufferGeometry): THREE.BufferGeometry => (g.index ? g.toNonIndexed() : g);
+  const thigh = nonIdx(new THREE.CylinderGeometry(0.085, 0.065, 0.44, 10).translate(0, -0.22, 0));
+  const shin = nonIdx(new THREE.CylinderGeometry(0.064, 0.05, 0.42, 10).translate(0, -0.63, 0));
+  const knee = nonIdx(new THREE.SphereGeometry(0.066, 10, 6).translate(0, -0.43, 0.005));
+  for (const p of [thigh, shin, knee]) p.deleteAttribute('uv');
+  return mergeGeometries([thigh, shin, knee])!;
+}
+
 export class PedRenderer {
   readonly group = new THREE.Group();
   readonly mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
-  readonly skinMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0 });
+  readonly skinMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62, metalness: 0, vertexColors: true });
   private readonly head: THREE.InstancedMesh;
   private readonly hair: THREE.InstancedMesh;
   private readonly torso: THREE.InstancedMesh;
@@ -761,6 +821,7 @@ export class PedRenderer {
   private readonly legs: THREE.InstancedMesh;
   private readonly shoes: THREE.InstancedMesh;
   private readonly acc: THREE.InstancedMesh;
+  private readonly hands: THREE.InstancedMesh;
   private readonly col = new THREE.Color();
 
   constructor(cap: number) {
@@ -775,12 +836,13 @@ export class PedRenderer {
       this.group.add(m);
       return m;
     };
-    this.head = mk({ geo: new THREE.SphereGeometry(0.115, 10, 8).scale(1, 1.15, 1.05), cap, mat: this.skinMat }, true);
-    this.hair = mk({ geo: new THREE.SphereGeometry(0.125, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.58).translate(0, 0.012, -0.005), cap, mat: this.mat }, false);
-    this.torso = mk({ geo: new THREE.BoxGeometry(0.4, 0.58, 0.22), cap, mat: this.mat }, true);
-    this.arms = mk({ geo: new THREE.BoxGeometry(0.095, 0.56, 0.095).translate(0, -0.28, 0), cap: cap * 2, mat: this.mat }, false);
-    this.legs = mk({ geo: new THREE.BoxGeometry(0.165, 0.84, 0.175).translate(0, -0.42, 0), cap: cap * 2, mat: this.mat }, true);
-    this.shoes = mk({ geo: new THREE.BoxGeometry(0.17, 0.09, 0.3).translate(0, -0.84, 0.06), cap: cap * 2, mat: this.mat }, false);
+    this.head = mk({ geo: headGeometry(), cap, mat: this.skinMat }, true);
+    this.hair = mk({ geo: new THREE.SphereGeometry(0.125, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.58).translate(0, 0.012, -0.008), cap, mat: this.mat }, false);
+    this.torso = mk({ geo: torsoGeometry(), cap, mat: this.mat }, true);
+    this.arms = mk({ geo: new THREE.CapsuleGeometry(0.047, 0.46, 3, 8).translate(0, -0.28, 0), cap: cap * 2, mat: this.mat }, false);
+    this.hands = mk({ geo: tint(new THREE.SphereGeometry(0.05, 8, 6).scale(0.75, 1.2, 0.5).translate(0, -0.6, 0.004), 1), cap: cap * 2, mat: this.skinMat }, false);
+    this.legs = mk({ geo: legGeometry(), cap: cap * 2, mat: this.mat }, true);
+    this.shoes = mk({ geo: new THREE.CapsuleGeometry(0.055, 0.17, 3, 8).rotateX(Math.PI / 2).scale(1.35, 0.85, 1).translate(0, -0.86, 0.06), cap: cap * 2, mat: this.mat }, false);
     this.acc = mk({ geo: new THREE.BoxGeometry(1, 1, 1), cap: cap * 3, mat: this.mat }, false);
   }
 
@@ -869,6 +931,7 @@ export class PedRenderer {
         _q2.setFromAxisAngle(_axisX, side < 0 ? armL : armR);
         _q.copy(_qb).multiply(_q2);
         if (abL || abR) { _q2.setFromAxisAngle(_axisZ, -side * (side < 0 ? abL : abR)); _q.multiply(_q2); }
+        this.set(this.hands, na, _q, side * 0.255 * w, 1.42 * h, 0, bx, by, bz, w, h, w, L.skin);
         this.set(this.arms, na++, _q, side * 0.255 * w, 1.42 * h, 0, bx, by, bz, w, h, w, L.sleeve);
         _q2.setFromAxisAngle(_axisX, side < 0 ? legL : legR);
         _q.copy(_qb).multiply(_q2);
@@ -897,10 +960,10 @@ export class PedRenderer {
       }
     }
     this.head.count = this.hair.count = this.torso.count = n;
-    this.arms.count = na;
+    this.arms.count = this.hands.count = na;
     this.legs.count = this.shoes.count = nl;
     this.acc.count = nacc;
-    for (const m of [this.head, this.hair, this.torso, this.arms, this.legs, this.shoes, this.acc]) {
+    for (const m of [this.head, this.hair, this.torso, this.arms, this.hands, this.legs, this.shoes, this.acc]) {
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }

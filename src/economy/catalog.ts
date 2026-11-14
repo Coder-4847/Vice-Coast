@@ -147,14 +147,24 @@ export const SHOP_WEAPONS: ShopWeapon[] = [
   { id: 'smg', price: 1500, ammoPrice: 90, ammoPack: 60 },
   { id: 'shotgun', price: 1900, ammoPrice: 110, ammoPack: 16 },
   { id: 'rifle', price: 3600, ammoPrice: 150, ammoPack: 60 },
+  { id: 'bat', price: 120, ammoPrice: 0, ammoPack: 0 },
+  { id: 'revolver', price: 2400, ammoPrice: 120, ammoPack: 12 },
+  { id: 'micro', price: 1300, ammoPrice: 90, ammoPack: 50 },
+  { id: 'combat', price: 3200, ammoPrice: 140, ammoPack: 16 },
+  { id: 'carbine', price: 4200, ammoPrice: 160, ammoPack: 60 },
+  { id: 'lmg', price: 9500, ammoPrice: 400, ammoPack: 100 },
+  { id: 'sniper', price: 11000, ammoPrice: 300, ammoPack: 10 },
+  { id: 'grenade', price: 800, ammoPrice: 500, ammoPack: 2 },
+  { id: 'molotov', price: 450, ammoPrice: 300, ammoPack: 2 },
+  { id: 'sticky', price: 1100, ammoPrice: 600, ammoPack: 2 },
   { id: 'rpg', price: 14000, ammoPrice: 1200, ammoPack: 2 },
   { id: 'laser', price: 26000, ammoPrice: 400, ammoPack: 40 },
 ];
 
 export const ATTACHMENTS = {
-  ext: { name: 'Extended magazine', blurb: '+50% magazine capacity', price: { vc9: 300, smg: 450, shotgun: 400, rifle: 600, knife: 0, hatchet: 0, rpg: 0, laser: 900 } satisfies Record<WeaponId, number> },
-  supp: { name: 'Suppressor', blurb: 'Much quieter: nobody hears, nobody calls it in', price: { vc9: 500, smg: 650, shotgun: 0, rifle: 900, knife: 0, hatchet: 0, rpg: 0, laser: 0 } satisfies Record<WeaponId, number> },
-  scope: { name: 'Optic', blurb: 'Tighter aim-down-sights zoom', price: { vc9: 0, smg: 500, shotgun: 0, rifle: 800, knife: 0, hatchet: 0, rpg: 0, laser: 700 } satisfies Record<WeaponId, number> },
+  ext: { name: 'Extended magazine', blurb: '+50% magazine capacity', price: { vc9: 300, smg: 450, shotgun: 400, rifle: 600, laser: 900, revolver: 0, micro: 400, combat: 500, carbine: 600, lmg: 800, sniper: 700 } as Partial<Record<WeaponId, number>> },
+  supp: { name: 'Suppressor', blurb: 'Much quieter: nobody hears, nobody calls it in', price: { vc9: 500, smg: 650, rifle: 900, micro: 550, carbine: 900, sniper: 1200 } as Partial<Record<WeaponId, number>> },
+  scope: { name: 'Optic', blurb: 'Tighter aim-down-sights zoom', price: { smg: 500, rifle: 800, laser: 700, carbine: 800, lmg: 900, micro: 450 } as Partial<Record<WeaponId, number>> },
 } as const;
 
 export const WEAPON_TINTS: ClothingItem[] = [

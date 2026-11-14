@@ -163,10 +163,14 @@ export class Combat {
   // ------------------------------------------------------------------------------------ bullets on cars
 
   /** A bullet hit a vehicle collider (driven/parked vehicle or traffic car). */
-  hitCollider(handle: number, damage: number): boolean {
+  hitCollider(handle: number, damage: number, point?: THREE.Vector3): boolean {
     const { vehicles, npcs } = this.d;
     for (const v of vehicles.vehicles) {
-      if (v.collider.handle === handle) { v.health = Math.max(0, v.health - damage * 2.2 * (v.custom?.armour ? 0.35 : 1)); return true; }
+      if (v.collider.handle === handle) {
+        v.health = Math.max(0, v.health - damage * 2.2 * (v.custom?.armour ? 0.35 : 1));
+        if (point) vehicles.visualOf(v)?.shot?.(point);
+        return true;
+      }
     }
     const cr = this.crafts?.byCollider(handle);
     if (cr) {

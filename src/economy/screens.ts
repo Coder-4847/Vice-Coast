@@ -274,7 +274,7 @@ export function weaponShop(c: Commerce, name: string): Page {
         }));
         const kit = e.p.kits[sw.id];
         for (const key of ['ext', 'supp', 'scope'] as const) {
-          const price = ATTACHMENTS[key].price[sw.id];
+          const price = ATTACHMENTS[key].price[sw.id] ?? 0;
           if (price <= 0) continue;
           b.append(row({
             label: `${def.name}: ${ATTACHMENTS[key].name}`, sub: ATTACHMENTS[key].blurb, badge: kit[key] ? 'Fitted' : '', right: kit[key] ? '' : money(price), disabled: !kit[key] && !e.canAfford(price),

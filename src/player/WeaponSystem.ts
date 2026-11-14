@@ -6,7 +6,7 @@ import { GROUP, type Physics, type RayHit } from '../physics/Physics';
 import type { Effects } from '../world/Effects';
 import type { Props } from '../world/Props';
 import type { Player } from './Player';
-import { WEAPONS, WEAPON_ORDER, type WeaponDef, type WeaponId } from './Weapons';
+import { CATS, WEAPONS, WEAPON_ORDER, perWeapon, type WeaponDef, type WeaponId } from './Weapons';
 
 export type WeaponState = 'holstered' | 'drawing' | 'ready' | 'reloading' | 'holstering' | 'inspecting';
 
@@ -46,16 +46,7 @@ export interface HitEvent {
 export class WeaponSystem {
   /** The weapon currently in hand, and what you carry. */
   def: WeaponDef = WEAPONS.vc9;
-  readonly inv: Record<WeaponId, { ammo: number; reserve: number; owned: boolean }> = {
-    vc9: { ammo: 13, reserve: 60, owned: true },
-    smg: { ammo: 0, reserve: 0, owned: false },
-    shotgun: { ammo: 0, reserve: 0, owned: false },
-    rifle: { ammo: 0, reserve: 0, owned: false },
-    knife: { ammo: 1, reserve: 0, owned: true },
-    hatchet: { ammo: 1, reserve: 0, owned: false },
-    rpg: { ammo: 0, reserve: 0, owned: false },
-    laser: { ammo: 0, reserve: 0, owned: false },
-  };
+  readonly inv: Record<WeaponId, { ammo: number; reserve: number; owned: boolean }> = perWeapon((id) => id === 'vc9' ? { ammo: 13, reserve: 60, owned: true } : { ammo: id === 'knife' || WEAPONS[id].melee ? 1 : 0, reserve: 0, owned: id === 'knife' });
   private pendingId: WeaponId | null = null;
   /** Called when the held weapon changes (HUD, audio). */
   onSwap: ((def: WeaponDef) => void) | null = null;
@@ -119,8 +110,8 @@ export class WeaponSystem {
   /** 0 hip … 1 fully aimed. */
   ads = 0;
   /** Attachments bought in the weapon shop. */
-  readonly suppressed: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false, knife: true, hatchet: true, rpg: false, laser: false };
-  readonly scoped: Record<WeaponId, boolean> = { vc9: false, smg: false, shotgun: false, rifle: false, knife: false, hatchet: false, rpg: false, laser: false };
+  readonly suppressed: Record<WeaponId, boolean> = perWeapon((id) => !!WEAPONS[id].melee || !!WEAPONS[id].throwable);
+  readonly scoped: Record<WeaponId, boolean> = perWeapon(() => false);
   /** Trigger pull 0–1 (visual). */
   trigger = 0;
   /** Slide position 0 forward … 1 back (visual, includes lock-back on empty). */
@@ -144,10 +135,13 @@ export class WeaponSystem {
   /** Pedestrian hit-testing and alarm hooks, installed by the NPC system. */
   npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null; hurt(target: unknown, dx: number, dz: number, damage: number, head: boolean): 'hit' | 'down' | 'kill' | null | void; alarm(x: number, z: number): void } | null = null;
   /** Bullets that hit a vehicle collider (installed by the combat system). */
-  onColliderHit: ((handle: number, damage: number) => boolean) | null = null;
+  onColliderHit: ((handle: number, damage: number, point?: THREE.Vector3) => boolean) | null = null;
   /** RPG launch and laser beam drawing (installed by the ordnance system). */
   onRocket: ((from: THREE.Vector3, dir: THREE.Vector3) => void) | null = null;
   onBeam: ((from: THREE.Vector3, to: THREE.Vector3) => void) | null = null;
+  /** Throw a grenade / molotov / sticky charge, and set off every stuck charge. */
+  onThrow: ((kind: 'frag' | 'fire' | 'sticky', from: THREE.Vector3, vel: THREE.Vector3) => void) | null = null;
+  onDetonate: (() => void) | null = null;
   /** Total shots fired this session. */
   shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
@@ -282,11 +276,18 @@ export class WeaponSystem {
       this.setState('inspecting');
       this.audio.mech('inspect');
     }
-    if (this.state === 'ready' && inp.pressed('reload') && !busy) this.startReload();
+    if (this.def.throwable === 'sticky' && inp.pressed('reload')) this.onDetonate?.();
+    else if (this.state === 'ready' && inp.pressed('reload') && !busy && !this.def.throwable) this.startReload();
     if (inp.quickSlot !== null) {
-      const id = WEAPON_ORDER[inp.quickSlot];
+      // number keys pick a group (melee, pistols, SMGs, shotguns, rifles, heavy, launchers, thrown); again cycles within it
+      const cat = CATS[inp.quickSlot];
       inp.quickSlot = null;
-      if (id && !busy && this.inv[id].owned) this.select(id);
+      const list = WEAPON_ORDER.filter((id) => WEAPONS[id].cat === cat && this.inv[id].owned);
+      if (list.length && !busy) {
+        const cur = this.pendingId ?? this.def.id;
+        const i = list.indexOf(cur);
+        this.select(list[(i + 1) % list.length]!);
+      }
     }
 
     // --- aiming -------------------------------------------------------------------------------
@@ -294,7 +295,7 @@ export class WeaponSystem {
     const adsRate = wantAim ? 1 / 0.2 : 1 / 0.16;
     this.ads = clamp(this.ads + (wantAim ? 1 : -1) * adsRate * dt, 0, 1);
     p.aiming = this.ads > 0.35;
-    p.lookScale = 1 - 0.42 * this.ads * this.ads;
+    p.lookScale = 1 - (this.def.sniper ? 0.84 : 0.42) * this.ads * this.ads;
     p.sprintAllowed = this.state !== 'reloading' && this.state !== 'inspecting' && this.ads < 0.3;
 
     // --- firing -------------------------------------------------------------------------------
@@ -388,6 +389,7 @@ export class WeaponSystem {
     const def = this.def;
     if (def.melee) { this.swing(); return; }
     if (def.rocket) { this.launch(); return; }
+    if (def.throwable) { this.toss(); return; }
     const p = this.player;
     this.ammo--;
     this.shotsFired++;
@@ -407,7 +409,9 @@ export class WeaponSystem {
 
     // --- one ray per pellet: eye → aim direction with a random point inside the spread cone --------------------
     for (let k = 0; k < def.pellets; k++) {
-      const deg = (this.spread * def.spreadMul + (def.pellets > 1 ? def.pelletSpread : 0)) * this.spreadScale;
+      // a sniper rifle is only accurate through the scope
+      const sniperK = def.sniper ? (this.ads > 0.8 ? 1 : 60) : 1;
+      const deg = (this.spread * def.spreadMul * sniperK + (def.pellets > 1 ? def.pelletSpread : 0)) * this.spreadScale;
       const cone = THREE.MathUtils.degToRad(deg) * 0.5;
       const r = Math.sqrt(Math.random()) * cone;
       const a = Math.random() * Math.PI * 2;
@@ -427,7 +431,7 @@ export class WeaponSystem {
         const fall = npcHit.t > def.range ? Math.max(0.35, 1 - (npcHit.t - def.range) / (def.range * 1.5)) : 1;
         this.markHit(this.npc?.hurt(npcHit.target, _dir.x, _dir.z, def.damage * fall, npcHit.head), npcHit.head);
         this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
-      } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, def.damage * 0.55)) {
+      } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, def.damage * 0.55, hit.point)) {
         this.effects.impact(hit.point, hit.normal, hit.surface, false);
         this.hitThisFrame = this.lastHit = { hit, target: false };
       } else if (hit) {
@@ -488,6 +492,26 @@ export class WeaponSystem {
     }
     p.addRecoil(-0.004, (Math.random() - 0.5) * 0.006);
     this.onFire?.(def.kick);
+  }
+
+  /** Grenades, molotovs and sticky charges: thrown in an arc along the view, a little upward. */
+  private toss(): void {
+    const p = this.player;
+    const def = this.def;
+    this.ammo--;
+    this.shotsFired++;
+    this.firedThisFrame = true;
+    this.cooldown = def.interval;
+    this.sinceShot = 0;
+    p.lookDirection(_aim);
+    const speed = def.throwable === 'sticky' ? 13 : 17;
+    const vel = new THREE.Vector3().copy(_aim).add(new THREE.Vector3(0, 0.22, 0)).normalize().multiplyScalar(speed);
+    const from = new THREE.Vector3().copy(p.eyePosition).addScaledVector(_aim, 0.5).add(new THREE.Vector3(0, -0.15, 0));
+    this.onThrow?.(def.throwable!, from, vel);
+    this.audio.mech('cloth');
+    this.onFire?.(def.kick);
+    // the next one comes straight out of the pocket: there is nothing to reload
+    if (this.ammo === 0 && this.reserve > 0) { this.reserve--; this.ammo = 1; }
   }
 
   /** RPG: one rocket, then a reload. */

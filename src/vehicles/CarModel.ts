@@ -238,6 +238,11 @@ export class CarModel {
     const body = new THREE.Mesh(extrudeProfile(sil.body, L, W, [sil.belt - 0.35, sil.belt + 0.1, 0.9], 0.05, arches, spec.clearance + 0.07), this.bodyMat);
     body.castShadow = true;
     this.shell.add(body);
+    this.bodyMesh = body;
+    this.beltY = sil.belt;
+    this.restPos = (body.geometry.getAttribute('position').array as Float32Array).slice();
+    body.geometry.computeBoundingBox();
+    body.geometry.boundingBox!.getCenter(this.bodyCentre);
 
     // greenhouse: glass volume + body-coloured pillars and roof
     const cabin = new THREE.Mesh(extrudeProfile(sil.cabin, L, W * 0.9, [sil.belt, sil.roof, 0.8], 0.015), glass);
@@ -608,9 +613,100 @@ export class CarModel {
   }
 
   /** Per-frame visual update from the physics state. `dt` in seconds. */
+  // ---------------------------------------------------------------------------------------------------- damage
+
+  private bodyMesh!: THREE.Mesh;
+  private restPos!: Float32Array;
+  private readonly bodyCentre = new THREE.Vector3();
+  private beltY = 0.9;
+  private seenImpact = 0;
+  private cracks = 0;
+  private holes: THREE.Mesh[] = [];
+  private static holeGeo = new THREE.CircleGeometry(0.036, 8);
+  private static holeMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0b, polygonOffset: true, polygonOffsetFactor: -2 });
+
+  /** Push the body in around a point (body-local), like a crumple. */
+  private dent(local: THREE.Vector3, radius: number, depth: number): void {
+    const geo = this.bodyMesh.geometry;
+    const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+    const a = pos.array as Float32Array, rest = this.restPos;
+    const c = this.bodyCentre;
+    let moved = false;
+    for (let i = 0; i < a.length; i += 3) {
+      const dx = a[i]! - local.x, dy = a[i + 1]! - local.y, dz = a[i + 2]! - local.z;
+      const d = Math.hypot(dx, dy, dz);
+      if (d > radius) continue;
+      const f = (1 - d / radius) ** 2 * depth;
+      // toward the middle of the car, never more than a hand's depth from where the panel started
+      let nx = c.x - a[i]!, ny = (c.y - a[i + 1]!) * 0.4, nz = c.z - a[i + 2]!;
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      nx /= nl; ny /= nl; nz /= nl;
+      const tx = a[i]! + nx * f, ty = a[i + 1]! + ny * f, tz = a[i + 2]! + nz * f;
+      const ox = tx - rest[i]!, oy = ty - rest[i + 1]!, oz = tz - rest[i + 2]!;
+      const ol = Math.hypot(ox, oy, oz), cap = 0.24;
+      const k = ol > cap ? cap / ol : 1;
+      a[i] = rest[i]! + ox * k; a[i + 1] = rest[i + 1]! + oy * k; a[i + 2] = rest[i + 2]! + oz * k;
+      moved = true;
+    }
+    if (moved) { pos.needsUpdate = true; geo.computeVertexNormals(); }
+  }
+
+  /** Glass crazes after a couple of hits and is gone after a few more. */
+  private crack(n: number): void {
+    this.cracks += n;
+    const g = this.glassMat;
+    if (this.cracks >= 7) { g.opacity = 0.12; g.roughness = 0.9; }
+    else if (this.cracks >= 2) { g.opacity = 0.72; g.roughness = 0.6; g.color.set('#8a96a0'); }
+  }
+
+  shot(p: THREE.Vector3): void {
+    const local = this.bodyMesh.worldToLocal(p.clone());
+    if (local.y > this.beltY) { this.crack(1); return; }
+    this.dent(local, 0.12, 0.012);
+    if (this.holes.length >= 36) { const old = this.holes.shift()!; this.bodyMesh.remove(old); }
+    const m = new THREE.Mesh(CarModel.holeGeo, CarModel.holeMat);
+    m.position.copy(local);
+    const out = local.clone().sub(this.bodyCentre).setY(0).normalize();
+    m.lookAt(local.clone().add(out));
+    m.position.addScaledVector(out, 0.01);
+    this.bodyMesh.add(m);
+    this.holes.push(m);
+  }
+
+  repair(): void {
+    const pos = this.bodyMesh.geometry.getAttribute('position') as THREE.BufferAttribute;
+    (pos.array as Float32Array).set(this.restPos);
+    pos.needsUpdate = true;
+    this.bodyMesh.geometry.computeVertexNormals();
+    for (const h of this.holes) this.bodyMesh.remove(h);
+    this.holes.length = 0;
+    this.cracks = 0;
+    this.glassMat.opacity = this.baseGlassOpacity; this.glassMat.roughness = 0.04;
+    this.glassMat.color.set(this.vehicle.spec.body.glassTint);
+    if (this.vehicle.custom) this.applyCustom(this.vehicle.custom);
+  }
+
+  private takeCrash(): void {
+    const v = this.vehicle;
+    this.seenImpact = v.impactSeq;
+    const s = Math.min(1.4, (v.impact - 4) / 10);
+    if (s <= 0) return;
+    // where the car met the obstacle: along the old direction of travel, out to the edge of the body
+    const L = v.spec.size.length, W = v.spec.size.width;
+    const d = v.impactDir;
+    const lp = new THREE.Vector3(d.x, 0, d.z).applyQuaternion(v.quaternion.clone().invert());
+    const t = Math.min(W / 2 / Math.max(1e-3, Math.abs(lp.x)), L / 2 / Math.max(1e-3, Math.abs(lp.z)));
+    const world = new THREE.Vector3(lp.x * t, 0.2, lp.z * t).applyQuaternion(v.quaternion).add(v.position);
+    this.bodyMesh.updateWorldMatrix(true, false);
+    const local = this.bodyMesh.worldToLocal(world);
+    this.dent(local, 0.5 + s * 0.45, 0.06 + s * 0.12);
+    if (s > 0.6) this.crack(s > 1 ? 3 : 1);
+  }
+
   update(): void {
     const v = this.vehicle;
     const spec = v.spec;
+    if (v.impactSeq !== this.seenImpact && this.bodyMesh) this.takeCrash();
     // wheels: suspension travel, steering, spin
     this.wheelsVis.forEach((wv, i) => {
       const w = v.wheels[i]!;

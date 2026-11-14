@@ -135,7 +135,7 @@ export class DriveBy {
       if (res === 'kill' || res === 'down') this.hitT = 0.35;
       g.weapon?.onFire?.(1);
     } else if (hit) {
-      if (hit.collider && g.combat?.hitCollider(hit.collider.handle, damage * 0.55)) this.hitT = 0.15;
+      if (hit.collider && g.combat?.hitCollider(hit.collider.handle, damage * 0.55, hit.point)) this.hitT = 0.15;
       g.effects?.impact(hit.point, hit.normal, hit.surface, !hit.body);
       g.weapon?.onFire?.(1);
     } else g.weapon?.onFire?.(1);

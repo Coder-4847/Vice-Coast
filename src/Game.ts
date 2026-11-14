@@ -256,10 +256,12 @@ export class Game {
         driving: this.driving, vehicles: this.vehicles, npcs: this.npcs, weapon: this.weapon, hud: this.combatHud,
         canvas: this.canvas, camera: this.camera, toast: (m) => this.ui.toast(m),
       });
-      this.weapon.onColliderHit = (h, d) => this.combat!.hitCollider(h, d);
+      this.weapon.onColliderHit = (h, d, p) => this.combat!.hitCollider(h, d, p);
       this.ordnance = new Ordnance(this);
       this.weapon.onRocket = (f, d) => this.ordnance!.rocket(f, d);
       this.weapon.onBeam = (f, t) => this.ordnance!.beam(f, t);
+      this.weapon.onThrow = (k, f, v) => { this.ordnance!.toss(k, f, v); this.viewmodel?.play('throw'); };
+      this.weapon.onDetonate = () => this.ordnance!.detonate();
       this.combat.crafts = this.crafts;
       this.combat.piloting = this.piloting;
       this.wanted = new Wanted();
@@ -275,6 +277,7 @@ export class Game {
       this.pickups = new Pickups([
         { kind: 'smg', x: px, z: -7 }, { kind: 'shotgun', x: px, z: -3.5 }, { kind: 'rifle', x: px, z: 0 },
         { kind: 'armour', x: px, z: 3.5 }, { kind: 'medkit', x: px, z: 7 },
+        { kind: 'grenade', x: px, z: 10.5 }, { kind: 'sniper', x: px, z: 14 },
       ]);
       for (const m of this.pickups.materials) this.world.rig.register(m);
       this.world.scene.add(this.pickups.group);
@@ -283,7 +286,7 @@ export class Game {
         if (kind === 'armour') this.combat?.vitals.addArmour(100);
         else if (kind === 'medkit') this.combat?.vitals.heal(100);
         else {
-          const fresh = weapon.give(kind, kind === 'shotgun' ? 24 : 90);
+          const fresh = weapon.give(kind, kind === 'shotgun' ? 24 : kind === 'grenade' ? 4 : kind === 'sniper' ? 15 : 90);
           if (fresh && weapon.isDrawn) weapon.select(kind);
         }
         this.audio.mech('magIn');
@@ -770,7 +773,7 @@ export class Game {
         if (!this.combat?.flow) weapon.update(dt);
         this.updateWheel(dt, weapon);
         // zoom in a little when aiming, out a little when sprinting
-        this.camera.fov = this.baseFov * (1 - (weapon.scoped[weapon.def.id] ? 0.45 : 0.2) * weapon.ads) + 6 * player.sprintBlend;
+        this.camera.fov = this.baseFov * (1 - (weapon.def.sniper ? 0.84 : weapon.scoped[weapon.def.id] ? 0.45 : 0.2) * weapon.ads) + 6 * player.sprintBlend;
         this.camera.updateProjectionMatrix();
         vm.update(dt, player, weapon, this.camera, this.camera.aspect);
       }
@@ -807,7 +810,7 @@ export class Game {
       const v = driving?.mode === 'driving' || driving?.mode === 'exiting' ? driving.vehicle : null;
       this.ui.updateHud(dt, {
         weaponName: weapon.name,
-        ammo: weapon.ammo,
+        ammo: weapon.def.throwable ? weapon.ammo + weapon.reserve : weapon.ammo,
         reserve: weapon.reserve,
         spread: weapon.spread,
         ads: weapon.ads,
@@ -815,9 +818,11 @@ export class Game {
         reloading: weapon.state === 'reloading',
         lowAmmo: weapon.ammo <= 3 && !weapon.def.melee,
         melee: !!weapon.def.melee,
+        thrown: !!weapon.def.throwable,
         hitMarker: weapon.hitMarker,
         hitKind: weapon.hitKind,
         hitHead: weapon.hitHead,
+        scope: !!weapon.def.sniper && weapon.ads > 0.85 && weapon.isDrawn && !inCar,
         stamina: player.stamina,
         prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,
         fovDeg: this.camera.fov,
