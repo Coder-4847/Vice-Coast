@@ -46,18 +46,47 @@ export const PROPERTY_BY_ID = Object.fromEntries(PROPERTIES.map((p) => [p.id, p]
 
 // ------------------------------------------------------------------------------------------------ businesses
 
-/** Businesses bought online: no building to visit, just a share of the takings paid into the bank every morning. */
-export interface BusinessDef { id: string; name: string; kind: string; region: string; blurb: string; price: number; income: number }
+/** What a business is: decides its building, its interior and how it makes money. */
+export type BizType = 'food' | 'shop' | 'carwash' | 'storage' | 'laundromat' | 'cab' | 'airstrip' | 'club' | 'motel' | 'grow' | 'print' | 'lab' | 'docs' | 'cartel';
+
+/**
+ * Businesses. Legal fronts pay clean takings into the bank every morning and launder dirty money (up to `launder` a day);
+ * illegal operations turn supplies into stock over `cycle` game hours (a full load of supplies, costing `supplyCost`, makes
+ * `value` dollars of stock), which you sell for dirty money.
+ */
+export interface BusinessDef {
+  id: string; name: string; kind: string; type: BizType; region: string; blurb: string; price: number;
+  /** Clean takings per day (legal fronts). */
+  income: number;
+  legal: boolean;
+  near: { x: number; z: number };
+  /** Dirty money laundered per day (legal fronts). */
+  launder?: number;
+  /** Illegal operations: hours to work through a full load, cost of a full load, value of the stock it makes, heat per load. */
+  cycle?: number; supplyCost?: number; value?: number; heat?: number;
+  /** What the stock is called. */
+  product?: string;
+}
 
 export const BUSINESSES: BusinessDef[] = [
-  { id: 'tacotruck', name: 'Canal Taco Truck', kind: 'Food truck', region: 'Costa Merida', blurb: 'One truck, one cook, a line round the block at lunchtime.', price: 15000, income: 190 },
-  { id: 'bait', name: 'Pinecrest Bait & Tackle', kind: 'Shop', region: 'Pinecrest Bay', blurb: 'Worms, hooks and gossip.', price: 28000, income: 330 },
-  { id: 'carwash', name: 'Sunwash Car Wash', kind: 'Car wash', region: 'Port Valeria', blurb: 'Hand wash, wax and a cash register that is very hard to audit.', price: 65000, income: 880 },
-  { id: 'storage', name: 'Harbor Storage Units', kind: 'Storage', region: 'Dusk Harbor', blurb: 'Two hundred lockers. Nobody asks what is in them.', price: 95000, income: 1250 },
-  { id: 'laundromat', name: 'Spin City Laundromat', kind: 'Laundromat', region: 'Southside', blurb: 'Coin machines that turn dirty money clean. Officially, clothes.', price: 120000, income: 1600 },
-  { id: 'cabco', name: 'Marlow Cab Co.', kind: 'Taxi firm', region: 'Port Valeria', blurb: 'A fleet of yellow sedans and a dispatcher called Dolores.', price: 180000, income: 2350 },
-  { id: 'airfield', name: 'Cinder Flats Airfield', kind: 'Airstrip', region: 'Cinder Flats', blurb: 'A dirt strip, a fuel tank and charter pilots who do not file flight plans.', price: 260000, income: 3300 },
-  { id: 'club', name: 'The Velvet Room', kind: 'Nightclub', region: 'Port Valeria', blurb: 'Velvet ropes, a VIP floor and a bass you feel in your teeth.', price: 420000, income: 5200 },
+  { id: 'tacotruck', name: 'Canal Taco Truck', kind: 'Food truck', type: 'food', legal: true, region: 'Costa Merida', blurb: 'One truck, one cook, a line round the block at lunchtime.', price: 15000, income: 190, launder: 2000, near: { x: 600, z: 3380 } },
+  { id: 'bait', name: 'Pinecrest Bait & Tackle', kind: 'Shop', type: 'shop', legal: true, region: 'Pinecrest Bay', blurb: 'Worms, hooks and gossip.', price: 28000, income: 330, launder: 4000, near: { x: 690, z: -2310 } },
+  { id: 'burger', name: 'Bayside Burger Shack', kind: 'Burger joint', type: 'food', legal: true, region: 'Port Valeria', blurb: 'Smash burgers and milkshakes by the boardwalk.', price: 45000, income: 600, launder: 6000, near: { x: 260, z: 140 } },
+  { id: 'carwash', name: 'Sunwash Car Wash', kind: 'Car wash', type: 'carwash', legal: true, region: 'Port Valeria', blurb: 'Hand wash, wax and a cash register that is very hard to audit.', price: 65000, income: 880, launder: 12000, near: { x: 880, z: 220 } },
+  { id: 'diner', name: 'Route 9 Diner', kind: 'Diner', type: 'food', legal: true, region: 'Cinder Flats', blurb: 'Pie, coffee and truckers who have seen things.', price: 75000, income: 950, launder: 9000, near: { x: 3360, z: 520 } },
+  { id: 'storage', name: 'Harbor Storage Units', kind: 'Storage', type: 'storage', legal: true, region: 'Dusk Harbor', blurb: 'Two hundred lockers. Nobody asks what is in them.', price: 95000, income: 1250, launder: 14000, near: { x: 420, z: 1700 } },
+  { id: 'laundromat', name: 'Spin City Laundromat', kind: 'Laundromat', type: 'laundromat', legal: true, region: 'Southside', blurb: 'Coin machines that turn dirty money clean. Officially, clothes.', price: 120000, income: 1600, launder: 30000, near: { x: 1450, z: 420 } },
+  { id: 'motel2', name: 'Sea Breeze Motel', kind: 'Motel', type: 'motel', legal: true, region: 'Port Valeria', blurb: 'Twenty rooms, a pool with water in it most days, and no questions.', price: 160000, income: 2000, launder: 20000, near: { x: 300, z: 300 } },
+  { id: 'cabco', name: 'Marlow Cab Co.', kind: 'Taxi firm', type: 'cab', legal: true, region: 'Port Valeria', blurb: 'A fleet of yellow sedans and a dispatcher called Dolores.', price: 180000, income: 2350, launder: 22000, near: { x: 1050, z: 150 } },
+  { id: 'motel', name: 'Starlite Motel', kind: 'Motel', type: 'motel', legal: true, region: 'Cinder Flats', blurb: 'Neon, ice machines and long-haul truckers. Rooms by the night or by the hour.', price: 210000, income: 2600, launder: 30000, near: { x: 3290, z: 640 } },
+  { id: 'airfield', name: 'Cinder Flats Airfield', kind: 'Airstrip', type: 'airstrip', legal: true, region: 'Cinder Flats', blurb: 'A dirt strip, a fuel tank and charter pilots who do not file flight plans.', price: 260000, income: 3300, launder: 35000, near: { x: 2950, z: 1500 } },
+  { id: 'club', name: 'The Velvet Room', kind: 'Nightclub', type: 'club', legal: true, region: 'Port Valeria', blurb: 'Velvet ropes, a VIP floor and a bass you feel in your teeth. Takings follow its popularity.', price: 420000, income: 5200, launder: 60000, near: { x: 330, z: -60 } },
+  // ---- illegal operations: sold on ghostline.onion
+  { id: 'docs', name: 'Marlow Copy Centre', kind: 'Forgery shop', type: 'docs', legal: false, region: 'Port Valeria', blurb: 'Passports, licences and diplomas, behind a copy shop that also makes copies.', price: 150000, income: 0, near: { x: 980, z: 260 }, cycle: 20, supplyCost: 8000, value: 32000, heat: 12, product: 'documents' },
+  { id: 'grow', name: 'Pine Hollow Grow-op', kind: 'Grow-op', type: 'grow', legal: false, region: 'Mount Kestrel', blurb: 'A barn in the pines with very good lighting and very blacked-out windows.', price: 220000, income: 0, near: { x: 980, z: -1500 }, cycle: 24, supplyCost: 12000, value: 45000, heat: 14, product: 'green' },
+  { id: 'print', name: 'Southside Print Shop', kind: 'Counterfeit cash', type: 'print', legal: false, region: 'Southside', blurb: 'Business cards out front. Fifties out back.', price: 300000, income: 0, near: { x: 1500, z: 500 }, cycle: 30, supplyCost: 18000, value: 70000, heat: 18, product: 'cash' },
+  { id: 'lab', name: 'Dry Creek Lab', kind: 'Lab', type: 'lab', legal: false, region: 'Cinder Flats', blurb: 'A trailer in the desert with its own generator and a very bad smell.', price: 380000, income: 0, near: { x: 3600, z: 900 }, cycle: 36, supplyCost: 25000, value: 110000, heat: 26, product: 'product' },
+  { id: 'cartel', name: 'Coastline Import Warehouse', kind: 'Cartel', type: 'cartel', legal: false, region: 'Dusk Harbor', blurb: 'The cartel\'s warehouse on the docks. Shipments come in by sea; you move them inland.', price: 1200000, income: 0, near: { x: 560, z: 1820 }, cycle: 48, supplyCost: 120000, value: 420000, heat: 35, product: 'cargo' },
 ];
 export const BUSINESS_BY_ID = Object.fromEntries(BUSINESSES.map((b) => [b.id, b]));
 

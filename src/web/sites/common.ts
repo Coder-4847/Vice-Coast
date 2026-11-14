@@ -5,7 +5,9 @@ import { button, div, type Kid } from '../ui';
 /** A site's chrome: logo, navigation, the page, and a footer. */
 export function frame(ctx: WebCtx, brand: { name: string; logo?: Kid; tagline?: string }, nav: [string, string][], ...main: Kid[]): HTMLElement {
   const logo = button(brand.logo ?? brand.name, () => ctx.go(ctx.host), 'w-logo');
-  const links = div('w-nav', ...nav.map(([label, u]) => button(label, () => ctx.go(u.includes('.') ? u : `${ctx.host}/${u}`), `w-navlink${(u.includes('.') ? u : `${ctx.host}/${u}`).replace(/\/$/, '') === `${ctx.host}${ctx.path ? '/' + ctx.path : ''}` ? ' on' : ''}`)));
+  // the current page, with its tab (?tab=…) if it has one: the matching nav link lights up
+  const here = `${ctx.host}${ctx.path ? '/' + ctx.path : ''}${ctx.query.tab ? `?tab=${ctx.query.tab}` : ''}`;
+  const links = div('w-nav', ...nav.map(([label, u]) => { const to = u.includes('.') ? u : `${ctx.host}/${u}`; return button(label, () => ctx.go(to), `w-navlink${to.replace(/\/$/, '').replace('/?', '?') === here ? ' on' : ''}`); }));
   return div('w-site',
     div('w-head', logo, brand.tagline ? h('span', 'w-tagline', brand.tagline) : null, links),
     div('w-main', ...main),

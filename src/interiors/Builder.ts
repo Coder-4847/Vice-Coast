@@ -15,7 +15,7 @@ interface Occ { x0: number; y0: number; z0: number; x1: number; y1: number; z1: 
 /** Something to use inside: a prompt within reach of (x, z). */
 export interface Spot { x: number; z: number; r: number; label: string; act: () => void; hold?: number; used?: boolean }
 /** Someone in the room. */
-export interface Extra { x: number; z: number; yaw: number; cast: 'clerk' | 'guard' | 'resident' | 'patron' | 'staff' | 'sleeper'; pose?: 'sit' | ''; talk?: string[] }
+export interface Extra { x: number; z: number; yaw: number; cast: 'clerk' | 'guard' | 'resident' | 'patron' | 'staff' | 'sleeper'; pose?: 'sit' | 'cheer' | 'smoke' | ''; talk?: string[] }
 
 const _c = new THREE.Color();
 const _n = new THREE.Vector3();

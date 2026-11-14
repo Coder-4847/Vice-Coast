@@ -264,6 +264,7 @@ export class Commerce {
     for (const k of this.ownedCrafts.values()) this.game.crafts?.remove(k);
     this.ownedCrafts.clear();
     this.game.deliveries?.reset();
+    this.game.empire?.reset();
     this.spawnOwnedCrafts();
     this.refreshMarkers();
     this.wreckTimers.clear();
@@ -511,7 +512,9 @@ export class Commerce {
 
   private newDay(): void {
     const notes = this.eco.newDay();
+    const biz = this.game.empire?.newDay() ?? [];
     this.game.ui.toast(`Day ${this.eco.p.day}${notes.length ? ' · ' + notes[0] : ''}`);
+    biz.forEach((n, i) => setTimeout(() => this.game.ui.toast(n), 2200 * (i + 1)));
     this.game.story?.onNewDay();
     this.autosave();
   }

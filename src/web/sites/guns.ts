@@ -6,6 +6,7 @@ import type { CartLine, DropKind } from '../../economy/types';
 import { WEAPONS, type WeaponId } from '../../player/Weapons';
 import type { Site, WebCtx } from '../Browser';
 import { button, div, gunArt } from '../ui';
+import { bizListings } from './biz';
 import { card, frame, kv, p, pick, rnd, section } from './common';
 
 /** Only the black market sells these. */
@@ -147,6 +148,7 @@ function route(ctx: WebCtx, black: boolean): HTMLElement[] {
   if (a === 'gear') return gear(ctx);
   if (a === 'cart') return cartPage(ctx, black);
   if (a === 'orders') return orders(ctx);
+  if (black && a === 'property') return [bizListings(ctx, false)];
   return catalogue(ctx, black, ctx.query.cat ?? '');
 }
 
@@ -167,8 +169,8 @@ export const GHOST: Site = {
     const n = cartOf(ctx.host).reduce((a, l) => a + l.qty, 0);
     const day = ctx.c.eco.p.day;
     el.append(frame(ctx, { name: 'ghostline', logo: h('span', 'w-mono', '> ghostline_'), tagline: `node ${Math.floor(rnd(day, 3) * 9000 + 1000)} · encrypted` },
-      [['Market', 'ghostline.onion'], [`Basket${n ? ` (${n})` : ''}`, 'cart'], ['Drops', 'orders']],
-      ctx.path ? null : div('w-terminal', p('> launchers, exotics and charges nobody else will sell you'), p('> three "found" items a day, cheap'), p('> dead drops only. pay, wait, collect. sometimes the cops are watching. that is the price.'), p(`> today's risk level: ${['low', 'moderate', 'elevated'][Math.floor(rnd(day, 9) * 3)]}`)),
+      [['Market', 'ghostline.onion'], ['Property', 'property'], [`Basket${n ? ` (${n})` : ''}`, 'cart'], ['Drops', 'orders']],
+      ctx.path ? null : div('w-terminal', p('> launchers, exotics and charges nobody else will sell you'), p('> three "found" items a day, cheap'), p('> new: property. grow-ops, presses, labs, a cartel warehouse. see /property'), p('> dead drops only. pay, wait, collect. sometimes the cops are watching. that is the price.'), p(`> today's risk level: ${['low', 'moderate', 'elevated'][Math.floor(rnd(day, 9) * 3)]}`)),
       ...route(ctx, true)));
   },
 };

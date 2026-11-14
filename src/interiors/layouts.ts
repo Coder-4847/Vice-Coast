@@ -13,6 +13,10 @@ export interface Venue {
   sub?: string;
   /** A floor or room number for hallways and rooms. */
   floor?: number;
+  /** A business you own: its id (the office laptop manages it). */
+  biz?: string;
+  /** How busy it is (0..1): the nightclub's crowd follows its popularity. */
+  crowd?: number;
   unit?: number;
 }
 
@@ -33,6 +37,8 @@ export interface Ops {
   knock(): void;
   /** Open the web browser (computers and laptops). */
   web(url?: string): void;
+  /** Open the management screen for the business you are in. */
+  manage(): void;
   /** The room you rented in this building today, if any. */
   key(v: Venue): Venue | null;
   atm(): void;
@@ -656,6 +662,206 @@ function mall(b: Builder, v: Venue, ops: Ops): void {
   void v;
 }
 
+
+// ================================================================================================ your businesses
+
+/** The office laptop: a small desk with a glowing screen and the "manage" spot. */
+function laptopDesk(b: Builder, x: number, z: number, f: 0 | 1 | 2 | 3, ops: Ops, label = 'Manage the business (laptop)'): void {
+  F.desk(b, x, z, f, false, 1.2);
+  b.box(x, 0.77, z, 0.34, 0.02, 0.24, S('metal', 0x2a2d33), false, false);
+  b.glow(x, 0.79, z - (f === 0 ? 0.1 : f === 1 ? -0.1 : 0), f < 2 ? 0.32 : 0.02, 0.2, f < 2 ? 0.02 : 0.32, 0x8ac4ff, 0.9);
+  b.spot(x, z + (f === 0 ? 0.9 : f === 1 ? -0.9 : 0), label, () => ops.manage(), 1.1);
+}
+
+function club(b: Builder, v: Venue, ops: Ops): void {
+  const W = 26, D = 22, H = 6;
+  const crowd = v.crowd ?? 0.5;
+  b.room(-W / 2, 0, W / 2, D, H, { floor: S('wood', 0x6a4a58, 1.4), wall: S('panel', 0x6a4a88, 1.6), ceil: S('plaster', 0x2a2232, 2), amb: amb(0x6a5a7a), skirting: 0x0a0a0a, gaps: [{ side: 0, at: 0, w: 2.2, h: 2.6 }] });
+  entrance(b, 0, 0, ops, true);
+  // the dance floor: lit tiles in club colours, coloured light rigs above
+  const cols = [0xff2e88, 0x27e6ff, 0xffb02e, 0x8a5cff];
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) b.glow(-4.5 + i * 1.8, 0.01, 6 + j * 1.8, 1.7, 0.03, 1.7, cols[(i + j * 2) % 4]!, 0.8);
+  for (const [x, z] of [[-8, 4], [8, 4], [-8, 15], [0, 4], [6, 15]] as const) b.fixture(x, z, H, 'pendant', 0xffc8e8, 0.8);
+  for (let i = 0; i < 4; i++) { b.light(-3 + i * 2, 4.5, 10.5, cols[i]!, 1.4, 6); b.glow(-3 + i * 2, H - 0.3, 10.5, 0.4, 0.2, 0.4, cols[i]!, 2); }
+  b.box(0, H - 0.5, 10.5, 12, 0.12, 0.12, S('metal', 0x2a2d33), false, false);
+  // DJ booth and LED wall on the back wall
+  b.box(0, 0, D - 2.2, 8, 0.7, 4, S('panel', 0x1a1a1a, 1.2), true);
+  b.box(0, 0.7, D - 2.8, 3.2, 1.0, 0.9, S('metal', 0x1a1c20), true);
+  for (const s of [-1, 1]) b.glow(s * 0.8, 1.7, D - 2.8, 0.7, 0.02, 0.5, 0x4ae0ff, 1.2);
+  for (let k = 0; k < 8; k++) b.glow(-7 + k * 2, 1.2, D - 0.12, 1.8, 4, 0.04, cols[k % 4]!, 0.8);
+  for (const s of [-1, 1]) { b.box(s * 5.5, 0, D - 2.2, 1.6, 3.4, 1.4, S('fabric', 0x0a0a0a, 0.3), true); for (let k = 0; k < 2; k++) b.glow(s * 5.5, 0.7 + k * 1.4, D - 1.48, 1.0, 1.0, 0.02, 0x222222, 1); }
+  b.light(0, 3, D - 4, 0x8a5cff, 1.2, 7, false);
+  b.person(0, D - 2.4, pi, 'staff', 'cheer');
+  // the bar along the left wall
+  F.backBar(b, -W / 2 + 0.3, 9, 2, 9);
+  F.counter(b, -W / 2 + 2.4, 9, 2, 9, S('marble', 0x1a1a1a, 1), false);
+  for (let i = 0; i < 7; i++) F.stool(b, -W / 2 + 3.5, 5.4 + i * 1.2, 0.78, 0x8a1a3a);
+  b.person(-W / 2 + 1.3, 9, pi / 2, 'staff');
+  b.spot(-W / 2 + 3.6, 9, 'Drink on the house', () => ops.drink(0), 1.2);
+  // VIP: a raised lounge with sofas behind a rope
+  b.box(W / 2 - 4, 0, D - 6, 7.5, 0.4, 8, S('carpet', 0x5a1a2a, 1), true);
+  F.sofa(b, W / 2 - 1, D - 6, 3, 0x1a1a1a, 3);
+  F.sofa(b, W / 2 - 4, D - 2.6, 1, 0x1a1a1a, 3);
+  F.coffeeTable(b, W / 2 - 3.2, D - 6, 0.9, 1.6);
+  for (let k = 0; k < 4; k++) b.cyl(W / 2 - 8, 0, D - 9.5 + k * 2.2, 0.06, 1.0, S('metal', 0xd8b048), false, 8);
+  b.box(W / 2 - 8, 0.9, D - 6.2, 0.05, 0.06, 6.6, S('fabric', 0x8a1a1a, 0.3), false, false);
+  b.person(W / 2 - 1.2, D - 7, -pi / 2, 'patron', 'sit');
+  b.person(W / 2 - 1.2, D - 5, -pi / 2, 'patron', 'sit');
+  b.light(W / 2 - 4, 3, D - 6, 0xd8b048, 0.9, 4);
+  // office in the front-right corner
+  b.partition('x', 6, W / 2 - 6, W / 2, H, S('panel', 0x2a2030, 1.4), { at: W / 2 - 5, w: 1 });
+  b.partition('z', W / 2 - 6, 0, 6, H, S('panel', 0x2a2030, 1.4));
+  b.beginZone(W / 2 - 6, 0, W / 2, 6, amb(0x6a6058));
+  b.fixture(W / 2 - 3, 3, H, 'round', 0xfff0dc, 1.0);
+  laptopDesk(b, W / 2 - 3, 2.2, 0, ops);
+  b.box(W / 2 - 0.5, 0, 4.8, 0.8, 1.2, 0.8, S('metal', 0x2a2d33), true); // safe
+  b.zone = 0;
+  // bouncers and the crowd (bigger when the club is popular)
+  b.person(-1.8, 1.4, pi, 'guard'); b.person(1.8, 1.4, pi, 'guard');
+  const n = Math.round(4 + crowd * 14);
+  for (let k = 0; k < n; k++) b.person(-4 + b.r() * 9, 6.5 + b.r() * 9, b.r() * 6.28, 'patron', 'cheer');
+  for (let k = 0; k < Math.round(crowd * 6); k++) b.person(-W / 2 + 3.6, 5.4 + k * 1.2, -pi / 2, 'patron', 'sit');
+  b.sign(v.name.toUpperCase(), 0, 4.6, D - 0.18, 6, 1, '#ff4a9a', '#100810');
+}
+
+function laundromat(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 12, D = 10;
+  b.room(-W / 2, 0, W / 2, D, 3, { floor: S('checker', 0xffffff, 1), wall: PLASTER(0xd8e8f0), ceil: S('ceiling', 0xf2f2f0, 1.2), amb: amb(0x8a8e90), skirting: 0x3a6a8a, gaps: [{ side: 0, at: 0, w: 1.9, h: 2.4 }] });
+  entrance(b, 0, 0, ops, true);
+  for (let x = -4; x <= 4; x += 4) for (let z = 2.5; z < D - 3; z += 3) b.fixture(x, z, 3, 'strip', 0xf4f8ff, 0.9);
+  for (const side of [-1, 1]) for (let i = 0; i < 6; i++) {
+    const x = side * (W / 2 - 0.45), z = 1.8 + i * 0.95;
+    b.box(x, 0, z, 0.8, 0.9, 0.85, S('metal', 0xf2f2f2), true);
+    b.glow(x - side * 0.41, 0.35, z, 0.02, 0.4, 0.4, 0x2a3a4a, 1);
+    b.box(x, 0.9, z, 0.8, 0.85, 0.85, S('metal', 0xe8e8e8), true);
+  }
+  F.table(b, 0, 4, 3, 1, S('lino', 0xe8e4dc, 1));
+  F.chairRow(b, 0, 2, 0, 4, 0xd83a2a);
+  b.person(1.2, 2.1, 0, 'patron', 'sit');
+  // the back room: counting tables
+  b.partition('x', D - 2.8, -W / 2, W / 2, 3, PLASTER(0xd8e8f0), { at: -W / 2 + 1.2, w: 0.9 });
+  b.beginZone(-W / 2, D - 2.8, W / 2, D, amb(0x7a7068));
+  b.fixture(0, D - 1.4, 3, 'bulb', 0xffd9a8, 1.0);
+  F.table(b, 1.5, D - 1.4, 3, 1.2, S('wood', 0x6b4a30));
+  for (let k = 0; k < 8; k++) b.box(0.4 + k * 0.32, 0.75, D - 1.4 + (k % 2) * 0.2, 0.16, 0.08 + (k % 3) * 0.04, 0.08, S('plain', 0x3a8a4a), false, false);
+  laptopDesk(b, -W / 2 + 2.2, D - 1.3, 1, ops);
+  b.person(2.5, D - 0.8, pi, 'staff');
+}
+
+function carwash(b: Builder, v: Venue, ops: Ops): void {
+  const W = 16, D = 12;
+  b.room(-W / 2, 0, W / 2, D, 5, { floor: S('concrete', 0x9aa0a4, 3), wall: S('tile', 0xd8e4ec, 1.2), amb: amb(0x8a8e90), gaps: [{ side: 0, at: -5, w: 1.2, h: 2.2 }] });
+  entrance(b, -5, 0, ops);
+  for (let z = 2; z < D; z += 3) b.fixture(2, z, 5, 'strip', 0xf4f8ff, 1.2);
+  // the tunnel: brushes, rails and a car halfway through
+  for (const s of [-1, 1]) b.box(2 + s * 2.8, 0, D / 2, 0.3, 0.2, D - 2, S('metal', 0xe8b81a), true);
+  for (let k = 0; k < 3; k++) { b.cyl(2 - 2.2, 0, 3 + k * 3, 0.45, 2.4, S('fabric', 0x2a7ad8, 0.3), true, 12); b.cyl(2 + 2.2, 0, 3 + k * 3, 0.45, 2.4, S('fabric', 0x2a7ad8, 0.3), true, 12); }
+  b.box(2, 3, D / 2, 5, 0.3, 0.5, S('fabric', 0x2a7ad8, 0.3), false, false);
+  b.box(2, 0.3, 7, 1.9, 0.9, 4.2, S('metal', b.pick([0xd83a2a, 0x2a2d33, 0xf2f2f2])), true);
+  b.box(2, 1.2, 6.8, 1.6, 0.6, 2.2, S('plain', 0x1a2430), false, false);
+  b.glow(2, 4.6, D / 2, 4, 0.05, D - 2, 0xaee4ff, 0.6);
+  // the booth
+  b.box(-W / 2 + 2.5, 0, 3.5, 3.6, 2.4, 0.1, S('plain', 0xb8d4e0), true, false);
+  laptopDesk(b, -W / 2 + 2, 5.2, 1, ops);
+  b.person(4.8, 9, pi, 'staff');
+  b.sign(v.name.toUpperCase(), 2, 4.2, D - 0.12, 5, 1, '#ffffff', '#1f6fd6');
+}
+
+function growop(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 18, D = 14;
+  b.room(-W / 2, 0, W / 2, D, 5.5, { floor: S('concrete', 0x6a6a64, 3), wall: S('wood', 0xffffff, 1.6), ceil: S('wood', 0x8a8a8a, 2), amb: amb(0x7a6a80), gaps: [{ side: 0, at: -6, w: 1.2, h: 2.2 }] });
+  entrance(b, -6, 0, ops);
+  // rows of plants under pink grow lights
+  for (let r = 0; r < 4; r++) {
+    const x = -4 + r * 3.4;
+    b.box(x, 0, D / 2 + 1, 1.4, 0.4, D - 4, S('wood', 0x5a3e28), true);
+    for (let z = 3.4; z < D - 1.4; z += 0.8) b.ball(x + (b.r() - 0.5) * 0.4, 0.95, z, 0.4 + b.r() * 0.15, S('fabric', b.pick([0x3a7a2a, 0x4a8a32, 0x2f6a24]), 0.25), 1.3);
+    b.glow(x, 3.2, D / 2 + 1, 0.4, 0.08, D - 4, 0xff5ad8, 1.3);
+    b.light(x, 3, D / 2 + 1, 0xff7ae8, 1.1, 5);
+  }
+  for (const s of [-1, 1]) b.cyl(s * (W / 2 - 0.8), 2, 2, 0.5, 0.25, S('metal', 0x8a8f96), false, 14);
+  b.box(0, 4.2, D / 2, W - 2, 0.12, 0.12, S('metal', 0x2a2d33), false, false);
+  // drying racks and a packing table by the door
+  F.table(b, -W / 2 + 2.2, 4, 1.2, 3, S('wood', 0x8a6040));
+  for (let k = 0; k < 6; k++) b.box(-W / 2 + 2.2, 0.75, 2.8 + k * 0.45, 0.4, 0.18, 0.3, S('plain', 0x4a8a3a), false, false);
+  laptopDesk(b, -W / 2 + 2.2, 1.6, 0, ops);
+  b.person(-0.6, 6, 0, 'staff'); b.person(2.8, 9, pi, 'staff');
+}
+
+function printshop(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 14, D = 12;
+  b.room(-W / 2, 0, W / 2, D, 4, { floor: S('concrete', 0x8a8a86, 3), wall: S('brick', 0xffffff, 2.4), amb: amb(0x7a7670), gaps: [{ side: 0, at: 0, w: 1.0, h: 2.15 }] });
+  entrance(b, 0, 0, ops);
+  for (let x = -4; x <= 4; x += 4) for (let z = 3; z < D; z += 3.5) b.fixture(x, z, 4, 'strip', 0xfff2dc, 1.0);
+  // presses
+  for (let i = 0; i < 2; i++) {
+    const x = -3.5 + i * 7;
+    b.box(x, 0, 7, 2.2, 1.6, 4, S('metal', 0x3a4a5a), true);
+    b.cyl(x, 1.6, 6, 0.3, 0.05, S('metal', 0x8a8f96), false, 10);
+    b.box(x, 1.6, 8, 2.0, 0.5, 1.2, S('metal', 0x2a2d33), false, false);
+    b.glow(x + 1.12, 1.0, 6, 0.02, 0.2, 0.4, 0x4aff9a, 1);
+  }
+  for (let k = 0; k < 4; k++) b.cyl(-W / 2 + 0.6, 0.4 + k * 0, 2.5 + k * 1.2, 0.45, 1.2, S('plain', 0xf2f0ea), true, 16);
+  // pallets of finished notes
+  for (let p = 0; p < 3; p++) { b.box(W / 2 - 1.2, 0, 3 + p * 2.2, 1.6, 0.15, 1.6, S('wood', 0xb89a6a)); for (let k = 0; k < 9; k++) b.box(W / 2 - 1.7 + (k % 3) * 0.5, 0.15 + Math.floor(k / 3) * 0.22, 2.5 + p * 2.2 + (k % 2) * 0.4, 0.45, 0.2, 0.35, S('plain', 0x6aa86a), false, false); }
+  laptopDesk(b, -W / 2 + 2.2, D - 1.4, 1, ops);
+  b.person(-3.5, 9.6, pi, 'staff'); b.person(3.5, 4.4, 0, 'staff');
+}
+
+function lab(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 10, D = 5;
+  b.room(-W / 2, 0, W / 2, D, 2.5, { floor: S('lino', 0x8a8a7a, 1), wall: S('panel', 0xd8d0b8, 1.4), amb: amb(0x7a7a6a), gaps: [{ side: 0, at: -3.5, w: 0.9, h: 2.1 }] });
+  entrance(b, -3.5, 0, ops);
+  b.fixture(-1, D / 2, 2.5, 'strip', 0xe8fff0, 0.9); b.fixture(2.5, D / 2, 2.5, 'strip', 0xe8fff0, 0.9);
+  b.window(1, 0.9, D - 0.11, 1.4, 0.8, 1);
+  F.table(b, 0.5, D - 1, 5, 0.9, S('metal', 0xc8ccd0));
+  for (let k = 0; k < 9; k++) b.cyl(-1.6 + k * 0.5, 0.75, D - 1 + (k % 2) * 0.2, 0.06 + (k % 3) * 0.03, 0.2 + (k % 2) * 0.15, S('plain', b.pick([0xd8eef2, 0xc8e8a8, 0xe8d8a8])), false, 10);
+  for (let k = 0; k < 3; k++) b.cyl(W / 2 - 0.5, 0, 1.0 + k * 0.9, 0.3, 0.9, S('metal', b.pick([0x2a5aa8, 0xd8641a, 0x3a6a3a])), true, 14);
+  b.box(-W / 2 + 0.6, 0, 1.2, 1, 0.9, 1.4, S('metal', 0x5a5a4a), true); // generator
+  b.glow(-W / 2 + 1.12, 0.5, 1.2, 0.02, 0.1, 0.2, 0xff3a1a, 1.4);
+  laptopDesk(b, 1.2, 1.0, 0, ops);
+  b.person(0.5, D - 1.8, 0, 'staff');
+}
+
+function docshop(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 10, D = 10;
+  b.room(-W / 2, 0, W / 2, D, 3, { floor: S('lino', 0xd8d4cc, 1.2), wall: PLASTER(0xeef0f2), ceil: S('ceiling', 0xf2f2f0, 1.2), amb: amb(0x8a8c8e), skirting: 0x1f6fd6, gaps: [{ side: 0, at: 0, w: 1.9, h: 2.4 }] });
+  entrance(b, 0, 0, ops, true);
+  for (let z = 2; z < D; z += 3) b.fixture(0, z, 3, 'panel', 0xf4f8ff, 0.9);
+  F.counter(b, 0, 3, 0, 4, S('panel', 0x1f6fd6, 1));
+  for (let k = 0; k < 3; k++) { b.box(-W / 2 + 0.6, 0, 1.6 + k * 1.3, 1, 1.1, 1, S('metal', 0xe8e8e4), true); b.glow(-W / 2 + 1.12, 1.0, 1.6 + k * 1.3, 0.02, 0.15, 0.3, 0x4ae0ff, 1); }
+  b.person(0, 3.8, pi, 'clerk');
+  // the back room: the real work
+  b.partition('x', 5.5, -W / 2, W / 2, 3, PLASTER(0xeef0f2), { at: W / 2 - 1.2, w: 0.9 });
+  b.beginZone(-W / 2, 5.5, W / 2, D, amb(0x6a6a6e));
+  b.fixture(0, 7.8, 3, 'round', 0xfff0dc, 1.0);
+  for (let k = 0; k < 2; k++) F.desk(b, -2.5 + k * 3, 7.6, 0, true, 1.4);
+  b.box(W / 2 - 0.6, 0, 8.6, 1, 1.0, 1.4, S('metal', 0x2a2d33), true);
+  b.glow(W / 2 - 1.12, 0.8, 8.6, 0.02, 0.2, 0.6, 0xff8a3a, 1);
+  laptopDesk(b, -W / 2 + 1.6, D - 1.2, 1, ops);
+  b.person(-2.5, 8.3, pi, 'staff', 'sit');
+}
+
+/** A business you own: its own interior, or a familiar one with the office laptop added by the door. */
+function business(b: Builder, v: Venue, ops: Ops): void {
+  const t = v.sub ?? 'shop';
+  const own = (fn: () => void): void => { fn(); laptopDesk(b, b.entry.x + 2.0, b.entry.z + 0.2, 3, ops); };
+  switch (t) {
+    case 'club': return club(b, v, ops);
+    case 'laundromat': return laundromat(b, v, ops);
+    case 'carwash': return carwash(b, v, ops);
+    case 'grow': return growop(b, v, ops);
+    case 'print': return printshop(b, v, ops);
+    case 'lab': return lab(b, v, ops);
+    case 'docs': return docshop(b, v, ops);
+    case 'food': return own(() => food(b, { ...v, sub: v.biz === 'diner' ? 'diner' : v.biz === 'tacotruck' ? 'taco' : 'burger' }, ops));
+    case 'shop': return own(() => store(b, { ...v, sub: 'grocery' }, ops));
+    case 'motel': return own(() => motelOffice(b, v, ops));
+    case 'cartel': return own(() => { warehouse(b, v, ops); for (let k = 0; k < 6; k++) F.crates(b, -6 + k * 2.4, 16, 3); b.person(-8, 14, 0, 'guard'); b.person(8, 6, pi, 'guard'); });
+    default: return own(() => warehouse(b, v, ops));
+  }
+}
+
 // ================================================================================================ dispatch
 
 /** Build the set for a venue into the builder. */
@@ -688,6 +894,7 @@ export function layout(b: Builder, v: Venue, ops: Ops): void {
     case 'police': return police(b, v, ops);
     case 'hospital': return hospital(b, v, ops);
     case 'mall': return mall(b, v, ops);
+    case 'biz': return business(b, v, ops);
     default: return house(b, v, ops, 'house');
   }
 }

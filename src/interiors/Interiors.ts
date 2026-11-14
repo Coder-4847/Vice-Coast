@@ -13,6 +13,7 @@ import { PROPERTY_BY_ID } from '../economy/catalog';
 import * as screens from '../economy/screens';
 import { Builder, type Spot } from './Builder';
 import { layout, venueName, type Ops, type Venue } from './layouts';
+import { managePage } from '../business/manage';
 
 /** An entrance on the street. */
 interface Entrance {
@@ -154,6 +155,11 @@ export class Interiors {
     return { x: d.x, z: d.z, yaw: d.yaw, locked: LOCKED.has(kind), venue: { kind, level: kind === 'apartments' || kind === 'hotel' || kind === 'office' ? 'lobby' : kind === 'motel' ? 'office' : 'main', seed: d.seed, name, floors: Math.max(1, d.floors), sub: kind === 'store' ? (d.seed % 3 === 0 ? 'liquor' : 'gas') : undefined } };
   }
 
+  /** Walk into a building somebody else placed (your businesses). */
+  enterVenue(e: { x: number; z: number; yaw: number; venue: Venue }): void {
+    this.enter({ x: e.x, z: e.z, yaw: e.yaw, locked: false, venue: e.venue }, e.venue);
+  }
+
   /** Commerce hands over shop and home entrances here. */
   enterPoint(pt: Point): void {
     const pl = this.g.player!;
@@ -213,6 +219,11 @@ export class Interiors {
 
   private exit(): void {
     this.fade(() => this.teardown(true));
+  }
+
+  /** Walk back out onto the street (used by menus that send you off on a job). */
+  leave(): void {
+    if (this.inside && !this.busy) this.exit();
   }
 
   /** Remove the set; `toStreet` puts the player back outside the door. */
@@ -310,6 +321,7 @@ export class Interiors {
       knock: () => this.say(this.pickLine(['Who is it?', 'Go away!', '...', 'Not today, thanks.', 'Room service? We didn\'t order anything.'])),
       atm: () => cm.open(screens.atmPage(cm)),
       web: (url) => cm.openWeb(url ?? 'wave.vc'),
+      manage: () => { const id = this.venue?.biz; if (id) cm.open(managePage(g, id)); },
       say: (t) => this.say(t),
       occupied: (seed) => {
         const hr = g.world.tod.hour;
@@ -379,7 +391,7 @@ export class Interiors {
       p.keep = true; p.speed = 0; p.edge = -1; p.armed = false; p.health = 60;
       if (e.cast === 'clerk' || e.cast === 'guard') p.look = { ...lookFor({ cast: e.cast }) };
       if (e.cast === 'guard') p.role = 'clerk';
-      p.pose = e.pose === 'sit' ? 'sit' : '';
+      p.pose = e.pose ?? '';
       p.state = e.cast === 'sleeper' ? 'lie' : 'stand';
       p.stateT = 1e6;
       const ex: Extra = { p, x, z, yaw: e.yaw, cast: e.cast, talk: e.talk, said: false };

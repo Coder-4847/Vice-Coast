@@ -4,6 +4,7 @@ import { BUSINESSES, PAINTS, PROPERTIES, PROPERTY_BY_ID, SHOWROOM } from '../../
 import { VEHICLES, type VehicleSpec } from '../../vehicles/specs';
 import type { Site, WebCtx } from '../Browser';
 import { button, carArt, div, homeArt } from '../ui';
+import { bizListings } from './biz';
 import { deliveryPoint, frame, kv, p, pick, rnd, section } from './common';
 
 /** The paint picked on a car page, kept between refreshes. */
@@ -128,7 +129,7 @@ function keystoneHome(ctx: WebCtx, tab: string): HTMLElement[] {
   return [
     div('w-hero keystone', div('', h('div', 'w-kicker', 'San Verano\'s property people'), h('h1', '', 'Find your place.'), p('From a desert single-wide to a private island. Buy online; the keys are waiting for you.'))),
     div('w-tabs', ...([['all', 'All homes'], ['sale', 'For sale'], ['owned', 'Yours'], ['biz', 'Businesses']] as const).map(([k, label]) => button(label, () => ctx.go(`keystone.vc?tab=${k}`), `w-tab${tab === k ? ' on' : ''}`))),
-    tab === 'biz' ? businesses(ctx) : div('w-cards wide', ...homes.map((d) => button(div('w-homecard', homeArt(d.kind, d.id.length * 31 + d.price % 97), div('w-homecard-info', h('b', '', d.name), h('span', 'muted', `${d.region} · ${d.kind}`), h('span', 'w-price', e.owns(d.id) ? 'Owned' : money(d.price)))), () => ctx.go(`keystone.vc/home/${d.id}`), 'w-cardbtn'))),
+    tab === 'biz' ? bizListings(ctx, true) : div('w-cards wide', ...homes.map((d) => button(div('w-homecard', homeArt(d.kind, d.id.length * 31 + d.price % 97), div('w-homecard-info', h('b', '', d.name), h('span', 'muted', `${d.region} · ${d.kind}`), h('span', 'w-price', e.owns(d.id) ? 'Owned' : money(d.price)))), () => ctx.go(`keystone.vc/home/${d.id}`), 'w-cardbtn'))),
   ];
 }
 
@@ -163,30 +164,11 @@ function keystoneListing(ctx: WebCtx, id: string): HTMLElement[] {
   ];
 }
 
-function businesses(ctx: WebCtx): HTMLElement {
-  const e = ctx.c.eco;
-  const owned = e.p.biz;
-  const daily = owned.reduce((a, id) => a + (BUSINESSES.find((b) => b.id === id)?.income ?? 0), 0);
-  return div('',
-    p(`Commercial listings. Businesses pay their takings into your bank every morning${owned.length ? `: you earn about ${money(daily)} a day` : ''}.`, 'muted'),
-    div('w-list', ...BUSINESSES.map((b) => {
-      const mine = owned.includes(b.id);
-      return div('w-listing',
-        div('w-bizicon', b.kind[0]!),
-        div('w-listing-info', h('b', '', b.name), h('span', 'muted', `${b.kind} · ${b.region}`), p(b.blurb, 'small')),
-        div('w-listing-buy', h('div', 'w-price', money(b.price)), h('span', 'muted small', `≈ ${money(b.income)} / day · pays back in ${Math.round(b.price / b.income)} days`),
-          mine ? button('Sell (70%)', () => { e.p.biz = e.p.biz.filter((x) => x !== b.id); e.earn(Math.round(b.price * 0.7), `Sold ${b.name}`); e.deposit(Math.round(b.price * 0.7)); ctx.toast(`Sold ${b.name}`); void ctx.c.save(ctx.c.slot ?? 1, true); ctx.refresh(); }, 'w-btn')
-            : button('Buy', () => { if (!e.charge(b.price, `Bought ${b.name}`)) { ctx.toast('Not enough money'); return; } e.p.biz.push(b.id); e.message('Keystone Realty', `${b.name} is yours. The manager will pay the takings into your account every morning.`); ctx.toast(`${b.name} is yours`); ctx.g.audio.uiBlip('ok'); void ctx.c.save(ctx.c.slot ?? 1, true); ctx.refresh(); }, 'w-btn primary', e.worth < b.price)),
-      );
-    })),
-  );
-}
-
 export const KEYSTONE: Site = {
   host: 'keystone.vc', name: 'Keystone Realty', tagline: 'Homes and businesses', color: '#7a5cff', category: 'Shopping',
   render(ctx, el) {
     const [a, b] = ctx.path.split('/');
-    el.append(frame(ctx, { name: 'Keystone Realty', logo: h('span', '', '⌂ ', h('b', '', 'KEYSTONE'), ' Realty'), tagline: `${PROPERTIES.length} homes · ${BUSINESSES.length} businesses` }, [['Homes', 'keystone.vc'], ['Businesses', 'keystone.vc?tab=biz'], ['Your properties', 'keystone.vc?tab=owned']],
+    el.append(frame(ctx, { name: 'Keystone Realty', logo: h('span', '', '⌂ ', h('b', '', 'KEYSTONE'), ' Realty'), tagline: `${PROPERTIES.length} homes · ${BUSINESSES.filter((b) => b.legal).length} businesses` }, [['Homes', 'keystone.vc'], ['Businesses', 'keystone.vc?tab=biz'], ['Your properties', 'keystone.vc?tab=owned']],
       ...(a === 'home' && b ? keystoneListing(ctx, b) : keystoneHome(ctx, ctx.query.tab ?? 'all'))));
   },
 };
