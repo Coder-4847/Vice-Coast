@@ -28,7 +28,7 @@ export interface Veg {
 /** Merge several chunk results (sources whose areas overlap). */
 export function mergeChunks(list: ChunkData[]): ChunkData {
   if (list.length === 1) return list[0]!;
-  const out: ChunkData = { cx: list[0]!.cx, cz: list[0]!.cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [], veg: [] };
+  const out: ChunkData = { cx: list[0]!.cx, cz: list[0]!.cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [], veg: [], doors: [] };
   for (const d of list) {
     out.boxes.push(...d.boxes);
     out.cyls.push(...d.cyls);
@@ -36,6 +36,7 @@ export function mergeChunks(list: ChunkData[]): ChunkData {
     out.trees.push(...d.trees);
     out.signals.push(...d.signals);
     if (d.veg) out.veg!.push(...d.veg);
+    if (d.doors) out.doors!.push(...d.doors);
   }
   return out;
 }

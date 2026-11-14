@@ -25,9 +25,9 @@ export function buildMountKestrel(): Kit {
     const x = rd.xs[i]! + 36, z = rd.zs[i]! - 10;
     const y = k.ground(x, z);
     k.box(x + 10, z, 60, 40, 0.15, 0x585858, { y0: y, solid: false }); // car park
-    k.building(x - 4, z - 22, 30, 16, 6.2, 0, 0x7a5a3a, { roof: 'gable', roofColor: 0x3f4a42, mode: MODE.PUNCHED, pitch: 0.5, floors: 2 });
+    k.building(x - 4, z - 22, 30, 16, 6.2, 0, 0x7a5a3a, { door: 'hotel', roof: 'gable', roofColor: 0x3f4a42, mode: MODE.PUNCHED, pitch: 0.5, floors: 2 });
     k.building(x + 26, z - 22, 14, 10, 4.2, 0, 0x8a6a48, { roof: 'gable', roofColor: 0x3f4a42, mode: MODE.PUNCHED, pitch: 0.5 });
-    for (let c = 0; c < 6; c++) k.building(x - 24 + c * 12, z + 34, 8, 7, 3.4, 0, pick(r, PAL.wood), { roof: 'gable', roofColor: 0x3f4a42, mode: MODE.PUNCHED, pitch: 0.55 }); // cabins
+    for (let c = 0; c < 6; c++) k.building(x - 24 + c * 12, z + 34, 8, 7, 3.4, 0, pick(r, PAL.wood), { door: 'cabin', roof: 'gable', roofColor: 0x3f4a42, mode: MODE.PUNCHED, pitch: 0.55 }); // cabins
     for (let c = 0; c < 7; c++) { const cx = x - 8 + c * 6.4; k.box(cx, z + 2, 2.1, 4.5, 1.5, pick(r, [0x777777, 0x8a3a2f, 0x3a5a8a, 0xdadada]), { ry: 0 }); }
     k.sign(x + 36, z - 6, Math.PI, 5.4, 2.4, 3.4, 0x4a7a5a, MODE.WALL);
     k.scatter(VEG.PINE, x, z, 60, 18, 0.9, 1.3);

@@ -197,8 +197,9 @@ export class RenderPipeline {
     this.h = Math.max(1, Math.round(height));
     const opts = { type: THREE.HalfFloatType, depthBuffer: true, stencilBuffer: false } as const;
     this.sceneRT = new THREE.WebGLRenderTarget(this.w, this.h, { ...opts, samples: preset.msaa });
-    this.rtA = new THREE.WebGLRenderTarget(this.w, this.h, { type: THREE.HalfFloatType, depthBuffer: false });
-    this.rtB = new THREE.WebGLRenderTarget(this.w, this.h, { type: THREE.HalfFloatType, depthBuffer: false });
+    // depth buffers so the viewmodel can be drawn into whichever one holds the AO'd image
+    this.rtA = new THREE.WebGLRenderTarget(this.w, this.h, { type: THREE.HalfFloatType, depthBuffer: true });
+    this.rtB = new THREE.WebGLRenderTarget(this.w, this.h, { type: THREE.HalfFloatType, depthBuffer: true });
     this.ldr = new THREE.WebGLRenderTarget(this.w, this.h, { type: THREE.UnsignedByteType, depthBuffer: false });
 
     if (preset.ao) {
@@ -241,12 +242,16 @@ export class RenderPipeline {
     r.setRenderTarget(this.sceneRT);
     r.shadowMap.needsUpdate = true; // shadow maps are rendered once per frame, here, and reused by later passes
     r.render(this.scene, this.camera);
-    if (this.overlayCamera) {
+    // the viewmodel goes on after the AO pass: screen-space AO from the world's depth must not darken the hands
+    const overlay = (target: THREE.WebGLRenderTarget): void => {
+      if (!this.overlayCamera) return;
+      r.setRenderTarget(target);
       r.autoClear = false;
       r.clearDepth(); // the viewmodel never intersects the world
       r.render(this.scene, this.overlayCamera);
       r.autoClear = true;
-    }
+    };
+    if (!this.gtao) overlay(this.sceneRT);
 
     // 2. Post chain.
     let read = this.sceneRT;
@@ -259,7 +264,7 @@ export class RenderPipeline {
         write = t;
       }
     };
-    if (this.gtao) run(this.gtao);
+    if (this.gtao) { run(this.gtao); overlay(read); }
     if (this.bloom) {
       this.bloom.strength = p.bloom;
       // UnrealBloom forwards the *whole* pixel above the threshold, and it works before exposure, so the

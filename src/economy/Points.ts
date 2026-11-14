@@ -52,6 +52,7 @@ class Clearance {
       for (let cz = cz0; cz <= cz1; cz++) {
         for (const d of this.chunks(cx, cz)) {
           for (const b of d.boxes) {
+            if (b.door) continue;
             if (b.y + b.sy / 2 < gy + 0.25 || b.y - b.sy / 2 > gy + 3.2) continue;
             const dx = x - b.x, dz = z - b.z;
             if (Math.abs(dx) > b.sx + b.sz + m + 4 || Math.abs(dz) > b.sx + b.sz + m + 4) continue;

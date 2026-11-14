@@ -141,10 +141,12 @@ export class Viewmodel {
     if (glove) {
       skin.color.set(glove); skin.roughness = o.gloves === 'white' ? 0.7 : 0.62; skin.sheen = 0; this.cuffMat.color.set(glove);
       this.right.nailMat.color.set(glove); this.left.nailMat.color.set(glove);
+      this.right.showNails(false); this.left.showNails(false);
     } else {
-      skin.color.set(o.skin); skin.roughness = 0.58; skin.sheen = 0.6; this.cuffMat.color.set(o.cuff);
+      skin.color.set(o.skin); skin.roughness = 0.52; skin.sheen = 0.35; this.cuffMat.color.set(o.cuff);
       const nail = new THREE.Color(o.skin).lerp(new THREE.Color('#ffd9c2'), 0.35);
       this.right.nailMat.color.copy(nail); this.left.nailMat.color.copy(nail);
+      this.right.showNails(true); this.left.showNails(true);
     }
   }
 

@@ -37,27 +37,34 @@ export function buildShopFronts(points: Point[], inCity: (x: number, z: number) 
         k.hangar(bx, p.z - 12, 24, 10, Math.PI / 2, 0xe8e6e0, 0x7a8086);
         void A;
       } else if (id === 'downtown') {
-        k.building(bx, p.z - 5.5, 9, 9, 24, 0, 0x9aa6b4, { roof: 'flat', mode: MODE.GLASS });
+        k.building(bx, p.z - 5.5, 9, 9, 24, 0, 0x9aa6b4, { door: false, roof: 'flat', mode: MODE.GLASS });
+        k.frontDoor(bx, p.z - 5.5, 9, 9, Math.PI, 'house', true);
       } else if (id === 'trailer') {
-        k.building(bx, p.z - 3.4, 10, 3.2, 2.8, 0, 0xd9d6cc, { roof: 'shed', roofColor: 0x9a9ea2, mode: MODE.PUNCHED });
+        k.building(bx, p.z - 3.4, 10, 3.2, 2.8, 0, 0xd9d6cc, { door: false, roof: 'shed', roofColor: 0x9a9ea2, mode: MODE.PUNCHED });
+        k.frontDoor(bx, p.z - 3.4, 10, 3.2, Math.PI, 'house', true);
         k.box(bx + 6.5, p.z - 3.4, 3, 3, 0.4, 0x7a5a3a, { y0: g });
       } else if (id === 'cabin') {
-        k.building(bx, p.z - 5, 10, 7, 3.6, 0, 0x7a5a3a, { roof: 'gable', roofColor: 0x4a3a30, mode: MODE.PUNCHED });
+        k.building(bx, p.z - 5, 10, 7, 3.6, 0, 0x7a5a3a, { door: false, roof: 'gable', roofColor: 0x4a3a30, mode: MODE.PUNCHED });
+        k.frontDoor(bx, p.z - 5, 10, 7, Math.PI, 'house', true);
         k.cyl(bx + 3, p.z - 7, 0.9, 6.2, 0x5a4a40);
       } else if (id === 'crestview' || id === 'rojo') {
-        k.building(bx, p.z - 8, 22, 12, 6, 0, 0xf4f2ec, { roof: 'flat', mode: MODE.GLASS });
+        k.building(bx, p.z - 8, 22, 12, 6, 0, 0xf4f2ec, { door: false, roof: 'flat', mode: MODE.GLASS });
+        k.frontDoor(bx, p.z - 8, 22, 12, Math.PI, 'house', true);
         k.box(bx + 4, p.z - 8, 18, 10, 3.4, 0xe8e4da, { y0: g + 6, mode: MODE.GLASS });
         k.box(bx - 6, p.z + 6, 14, 8, 0.15, 0x2a9bc9, { y0: g, mode: MODE.GLOW, solid: false });
       } else if (id === 'dock') {
-        k.building(bx, p.z - 5, 14, 8, 4.2, 0, 0x8a7a68, { roof: 'gable', roofColor: 0x2a5a7a, mode: MODE.PUNCHED });
+        k.building(bx, p.z - 5, 14, 8, 4.2, 0, 0x8a7a68, { door: false, roof: 'gable', roofColor: 0x2a5a7a, mode: MODE.PUNCHED });
+        k.frontDoor(bx, p.z - 5, 14, 8, Math.PI, 'house', true);
       } else {
-        k.building(bx, p.z - 6, id === 'boardwalk' ? 12 : 12, 8, id === 'boardwalk' ? 7.5 : 4.6, 0, wall, { roof: id === 'boardwalk' ? 'flat' : 'gable', mode: MODE.PUNCHED });
+        k.building(bx, p.z - 6, id === 'boardwalk' ? 12 : 12, 8, id === 'boardwalk' ? 7.5 : 4.6, 0, wall, { door: false, roof: id === 'boardwalk' ? 'flat' : 'gable', mode: MODE.PUNCHED });
+        k.frontDoor(bx, p.z - 6, id === 'boardwalk' ? 12 : 12, 8, Math.PI, 'house', true);
       }
       k.box(bx, p.z - 0.8, 2.2, 0.3, 0.9, c, { y0: g + 2.1, mode: MODE.NEON, solid: false });
     } else {
       const big = p.kind === 'showroom' || p.kind === 'tuning';
       const w = big ? 14 : 9, d = big ? 9 : 6, h = big ? 4.2 : 3.6;
-      k.building(bx, p.z - 1.8 - d / 2, w, d, h, 0, wall, { roof: 'false', mode: big ? MODE.GLASS : MODE.PUNCHED });
+      k.building(bx, p.z - 1.8 - d / 2, w, d, h, 0, wall, { door: false, roof: 'false', mode: big ? MODE.GLASS : MODE.PUNCHED });
+      k.frontDoor(bx, p.z - 1.8 - d / 2, w, d, Math.PI, 'house', true);
       front(w, d, h);
       k.sign(bx + w / 2 + 1, p.z - 0.6, 0, 2.6, 1, 3.4, c);
     }

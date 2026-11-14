@@ -235,9 +235,13 @@ export class Police {
 
   // --------------------------------------------------------------------------------------- targeting
 
+  /** While the player is indoors the police work the street door. */
+  proxy: { x: number; y: number; z: number } | null = null;
+
   private refreshTarget(): void {
     const { player, driving } = this.d;
     const t = this.tgt;
+    if (this.proxy) { t.x = this.proxy.x; t.y = this.proxy.y; t.z = this.proxy.z; t.vx = 0; t.vz = 0; t.car = false; t.speed = 0; return; }
     const v = driving.mode === 'driving' || driving.mode === 'entering' ? driving.vehicle : null;
     if (v) {
       const lv = v.body.linvel();
@@ -540,6 +544,7 @@ export class Police {
 
   /** Fire a burst/shot/shotgun blast at the player from `p`. */
   private shoot(p: Ped, spec: Spec, d: number): void {
+    if (this.proxy) return;
     p.burstN++;
     if (p.burstN >= spec.burst) { p.burstN = 0; p.fireT = (spec.pause ?? spec.interval) * (0.8 + Math.random() * 0.5); }
     else p.fireT = spec.interval;

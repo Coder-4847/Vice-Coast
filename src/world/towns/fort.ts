@@ -32,8 +32,8 @@ export function buildFortHalloran(): Kit {
   k.wall(cx - hw, cz + hd, cx - hw, cz - hd, 3.2, 0x6a6e66, 0.3, MODE.METAL);
   k.fence(cx - hw - 6, cz - hd - 6, cx + hw + 6, cz - hd - 6, 2.4, 0x555a50, 5, false);
   // gatehouse, barrier arms and warning signs
-  k.building(cx - 22, cz - hd + 4, 10, 8, 3.6, 0, concrete, { roof: 'flat', mode: MODE.PUNCHED, y0: H });
-  k.building(cx + 22, cz - hd + 4, 10, 8, 3.6, 0, concrete, { roof: 'flat', mode: MODE.PUNCHED, y0: H });
+  k.building(cx - 22, cz - hd + 4, 10, 8, 3.6, 0, concrete, { door: false, roof: 'flat', mode: MODE.PUNCHED, y0: H });
+  k.building(cx + 22, cz - hd + 4, 10, 8, 3.6, 0, concrete, { door: false, roof: 'flat', mode: MODE.PUNCHED, y0: H });
   k.box(cx - 7, cz - hd - 8, 14, 0.25, 0.25, 0xc23a2a, { y0: H + 1.2, solid: false });
   k.box(cx + 7, cz - hd - 8, 14, 0.25, 0.25, 0xf0ede6, { y0: H + 1.2, solid: false });
   for (const dx of [-60, 60]) k.sign(cx + dx, cz - hd - 24, 0, 9, 3.2, 3.4, 0xc23a2a, MODE.NEON);
@@ -49,17 +49,17 @@ export function buildFortHalloran(): Kit {
   for (const [x, z] of [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd], [0, hd], [-hw, 0], [hw, 0]] as const) tower(cx + x * 0.98, cz + z * 0.98);
 
   // HQ with flagpole, parade ground
-  k.building(cx - 90, cz - 140, 46, 22, 9, 0, khaki, { roof: 'hip', roofColor: dark, mode: MODE.PUNCHED, y0: H, floors: 2 });
+  k.building(cx - 90, cz - 140, 46, 22, 9, 0, khaki, { door: false, roof: 'hip', roofColor: dark, mode: MODE.PUNCHED, y0: H, floors: 2 });
   k.cyl(cx - 90, cz - 108, 0.3, 18, 0xcfcfcf); k.box(cx - 88, cz - 108, 3.6, 0.05, 2.2, 0xc23a2a, { y0: H + 15, solid: false });
   k.box(cx, cz + 40, 190, 120, 0.1, 0x8a8a7e, { y0: H, solid: false });
   // barracks
   for (let i = 0; i < 6; i++) {
     const x = cx - 230 + (i % 3) * 82 - 40, z = cz + 150 - Math.floor(i / 3) * 50;
-    k.building(x + 40, z, 50, 12, 4.2, 0, khaki, { roof: 'gable', roofColor: dark, mode: MODE.PUNCHED, pitch: 0.3, y0: H });
+    k.building(x + 40, z, 50, 12, 4.2, 0, khaki, { door: false, roof: 'gable', roofColor: dark, mode: MODE.PUNCHED, pitch: 0.3, y0: H });
   }
-  for (let i = 0; i < 3; i++) k.building(cx + 190, cz - 150 + i * 36, 40, 14, 4.2, 0, khaki, { roof: 'gable', roofColor: dark, mode: MODE.PUNCHED, pitch: 0.3, y0: H });
+  for (let i = 0; i < 3; i++) k.building(cx + 190, cz - 150 + i * 36, 40, 14, 4.2, 0, khaki, { door: false, roof: 'gable', roofColor: dark, mode: MODE.PUNCHED, pitch: 0.3, y0: H });
   // motor pool: a long vehicle shed, parked trucks, and the tank and APC pads (the drivable ones spawn here)
-  k.building(cx - 60, cz + 70, 90, 28, 7, 0, 0x7a7e68, { roof: 'shed', roofColor: 0x555a4a, mode: MODE.METAL, pitch: 0.1, y0: H });
+  k.building(cx - 60, cz + 70, 90, 28, 7, 0, 0x7a7e68, { door: false, roof: 'shed', roofColor: 0x555a4a, mode: MODE.METAL, pitch: 0.1, y0: H });
   k.box(cx - 58, cz - 10, 100, 40, 0.15, 0x6a6e62, { y0: H, solid: false });
   for (let i = 0; i < 6; i++) { const x = cx - 100 + i * 14; k.box(x, cz + 40, 3, 8, 2.8, pick(r, [0x55604a, 0x4a5240]), { y0: H }); k.box(x, cz + 35.5, 2.6, 2.4, 2.4, 0x4a5240, { y0: H, solid: false }); }
   // hangar and helipads beyond the parade ground

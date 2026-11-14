@@ -53,7 +53,8 @@ export class Robberies {
     const peds = this.g.npcs?.peds;
     if (!peds) return;
     const c = this.stores.clerkSpot(st);
-    const p = peds.place(c.x, c.z, 'walker', 'stand', st.yaw);
+    const yaw = st.room ? st.room.yaw : st.yaw;
+    const p = peds.place(c.x, c.z, 'walker', 'stand', yaw);
     if (!p) return;
     p.role = 'clerk';
     p.keep = true;
@@ -65,10 +66,16 @@ export class Robberies {
     p.look.shirt = [0xe8e8e4, 0xc4202c, 0x2f8a8c, 0xd0a23a][Math.floor(hash(st.def.id) * 4)]!;
     p.look.sleeve = p.look.shirt;
     p.health = 70;
-    p.yaw = st.yaw;
+    p.yaw = yaw;
     this.clerkFlags.set(p, { hands: false, t: 0 });
     p.ai = (q, dt) => this.clerkAI(st, q, dt);
     st.clerk = p;
+  }
+
+  /** The interior is going away: send the clerk home (unless a robbery is running there). */
+  releaseClerk(st: Store): void {
+    if (this.active?.store === st) this.end(this.active, false);
+    this.removeClerk(st);
   }
 
   private removeClerk(st: Store): void {
@@ -89,7 +96,7 @@ export class Robberies {
     f.t -= dt;
     p.aim = f.hands;
     if (d < 14) p.yaw = turn(p.yaw, Math.atan2(pl.pos.x - p.x, pl.pos.z - p.z), dt * 6);
-    else p.yaw = turn(p.yaw, st.yaw, dt * 3);
+    else p.yaw = turn(p.yaw, st.room ? st.room.yaw : st.yaw, dt * 3);
   }
 
   // ------------------------------------------------------------------------------------------------ prompts
@@ -97,7 +104,7 @@ export class Robberies {
   /** Something to rob in reach? Returns the prompt and starts it on `go`. */
   offer(): { text: string; go: () => void } | null {
     const g = this.g;
-    if (this.active || this.atm || this.s.mission || this.s.heists.inside || this.s.cutscenes.active) return null;
+    if (this.active || this.atm || this.s.mission || this.s.heists.inside || this.s.cutscenes.active || this.g.interiors?.busy) return null;
     const pl = g.player!;
     if (!g.weapon?.isDrawn || g.driving?.mode !== 'foot' || g.piloting?.busy || pl.state !== 'ground') return null;
     if ((g.wanted?.stars ?? 0) >= 3) return null;
@@ -173,7 +180,8 @@ export class Robberies {
     if (a.kind === 'armed' && a.away > 2.2) {
       this.s.say('clerk', 'You\'re not walking out of here!', 2);
       const c = this.stores.clerkSpot(a.store);
-      this.s.hostiles.spawn({ x: c.x - Math.sin(a.store.yaw) * 0.2, z: c.z - Math.cos(a.store.yaw) * 0.2, kind: 'pistol', hold: true, tag: 'clerk', look: 'clerk', hp: 60 });
+      const cy = a.store.room ? a.store.room.yaw : a.store.yaw;
+      this.s.hostiles.spawn({ x: c.x - Math.sin(cy) * 0.2, z: c.z - Math.cos(cy) * 0.2, kind: 'pistol', hold: true, tag: 'clerk', look: 'clerk', hp: 60 });
       this.rob.shootouts++;
       this.removeClerk(a.store);
       this.active = null;
@@ -219,7 +227,10 @@ export class Robberies {
     if (this.nearT <= 0) {
       this.nearT = 0.5;
       for (const st of this.stores.list) {
-        const d = Math.hypot(st.x - pl.pos.x, st.z - pl.pos.z);
+        const an = this.stores.anchor(st);
+        const d = Math.hypot(an.x - pl.pos.x, an.z - pl.pos.z);
+        // walk-in shops staff the counter only while you are inside
+        if (st.door && !st.room) { if (st.clerk && this.active?.store !== st) this.removeClerk(st); continue; }
         if (d < 70 && !st.clerk) this.spawnClerk(st);
         else if (d > 130 && st.clerk && this.active?.store !== st) this.removeClerk(st);
         else if (st.clerk && (st.clerk.state === 'down' || !st.clerk.active)) {

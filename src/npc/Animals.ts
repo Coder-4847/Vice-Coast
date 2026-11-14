@@ -33,7 +33,8 @@ export class Animals {
   private readonly s = new THREE.Vector3();
   stats = { dogs: 0, pigeons: 0, bites: 0 };
   /** Your own dog, once adopted from the shelter (phone). */
-  private buddy: Dog | null = null;
+  /** Your dog, if you adopted one. */
+  buddy: Dog | null = null;
 
   /** Adopt Rufus: $500, then he lives with you for good. */
   adopt(): void {

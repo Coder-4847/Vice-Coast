@@ -147,7 +147,7 @@ export function buildCostaMerida(): Kit {
     special.add(`${i},${j}`);
     const cx = (rc.x0 + rc.x1) / 2, cz = (rc.z0 + rc.z1) / 2;
     k.box(cx, cz, rc.x1 - rc.x0, rc.z1 - rc.z0, 0.14, 0xd9cbb0, { y0: G, solid: false });
-    k.building(cx, cz + 14, 16, 36, 16, 0, 0xf4ede0, { roof: 'gable', roofColor: 0x8a4b38, mode: MODE.CLERESTORY, pitch: 0.5, y0: G });
+    k.building(cx, cz + 14, 16, 36, 16, 0, 0xf4ede0, { door: 'look', roof: 'gable', roofColor: 0x8a4b38, mode: MODE.CLERESTORY, pitch: 0.5, y0: G });
     for (const dx of [-9, 9]) { k.box(cx + dx, cz - 6, 7, 7, 30, 0xf4ede0, { y0: G, mode: MODE.WALL }); k.box(cx + dx, cz - 6, 8, 8, 1, 0xcfc9bb, { y0: G + 30, solid: false }); const p = k.box(cx + dx, cz - 6, 5.2, 5.2, 8, 0x8a4b38, { y0: G + 31, solid: false, ry: Math.PI / 4 }); void p; k.box(cx + dx, cz - 6, 0.25, 0.25, 4, 0xe0c040, { y0: G + 39, solid: false }); }
     k.cyl(cx, cz - 26, 9, 0.8, 0x3a8ab0); k.cyl(cx, cz - 26, 1.2, 3.6, 0xf0f4f8, { solid: false });
     for (let n = 0; n < 8; n++) k.tree(rc.x0 + 6, rc.z0 + 8 + n * 10, 1, 1.0), k.tree(rc.x1 - 6, rc.z0 + 8 + n * 10, 1, 1.0);
@@ -160,7 +160,7 @@ export function buildCostaMerida(): Kit {
       if (!rc) continue;
       special.add(`0,${j}`);
       const cx = (rc.x0 + rc.x1) / 2, cz = (rc.z0 + rc.z1) / 2;
-      k.building(cx - 8, cz, 34, rc.z1 - rc.z0 - 8, h * 3.4, YAW.W, pick(r, PAL.pastel), { roof: 'flat', mode: MODE.GLASS, y0: G });
+      k.building(cx - 8, cz, 34, rc.z1 - rc.z0 - 8, h * 3.4, YAW.W, pick(r, PAL.pastel), { door: 'hotel', roof: 'flat', mode: MODE.GLASS, y0: G });
       k.box(cx + 16, cz, 12, rc.z1 - rc.z0 - 10, 0.5, 0x2a9bc9, { y0: G + 0.2, solid: false, mode: MODE.GLOW }); // pool deck
       k.sign(cx - 26, cz - 12, YAW.W, 4, 2, 12, pick(r, PAL.neon));
       for (let n = 0; n < 5; n++) k.tree(cx + 14, rc.z0 + 8 + n * 13, 1, 1.1);

@@ -179,6 +179,9 @@ export class World {
     if (instant) this.atmosphere.markEnvDirty();
   }
 
+  /** The player is inside a building: neutral exposure, no weather, no sun flare. */
+  indoor = false;
+
   update(dt: number, running: boolean, playing = running): void {
     this.clock += dt;
     this.frame++;
@@ -186,6 +189,7 @@ export class World {
     if (running) this.tod.advance(dt);
     if (playing) this.signals.update(dt);
     const w = this.weather;
+    w.sheltered = this.indoor;
     w.update(dt, cam, this.gfx.renderer.domElement.height, this.atmosphere.skyLuma);
     this.atmosphere.update(dt, cam, this.tod, w, w.flash);
     this.rig.update(this.tod, w, this.atmosphere, w.flash);
@@ -237,6 +241,15 @@ export class World {
     p.time = this.clock;
     p.sunColor.copy(this.atmosphere.sunColor).multiplyScalar(1.1);
     p.sunVisibility = this.sunVis;
+    if (this.indoor) {
+      p.exposure = 1.0;
+      p.tint.setRGB(1.02, 1.0, 0.97);
+      p.saturation = 1.02;
+      p.bloom = 0.22;
+      p.vignette = 0.28;
+      p.flash = 0;
+      p.sunVisibility = 0;
+    }
   }
 
   /** Sun occlusion by terrain/buildings/clouds, smoothed, plus its screen position for the lens flare. */

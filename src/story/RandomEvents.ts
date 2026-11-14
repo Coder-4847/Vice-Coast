@@ -38,7 +38,7 @@ export class RandomEvents {
   update(dt: number): void {
     const s = this.s, g = s.g;
     if (!g.player || g.state !== 'playing') return;
-    const busy = !!s.mission || s.cutscenes.active || s.pastimes.busy || !!g.piloting?.busy;
+    const busy = !!s.mission || s.cutscenes.active || s.pastimes.busy || !!g.piloting?.busy || g.world.indoor;
     if (this.ev) { if (s.mission) this.end(); else this.step(dt); return; }
     if (busy) return;
     this.nextT -= dt;

@@ -1,4 +1,4 @@
-import { CHUNK, MODE, hash2, mulberry32, type ChunkData, type Lamp, type Prim, type Tree } from '../city/plan';
+import { CHUNK, MODE, hash2, mulberry32, type ChunkData, type Door, type DoorKind, type Lamp, type Prim, type Tree } from '../city/plan';
 import { mergeChunks, VEG, type ChunkSource, type Veg, type VegKind } from '../city/source';
 import { terrainHeight } from '../heightfield';
 
@@ -31,6 +31,7 @@ export class Kit {
   readonly lamps: Lamp[] = [];
   readonly trees: Tree[] = [];
   readonly veg: Veg[] = [];
+  readonly doors: Door[] = [];
   readonly r: () => number;
 
   constructor(readonly name: string, seed: number) {
@@ -72,6 +73,22 @@ export class Kit {
    * Offset local (u, v) by `yaw` about (cx, cz). Convention: `yaw` is the world heading (atan2(dz, dx)) of the building's
    * width axis; +u runs along it and +v is a quarter-turn clockwise from it on the map (towards +z when yaw = 0).
    */
+  /** A door on the local -v face of a building centred at (x, z), facing out. */
+  frontDoor(x: number, z: number, w: number, d: number, yaw: number, kind: DoorKind, lookOnly = false, floors = 1, y0?: number): void {
+    const [fx, fz] = this.at(x, z, yaw, 0, -d / 2);
+    const [ox, oz] = this.at(x, z, yaw, 0, -d / 2 - 1);
+    const nx = ox - fx, nz = oz - fz;
+    const ry = Math.atan2(nx, nz);
+    const base = y0 ?? this.ground(fx, fz);
+    const ww = kind === 'warehouse' ? 3.0 : 1.7;
+    void w;
+    const fr = this.box(fx + nx * 0.1, fz + nz * 0.1, ww + 0.5, 0.24, 3.0, 0x2a2d33, { y0: base, ry, mode: MODE.METAL, solid: false });
+    fr.door = true;
+    const lf = this.box(fx + nx * 0.24, fz + nz * 0.24, ww, 0.06, 2.5, lookOnly ? 0x6a5a48 : 0xffd9a0, { y0: base + 0.05, ry, mode: lookOnly ? MODE.WALL : MODE.GLOW, solid: false });
+    lf.door = true;
+    if (!lookOnly) this.doors.push({ x: fx + nx * 1.1, z: fz + nz * 1.1, yaw: ry, kind, seed: hash2(Math.round(x * 3), Math.round(z * 3), 4128), floors });
+  }
+
   at(cx: number, cz: number, yaw: number, u: number, v: number): [number, number] {
     const c = Math.cos(yaw), s = Math.sin(yaw);
     return [cx + u * c - v * s, cz + u * s + v * c];
@@ -83,11 +100,19 @@ export class Kit {
    */
   building(x: number, z: number, w: number, d: number, h: number, yaw: number, wall: number, o: {
     roof?: 'flat' | 'gable' | 'hip' | 'shed' | 'false' | 'none'; roofColor?: number; mode?: number; pitch?: number; overhang?: number; y0?: number; floors?: number; solid?: boolean;
+    /** What is behind the front door (on the local -v face); false for none, 'look' for a door you cannot use. */
+    door?: DoorKind | false | 'look';
+    /** The door on the +v face instead. */
+    doorBack?: boolean;
   } = {}): void {
     const ry = -yaw;
     const y0 = o.y0 ?? this.ground(x, z);
     const mode = o.mode ?? MODE.WALL;
     this.box(x, z, w, d, h, wall, { y0, ry, mode, solid: o.solid });
+    if (o.door !== false && o.solid !== false && h >= 2.5 && w >= 3.5 && d >= 3) {
+      const kind: DoorKind = o.door && o.door !== 'look' ? o.door : w * d > 260 && h < 14 ? 'warehouse' : h > 8 && w * d > 120 ? 'apartments' : 'house';
+      this.frontDoor(x, z, w, d, o.doorBack ? yaw + Math.PI : yaw, kind, o.door === 'look', Math.max(1, Math.round(h / 3.4)), y0);
+    }
     const roof = o.roof ?? 'flat';
     const rc = o.roofColor ?? pick(this.r, PAL.roof);
     const ov = o.overhang ?? 0.5;
@@ -209,7 +234,7 @@ export class Kit {
       const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
       const k = `${cx},${cz}`;
       let d = m.get(k);
-      if (!d) m.set(k, (d = { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [], veg: [] }));
+      if (!d) m.set(k, (d = { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [], veg: [], doors: [] }));
       return d;
     };
     for (const b of this.boxes) get(b.x, b.z).boxes.push(b);
@@ -217,6 +242,7 @@ export class Kit {
     for (const l of this.lamps) get(l.x, l.z).lamps.push(l);
     for (const t of this.trees) get(t.x, t.z).trees.push(t);
     for (const v of this.veg) get(v.x, v.z).veg!.push(v);
+    for (const dr of this.doors) get(dr.x, dr.z).doors!.push(dr);
     this.cache = m;
     return m;
   }

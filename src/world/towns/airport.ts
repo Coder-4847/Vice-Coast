@@ -40,7 +40,7 @@ export function buildAirport(): Kit {
   k.hangar(A.x - 340, A.apronZ - 4, 46, 17, 0, 0x8a9096, 0x6a6e72);
   // fuel farm & cargo shed
   for (let i = 0; i < 3; i++) { k.cyl(A.x - 220 + i * 18, zt + 80, 14, 10, 0xe8e4da); }
-  k.building(A.x + 220, zt - 12, 60, 30, 12, 0, 0x8a9096, { roof: 'gable', roofColor: 0x6a6e72, mode: MODE.METAL, pitch: 0.12, y0: H });
+  k.building(A.x + 220, zt - 12, 60, 30, 12, 0, 0x8a9096, { door: 'warehouse', roof: 'gable', roofColor: 0x6a6e72, mode: MODE.METAL, pitch: 0.12, y0: H });
   // car park with a few cars
   k.box(A.x, zt - 62, 220, 50, 0.1, 0x3a3b3d, { y0: H, solid: false });
   for (let i = 0; i < 30; i++) { k.box(A.x - 100 + (i % 15) * 14 + (r() - 0.5) * 2, zt - 52 + Math.floor(i / 15) * 22, 2, 4.5, 1.4, pick(r, [0x8a3a2f, 0x3a5a8a, 0xdadada, 0x2a2d32, 0xc9a227]), { y0: H }); }

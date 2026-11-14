@@ -4,7 +4,7 @@ import type { QualityPreset } from '../core/Quality';
 import { CITY, Terrain } from './Terrain';
 import { NOISE_GLSL } from './skyGlsl';
 import { buildCityFields, type CityFields } from './city/fields';
-import { CHUNK, CityPlan, MODE, type ChunkData, type Prim } from './city/plan';
+import { CHUNK, CityPlan, MODE, type ChunkData, type Door, type Prim } from './city/plan';
 import { mergeChunks, VEG, type ChunkSource, type Veg } from './city/source';
 import { Wilderness } from './Wilderness';
 import { broadGeometry, cactusGeometry, deadTreeGeometry, joshuaGeometry, pineGeometry, rockGeometry, saguaroGeometry, scrubGeometry } from './vegGeometry';
@@ -189,7 +189,7 @@ export class City {
   private pVeg: InstancePool[] = [];
   private all: InstancePool[] = [];
 
-  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[]; veg: Veg[] }>();
+  private readonly rec = new Map<string, { cx: number; cz: number; handles: number[]; pending: BuildingBox[]; veg: Veg[]; doors: Door[] }>();
   /** Colliders for wild vegetation, created only near the player. */
   private readonly vegCol = new Map<string, number[]>();
   private vegTick = 0;
@@ -250,6 +250,17 @@ export class City {
       if (cx >= q.cx0 && cx <= q.cx1 && cz >= q.cz0 && cz <= q.cz1) parts.push(s.generateChunk(cx, cz));
     }
     return parts.length ? mergeChunks(parts) : { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [] };
+  }
+
+  /** Enterable doors in the loaded chunks around (x, z). */
+  doorsNear(x: number, z: number, out: Door[] = []): Door[] {
+    out.length = 0;
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+      const r = this.rec.get(`${cx + i},${cz + j}`);
+      if (r) for (const d of r.doors) out.push(d);
+    }
+    return out;
   }
 
   get instanceCount(): number {
@@ -520,7 +531,7 @@ export class City {
     const key = `${cx},${cz}`;
     if (this.rec.has(key)) return;
     const d = this.generate(cx, cz);
-    const rec = { cx, cz, handles: [] as number[], pending: [] as BuildingBox[], veg: d.veg ?? [] };
+    const rec = { cx, cz, handles: [] as number[], pending: [] as BuildingBox[], veg: d.veg ?? [], doors: d.doors ?? [] };
     this.rec.set(key, rec);
     this.pFar.remove(key);
 

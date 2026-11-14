@@ -17,6 +17,7 @@ import { KitSource } from '../world/towns/kit';
 import { SaveStore } from './SaveStore';
 import type { OwnedVehicle, SaveData, SlotInfo } from './types';
 import * as screens from './screens';
+import { Interiors } from '../interiors/Interiors';
 
 const BASE_MAG = Object.fromEntries(Object.values(WEAPONS).map((w) => [w.id, w.mag])) as Record<WeaponId, number>;
 const AUTOSAVE_EVERY = 240;
@@ -153,7 +154,8 @@ export class Commerce {
     const g = this.game;
     const p = g.player!;
     const v = g.combat!.vitals;
-    return { x: p.pos.x, z: p.pos.z, yaw: p.yaw, hour: g.world.tod.hour, health: v.health, armour: v.armour };
+    const out = g.interiors?.outside();
+    return { x: out ? out.x : p.pos.x, z: out ? out.z : p.pos.z, yaw: out ? out.yaw : p.yaw, hour: g.world.tod.hour, health: v.health, armour: v.armour };
   }
 
   /** Copy live state (weapons, owned cars out in the world) into the profile. */
@@ -440,11 +442,13 @@ export class Commerce {
         : pt.kind === 'food' ? 'Order food'
         : `Shop at ${pt.name}`;
       if (pt.kind === 'tuning') this.near = null; // on foot there is nothing to do at the tuning bay
+      if (this.near && g.interiors && Interiors.hasInterior(pt, !!this.eco.owns(pt.ref))) this.prompt = `Enter ${pt.name}`;
     }
     if (this.near && g.input.pressed('interact')) {
       g.input.swallow('interact');
       if (this.near.kind === 'showroom' && this.test) this.endTest(true);
       else if (v && this.near.kind === 'property') this.open(screens.propertyPage(this, PROPERTY_BY_ID[this.near.ref]!, true));
+      else if (!v && g.interiors && Interiors.hasInterior(this.near, !!this.eco.owns(this.near.ref))) g.interiors.enterPoint(this.near);
       else this.openFor(this.near);
     }
   }

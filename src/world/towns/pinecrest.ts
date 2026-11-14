@@ -48,7 +48,7 @@ export function buildPinecrest(): Kit {
   {
     const [bx, bz] = blockC(0, 1);
     // Hook & Ladle Diner
-    k.building(bx - 6, bz, 22, 10, 4.2, YAW.W, 0xe8e0d0, { roof: 'shed', roofColor: 0x6a4a3a, mode: MODE.GLASS, pitch: 0.1 });
+    k.building(bx - 6, bz, 22, 10, 4.2, YAW.W, 0xe8e0d0, { door: 'diner', roof: 'shed', roofColor: 0x6a4a3a, mode: MODE.GLASS, pitch: 0.1 });
     k.building(bx + 8, bz + 2, 12, 8, 3.8, YAW.W, 0xcfd6c9, { roof: 'gable', roofColor: 0x6a5a50, mode: MODE.PUNCHED });
     k.sign(bx - 22, bz - 11, YAW.W, 4.0, 3.0, 8, 0xff5a3c);
   }
@@ -67,7 +67,7 @@ export function buildPinecrest(): Kit {
   // main street
   {
     const [bx, bz] = blockC(1, 1);
-    k.building(bx, bz, 26, 18, 8.4, YAW.W, 0xcfc4a8, { roof: 'flat', mode: MODE.PUNCHED, floors: 2 }); // Larkin's Mercantile
+    k.building(bx, bz, 26, 18, 8.4, YAW.W, 0xcfc4a8, { door: 'store', roof: 'flat', mode: MODE.PUNCHED, floors: 2 }); // Larkin's Mercantile
     const [px, pz] = k.at(bx, bz, YAW.W, 0, 11);
     k.box(px, pz, 26, 3.4, 0.25, 0x7a5a3a, { y0: k.ground(px, pz) + 3.2, ry: -YAW.W, solid: false });
     for (const u of [-11, -4, 4, 11]) { const [qx, qz] = k.at(bx, bz, YAW.W, u, 12.6); k.box(qx, qz, 0.25, 0.25, 3.3, 0x5a4230, { solid: false }); }
@@ -76,7 +76,7 @@ export function buildPinecrest(): Kit {
   {
     const [bx, bz] = blockC(1, 2);
     // Pinecrest Savings & Loan: stone, columns, a clock
-    k.building(bx, bz, 22, 16, 9, YAW.W, 0xb9b2a6, { roof: 'flat', mode: MODE.PUNCHED });
+    k.building(bx, bz, 22, 16, 9, YAW.W, 0xb9b2a6, { door: 'office', roof: 'flat', mode: MODE.PUNCHED });
     for (let i = 0; i < 4; i++) { const [px, pz] = k.at(bx, bz, YAW.W, -7.5 + i * 5, 10.4); k.cyl(px, pz, 1.0, 7.2, 0xe8e2d4, { solid: true }); }
     const [rx, rz] = k.at(bx, bz, YAW.W, 0, 10);
     k.box(rx, rz, 22, 4.6, 0.8, 0xcfc9bb, { y0: k.ground(rx, rz) + 7.4, ry: -YAW.W, solid: false });
@@ -94,7 +94,7 @@ export function buildPinecrest(): Kit {
   {
     const [bx, bz] = blockC(2, 1);
     k.building(bx, bz, 24, 15, 5.6, YAW.E, 0x9a5a48, { roof: 'hip', roofColor: 0x5a4a45, mode: MODE.PUNCHED });
-    k.building(bx + 14, bz - 10, 8, 8, 4, YAW.E, 0x8a4a3a, { roof: 'flat', mode: MODE.WALL }); // the jail annex
+    k.building(bx + 14, bz - 10, 8, 8, 4, YAW.E, 0x8a4a3a, { door: 'police', roof: 'flat', mode: MODE.WALL }); // the jail annex
     const [fx, fz] = k.at(bx, bz, YAW.E, 9, 10);
     k.cyl(fx, fz, 0.18, 9, 0xe8e8e4); k.box(fx, fz + 0.9, 0.05, 1.8, 1.1, 0xc23a2a, { y0: k.ground(fx, fz) + 7.6, solid: false });
     for (let i = 0; i < 2; i++) { const [cx, cz] = k.at(bx, bz, YAW.E, -6 + i * 6, 16); k.box(cx, cz, 5, 2.0, 1.5, i ? 0x1a1a1a : 0xf0f0f0, { ry: -YAW.E }); k.box(cx, cz, 2.2, 1.9, 0.3, i ? 0xc23a2a : 0x2f6bb8, { y0: k.ground(cx, cz) + 1.5, ry: -YAW.E, mode: MODE.GLOW, solid: false }); }
@@ -119,7 +119,7 @@ export function buildPinecrest(): Kit {
   {
     const [bx, bz] = blockC(2, 3);
     // St. Brendan's, with a steeple
-    k.building(bx, bz, 12, 22, 7, YAW.E, PAL.white, { roof: 'gable', roofColor: 0x5a4a45, mode: MODE.PUNCHED, pitch: 0.7 });
+    k.building(bx, bz, 12, 22, 7, YAW.E, PAL.white, { door: 'look', roof: 'gable', roofColor: 0x5a4a45, mode: MODE.PUNCHED, pitch: 0.7 });
     const [tx, tz] = k.at(bx, bz, YAW.E, 0, 12);
     k.box(tx, tz, 5, 5, 12, PAL.white);
     k.box(tx, tz, 5.8, 5.8, 1, 0x5a4a45, { y0: k.ground(tx, tz) + 12, solid: false });
@@ -134,7 +134,7 @@ export function buildPinecrest(): Kit {
   houseOn(3, 3, -8, -8, 'E'); houseOn(3, 3, 16, 10, 'W'); houseOn(2, 3, 18, 4, 'W');
   {
     const [bx, bz] = blockC(3, 1);
-    k.building(bx, bz, 30, 14, 8, YAW.E, 0x7a5a3a, { roof: 'gable', roofColor: 0x4a5a4a, mode: MODE.PUNCHED, pitch: 0.42, floors: 2 }); // Timberline Inn
+    k.building(bx, bz, 30, 14, 8, YAW.E, 0x7a5a3a, { door: 'hotel', roof: 'gable', roofColor: 0x4a5a4a, mode: MODE.PUNCHED, pitch: 0.42, floors: 2 }); // Timberline Inn
     const [px, pz] = k.at(bx, bz, YAW.E, 0, 8.4);
     k.box(px, pz, 30, 3, 0.3, 0x6a4a2a, { y0: k.ground(px, pz) + 3.4, ry: -YAW.E, solid: false });
     k.sign(bx + 18, bz + 14, YAW.E, 5, 2.2, 5, 0x39ff88);

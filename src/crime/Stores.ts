@@ -54,6 +54,10 @@ export interface Store {
   clerk: Ped | null;
   group: THREE.Group;
   marker: { name: string; x: number; z: number; glyph: string; color?: string };
+  /** The clerk's spot behind the counter inside, while the interior is built (world coordinates). */
+  room: { x: number; z: number; yaw: number } | null;
+  /** The street door (forward = the way out). */
+  door: { x: number; z: number; yaw: number } | null;
 }
 
 const TAG = '‍';
@@ -71,7 +75,7 @@ function signTexture(text: string, color: number): THREE.CanvasTexture {
   return t;
 }
 
-/** Little service kiosks with a clerk behind the counter, placed on open ground near their listed spots. */
+/** Little walk-in shops (a gas station, a mini-mart, a liquor store, a jeweller) placed on open ground near their listed spots. */
 export class Stores {
   readonly list: Store[] = [];
   readonly group = new THREE.Group();
@@ -106,35 +110,48 @@ export class Stores {
         grp.add(mesh);
         return mesh;
       };
-      add(3.8, 0.1, 2.8, 0, 0.05, 0, dark);
-      add(3.6, 2.8, 0.2, 0, 1.4, -1.3, wall);
-      add(0.2, 2.8, 2.6, -1.8, 1.4, 0, wall);
-      add(0.2, 2.8, 2.6, 1.8, 1.4, 0, wall);
-      add(4.4, 0.2, 3.4, 0, 2.95, 0.1, accent);
-      add(3.6, 1.1, 0.5, 0, 0.55, 1.15, wood);
-      add(3.0, 0.7, 0.1, 0, 3.55, 1.5, sign);
-      for (let i = 0; i < 4; i++) add(0.7, 0.5, 0.3, -1.2 + i * 0.8, 1.1 + (i % 2) * 0.6, -1.1, accent);
-      if (def.kind === 'gas') { add(0.5, 1.5, 0.5, -1.7, 0.75, 4.4, accent); add(0.5, 1.5, 0.5, 1.7, 0.75, 4.4, accent); }
-      if (def.kind === 'jewel') add(1.0, 0.25, 0.8, 0, 1.22, 1.15, new THREE.MeshStandardMaterial({ color: 0x9ad7ff, emissive: 0x9ad7ff, emissiveIntensity: 0.4, transparent: true, opacity: 0.7 }));
+      // a closed box of a shop: walls, a flat roof with a lit fascia, big windows either side of a glass door
+      const W = 6.2, D = 4.6, H = 3.3;
+      add(W, H, D, 0, H / 2, -0.4, wall);
+      add(W + 0.5, 0.35, D + 0.5, 0, H + 0.17, -0.4, accent);
+      add(W - 0.6, 0.6, 0.08, 0, H - 0.45, D / 2 - 0.36, sign);
+      const glass = new THREE.MeshStandardMaterial({ color: 0x1a2430, emissive: 0xfff0d0, emissiveIntensity: 0.55, roughness: 0.15, metalness: 0.2 });
+      g.world.rig.register(glass);
+      for (const s of [-1, 1]) add(1.9, 1.6, 0.06, s * 1.95, 1.35, D / 2 - 0.37, glass);
+      add(1.4, 2.3, 0.06, 0, 1.15, D / 2 - 0.37, glass);
+      add(1.7, 2.5, 0.1, 0, 1.25, D / 2 - 0.42, dark);
+      add(W, 0.12, 1.2, 0, 0.06, D / 2 + 0.2, dark);
+      if (def.kind === 'gas') {
+        add(8, 0.4, 5, 0, 4.4, 4.6, accent);
+        for (const s of [-1, 1]) { add(0.35, 4.2, 0.35, s * 3.4, 2.1, 4.6, wood); add(0.5, 1.5, 0.5, s * 1.7, 0.75, 4.6, accent); add(0.7, 0.25, 1.4, s * 1.7, 0.12, 4.6, dark); }
+      }
+      void wood;
       this.group.add(grp);
       // colliders: back, sides, counter, pumps (local → world with the yaw)
       const boxes: { cx: number; cy: number; cz: number; hx: number; hy: number; hz: number; ry: number }[] = [];
       const co = (lx: number, lz: number, hx: number, hz: number): void => {
         boxes.push({ cx: spot.x + Math.cos(yaw) * lx + Math.sin(yaw) * lz, cy: y + 1.4, cz: spot.z - Math.sin(yaw) * lx + Math.cos(yaw) * lz, hx, hy: 1.4, hz, ry: yaw });
       };
-      co(0, -1.3, 1.8, 0.1); co(-1.8, 0, 0.1, 1.3); co(1.8, 0, 0.1, 1.3); co(0, 1.15, 1.8, 0.25);
-      if (def.kind === 'gas') { co(-1.7, 4.4, 0.25, 0.25); co(1.7, 4.4, 0.25, 0.25); }
+      co(0, -0.4, W / 2, D / 2);
+      if (def.kind === 'gas') { co(-1.7, 4.6, 0.25, 0.25); co(1.7, 4.6, 0.25, 0.25); co(-3.4, 4.6, 0.18, 0.18); co(3.4, 4.6, 0.18, 0.18); }
       g.physics!.addBuildings(boxes);
       const marker = { name: `${TAG}${def.name}`, x: spot.x, z: spot.z, glyph: '¢', color: '#9aa3b5' };
       MARKERS.push(marker);
-      this.list.push({ def, x: spot.x, z: spot.z, yaw, clerk: null, group: grp, marker });
+      const dx = spot.x + Math.sin(yaw) * (D / 2 - 0.4 + 1.0), dz = spot.z + Math.cos(yaw) * (D / 2 - 0.4 + 1.0);
+      this.list.push({ def, x: spot.x, z: spot.z, yaw, clerk: null, group: grp, marker, room: null, door: { x: dx, z: dz, yaw } });
     }
     g.world.scene.add(this.group);
   }
 
   /** The clerk's spot behind the counter (world). */
   clerkSpot(s: Store): { x: number; z: number } {
+    if (s.room) return { x: s.room.x, z: s.room.z };
     return { x: s.x + Math.sin(s.yaw) * 0.2, z: s.z + Math.cos(s.yaw) * 0.2 };
+  }
+
+  /** Where the clerk works right now: the counter inside while it is built, else the shop itself. */
+  anchor(s: Store): { x: number; z: number } {
+    return s.room ?? { x: s.x, z: s.z };
   }
 
   /** Where a customer stands, in front of the window. */

@@ -167,6 +167,26 @@ with missions and heists in later phases.
 **Saving:** three slots in browser storage, chosen on the title screen. The game autosaves every four minutes (when nobody is after
 you) and whenever you buy, sleep or leave a shop. **Menu → Saves** lets you save, load, delete, **export** a slot to a file and **import** one.
 
+### Interiors
+
+Almost every building has a door you can use: a lit entrance on the side facing the street. Walk up and press `E` (houses
+need `E` **held** to break in). The inside is built from the building's kind and its own seed, so the same door always leads to the
+same rooms, lit by its ceiling fixtures and windows (daylight by day, dark glass at night).
+
+| Building | Inside |
+| --- | --- |
+| Shops, gun stores, barbers, food places | Walk-in rooms with racks, gun walls, barber chairs, menu boards and booths; the menu opens at the counter |
+| Gas stations, mini-marts, liquor stores, jewellers | Aisles, drinks coolers and a clerk behind the till. **Rob it from inside**: the alarm still calls the police to the street door |
+| Apartment buildings | Lobby with mailboxes and an elevator up to a hallway of numbered doors; hold `E` on one to break into that flat |
+| Hotels and motels | Rent a room at the desk ($40–$210), ride up with your key and **sleep until morning** (heals, saves) |
+| Houses, villas, cabins, trailers | Several furnished rooms. Break in and **take the TV, jewellery, laptop or cash**; if someone is home (or wakes up), they call the police |
+| Offices, gyms, bars, diners | Lobby and an office floor (search the boss's desk), a workout that heals, drinks at the bar, food at the counter |
+| Police HQ, the hospital, the mall, warehouses | A front desk, a doctor who patches you up for $200, a mall atrium with shops and a food court, racking you can loot |
+| Your own homes | The real thing: sleep / save, wardrobe and the property menu from inside |
+
+You cannot walk in while the police are after you, and shops (not hotels, stores or bars) close from 11 PM to 6 AM. Inside, the map
+shows where you came in, saves remember the street, and a wanted level raised indoors sends the police to the door.
+
 ### Story, three protagonists and heists
 
 **Marcus "Mack" Delgado** (driver), **Imani Cole** (pilot) and **Teddy Vance** (stuntman) are playable and switchable. New games start with
@@ -277,7 +297,8 @@ src/
   vehicles/ specs, tyre/suspension/drivetrain model, car + bike models, enter/exit + chase camera
   economy/ money, save slots, properties, shops, garage and customisation screens, interaction points
   crew/    roster, loyalty / injuries / effects, field allies with a command wheel, crew pages
-  crime/   robbery kiosks, clerks and the hold-up / ATM flows, shared police-call helper
+  crime/   walk-in robbery stores, clerks and the hold-up / ATM flows, shared police-call helper
+  interiors/ building interiors: room builder with baked vertex lighting, procedural textures, furniture kit, layouts per building kind, enter/leave and burglary
   story/   mission engine (generator scripts, checkpoints, medals), cutscene director, protagonists + abilities, gunmen and scripted drivers, heists and their interiors, content/ (missions, cutscenes, heists)
   craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
   player/  controller, first-person viewmodel (arms, hands, pistol, animation), weapon logic
@@ -320,6 +341,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 25. **Living world, phase A** ✅ — hit markers by result (white hit, yellow downed, red kill, bigger for head shots, with sounds); people flinch when hit, limp and clutch wounds, fall the way the shot pushes them with flailing limbs and a sprawl, or go down writhing and crawling before they bleed out (a downed person counts as neutralised and can be finished); blood splatters on walls and pavement behind wounds, pools spread under bodies, blood at the screen edges when you are hurt; first-person hand animations for smashing a car window, pulling a driver out and eating, and sparks under the dash while hotwiring
 26. **Living world, phase B** ✅ — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
 27. **Living world, phase C** ✅ — street scenes (chats, kerb sitters, drunks with bottles, fistfights with an audience, smokers, a hot-dog vendor, tourists, arrests), speech bubbles with synthesised voices, people reacting to bumps, guns and nice cars, paramedics who treat (and sometimes revive) the fallen, fire crews with fire trucks, dogs with owners and strays, pigeons that scatter, hitchhiker and getaway-driver events, a cheat console; fixed the sniper-scope overlay showing on every weapon
-28. **Phase D** ✅ (this build) — fist fighting, a cover system (low and high cover), stealth takedowns, Rufus the dog (adopt, follow, attack on command, defend you), bumpers and doors that hang and fall off
+28. **Phase D** ✅ — fist fighting, a cover system (low and high cover), stealth takedowns, Rufus the dog (adopt, follow, attack on command, defend you), bumpers and doors that hang and fall off
+29. **Phase E** ✅ (this build) — interiors for nearly every building (shops, stores, apartments with hallways, hotels and motels with rooms to rent, houses to burgle, offices, bars, diners, gyms, police HQ, the hospital, the mall, warehouses, your own homes), robbery stores you walk into, new first-person hands (one skinned mesh with knuckles, finger pads, creases and nails; skin with pores, wrinkles, veins and warm subsurface light), and world AO no longer smearing across the hands
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

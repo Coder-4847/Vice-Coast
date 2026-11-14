@@ -224,6 +224,9 @@ export class Weather {
     if (type === 'storm') this.nextStrike = 1.5 + Math.random() * 3;
   }
 
+  /** Indoors: no rain, snow or dust around the camera. */
+  sheltered = false;
+
   update(dt: number, camera: THREE.Camera, viewportHeightPx: number, skyLuma: number): void {
     this.clock += dt;
     const target = PRESETS[this.type];
@@ -248,7 +251,7 @@ export class Weather {
     this.light.setScalar(0.35 + 0.65 * Math.min(1, skyLuma * 2.2));
 
     const setField = (field: ParticleField, intensity: number, vx: number, vy: number, vz: number, hex: string, boost: number, alpha: number, size = 1) => {
-      field.object.visible = intensity > 0.01;
+      field.object.visible = intensity > 0.01 && !this.sheltered;
       if (!field.object.visible) return;
       const u = field.material.uniforms;
       u.uTime!.value = this.clock;

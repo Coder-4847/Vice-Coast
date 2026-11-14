@@ -65,12 +65,12 @@ export function buildDuskHarbor(): Kit {
   // -------------------------------------------------------------------------------------------- warehouses
   for (let i = 0; i < 3; i++) {
     const z = 1620 + i * 96;
-    k.building(465, z + 28, 56, 34, 9, 0, pick(r, PAL.metal), { roof: 'gable', roofColor: 0x6a7178, mode: MODE.METAL, pitch: 0.12, y0: H });
+    k.building(465, z + 28, 56, 34, 9, 0, pick(r, PAL.metal), { door: 'warehouse', roof: 'gable', roofColor: 0x6a7178, mode: MODE.METAL, pitch: 0.12, y0: H });
     for (let d = 0; d < 4; d++) k.box(437 - 0.3, z + 28 - 13 + d * 8.4, 0.4, 5, 4.8, 0x3a3d42, { y0: H, solid: false });
     k.box(465, z + 28, 52, 30, 0.3, 0x55585e, { y0: H + 9.3, solid: false });
   }
   // the Harbor Authority tower and a gatehouse on the Coastway
-  k.building(506, 1618, 26, 26, 42, 0, 0x6c8aa6, { roof: 'flat', mode: MODE.GLASS, y0: H });
+  k.building(506, 1618, 26, 26, 42, 0, 0x6c8aa6, { door: 'office', roof: 'flat', mode: MODE.GLASS, y0: H });
   k.box(506, 1618, 14, 14, 6, 0xcfd4d8, { y0: H + 42.4, solid: false });
   k.box(506, 1618, 0.4, 0.4, 14, 0xffffff, { y0: H + 48, solid: false });
   k.building(556, 1628, 8, 6, 3.4, 0, 0xd8d0c0, { roof: 'flat', mode: MODE.PUNCHED, y0: H });

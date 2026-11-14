@@ -47,7 +47,14 @@ export interface Prim {
   /** Optional tilt (radians) applied before the yaw: pitch about x, roll about z. */
   rx?: number;
   rz?: number;
+  /** Part of a building entrance (decoration: ignored when looking for open ground). */
+  door?: boolean;
 }
+
+/** What is behind a door: picks the interior that gets built when the player walks in. */
+export type DoorKind = 'apartments' | 'house' | 'office' | 'hotel' | 'motel' | 'store' | 'warehouse' | 'police' | 'hospital' | 'mall' | 'mansion' | 'diner' | 'bar' | 'gym' | 'cabin' | 'trailer';
+/** An enterable entrance: the spot on the street in front of it, and the way out of the building (forward = (sin yaw, cos yaw)). */
+export interface Door { x: number; z: number; yaw: number; kind: DoorKind; seed: number; floors: number }
 export interface Lamp { x: number; z: number; yaw: number; y: number }
 export interface Tree { x: number; y: number; z: number; kind: 0 | 1 | 2; s: number; tint: number }
 export interface Signal { x: number; z: number; yaw: number; axis: 0 | 1 }
@@ -62,6 +69,8 @@ export interface ChunkData {
   signals: Signal[];
   /** Wild vegetation and rocks (see source.ts). */
   veg?: import('./source').Veg[];
+  /** Enterable entrances. */
+  doors?: Door[];
 }
 
 export interface Landmark {
@@ -398,7 +407,7 @@ export class CityPlan {
   // ------------------------------------------------------------------------------------------ chunks
 
   generateChunk(cx: number, cz: number): ChunkData {
-    const out: ChunkData = { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [] };
+    const out: ChunkData = { cx, cz, boxes: [], cyls: [], lamps: [], trees: [], signals: [], doors: [] };
     const blocks = this.byChunk.get(`${cx},${cz}`);
     if (blocks) for (const b of blocks) this.genBlock(b, out);
     this.genRoadside(cx, cz, out);
@@ -618,9 +627,51 @@ function roofClutter(out: ChunkData, r: () => number, x0: number, z0: number, x1
   }
 }
 
+
+/**
+ * A lit entrance on the face of a lot that looks onto the nearest street (the block edge), and its record in `out.doors`.
+ * Uses its own hash, not the block's random stream, so adding doors leaves the rest of the city exactly as it was.
+ */
+function frontDoor(out: ChunkData, b: Block | null, x0: number, z0: number, x1: number, z1: number, kind: DoorKind, floors: number, awning = -1, y0: number = G): void {
+  const seed = hash2(Math.round(x0 * 4), Math.round(z0 * 4), 4127);
+  let face = 0;
+  if (b) {
+    const d = [z0 - b.z0, b.z1 - z1, x0 - b.x0, b.x1 - x1];
+    for (let k = 1; k < 4; k++) if (d[k]! < d[face]!) face = k;
+  }
+  const t = 0.3 + ((seed % 1000) / 1000) * 0.4;
+  const along = face < 2;
+  const len = along ? x1 - x0 : z1 - z0;
+  if (len < 3.2) return;
+  const u = along ? lerp(x0 + 1.4, x1 - 1.4, t) : lerp(z0 + 1.4, z1 - 1.4, t);
+  const nx = face === 2 ? -1 : face === 3 ? 1 : 0, nz = face === 0 ? -1 : face === 1 ? 1 : 0;
+  const fx = along ? u : face === 2 ? x0 : x1;
+  const fz = along ? (face === 0 ? z0 : z1) : u;
+  placeDoor(out, fx, fz, nx, nz, kind, floors, seed, awning, y0);
+}
+
+/** Frame, glowing door leaf and an optional awning on a wall at (fx, fz) facing (nx, nz). */
+function placeDoor(out: ChunkData, fx: number, fz: number, nx: number, nz: number, kind: DoorKind, floors: number, seed: number, awning = -1, y0: number = G): void {
+  const ry = Math.atan2(nx, nz);
+  const wide = kind === 'mall' || kind === 'hospital' || kind === 'police' || kind === 'hotel' || kind === 'office' || kind === 'warehouse';
+  const w = wide ? 3.2 : 1.7;
+  const fr = boxC(out.boxes, fx + nx * 0.1, y0, fz + nz * 0.1, w + 0.5, 3.0, 0.24, 0x2a2d33, MODE.METAL, false, ry);
+  fr.door = true;
+  const glow = kind === 'warehouse' ? 0x9aa4b0 : kind === 'store' || kind === 'diner' || kind === 'bar' ? 0xfff0c8 : 0xffd9a0;
+  const leaf = boxC(out.boxes, fx + nx * 0.24, y0 + 0.05, fz + nz * 0.24, w, 2.5, 0.06, glow, MODE.GLOW, false, ry);
+  leaf.door = true;
+  const bar = boxC(out.boxes, fx + nx * 0.3, y0 + 1.0, fz + nz * 0.3, w * 0.7, 0.06, 0.06, 0xc8ccd0, MODE.METAL, false, ry);
+  bar.door = true;
+  if (awning >= 0) {
+    const aw = boxC(out.boxes, fx + nx * 0.8, y0 + 3.0, fz + nz * 0.8, w + 1.6, 0.18, 1.4, awning, MODE.WALL, false, ry);
+    aw.door = true;
+  }
+  out.doors!.push({ x: fx + nx * 1.1, z: fz + nz * 1.1, yaw: ry, kind, seed, floors });
+}
+
 // ----------------------------------------------------------------------------------------- districts
 
-function tower(out: ChunkData, r: () => number, x0: number, z0: number, x1: number, z1: number, core: number): void {
+function tower(out: ChunkData, r: () => number, x0: number, z0: number, x1: number, z1: number, core: number, b: Block | null = null): void {
   const podH = 8 + Math.floor(r() * 3) * 4;
   const stone = pick(r, PAL.stone);
   box(out.boxes, x0, z0, x1, z1, G, podH, stone, MODE.PUNCHED);
@@ -654,6 +705,8 @@ function tower(out: ChunkData, r: () => number, x0: number, z0: number, x1: numb
   }
   roofClutter(out, r, x0, z0, x1, z1, G + podH, 3);
   if (r() < 0.55 + core * 0.2) neonSign(out, r, x0, z0, x1, z1, G + 4.5 + r() * 6, 12 + r() * 14);
+  const k = hash2(Math.round(x0), Math.round(z0), 51) % 100;
+  frontDoor(out, b, x0, z0, x1, z1, k < 24 ? 'hotel' : k < 46 ? 'apartments' : k < 54 ? 'gym' : 'office', Math.round((podH + H) / 3.8), 0x2a2d33);
 }
 
 function genDowntown(b: Block, r: () => number, out: ChunkData): void {
@@ -661,7 +714,7 @@ function genDowntown(b: Block, r: () => number, out: ChunkData): void {
   const long = b.w > b.d;
   const n = (long ? b.w : b.d) > 88 ? 2 : 1;
   const ls = lots(b.x0 + 0.6, b.z0 + 0.6, b.x1 - 0.6, b.z1 - 0.6, long ? n : 1, long ? 1 : n);
-  for (const l of ls) tower(out, r, l[0], l[1], l[2], l[3], core);
+  for (const l of ls) tower(out, r, l[0], l[1], l[2], l[3], core, b);
 }
 
 function genMidtown(b: Block, r: () => number, out: ChunkData): void {
@@ -675,6 +728,8 @@ function genMidtown(b: Block, r: () => number, out: ChunkData): void {
     box(out.boxes, l[0] - 0.4, l[1] - 0.4, l[2] + 0.4, l[3] + 0.4, G + h - 0.2, 0.7, pick(r, PAL.stone), MODE.WALL, false);
     roofClutter(out, r, l[0], l[1], l[2], l[3], G + h, 2 + Math.floor(r() * 3));
     if (r() < 0.3) neonSign(out, r, l[0], l[1], l[2], l[3], G + 4.2, 8 + r() * 8);
+    const k = hash2(Math.round(l[0]), Math.round(l[1]), 52) % 100;
+    frontDoor(out, b, l[0], l[1], l[2], l[3], k < 52 ? 'apartments' : k < 64 ? 'hotel' : k < 74 ? 'bar' : k < 84 ? 'diner' : 'office', floors, k >= 64 && k < 84 ? 0x8a2a2a : -1);
   }
 }
 
@@ -691,6 +746,9 @@ function genSeaside(b: Block, r: () => number, out: ChunkData): void {
     box(out.boxes, l[0] + 1, l[1] + 1, l[2] - 1, l[3] - 1, G + h, 1.1, 0xeeeeee, MODE.WALL, false);
     roofClutter(out, r, l[0], l[1], l[2], l[3], G + h + 1, 2);
     if (r() < 0.6) neonSign(out, r, l[0], l[1], l[2], l[3], G + 5 + r() * 6, 10 + r() * 10);
+    const k = hash2(Math.round(l[0]), Math.round(l[1]), 53) % 100;
+    const kind: DoorKind = floors <= 4 && k < 40 ? 'motel' : k < 55 ? 'hotel' : k < 70 ? 'bar' : k < 80 ? 'diner' : 'apartments';
+    frontDoor(out, b, l[0], l[1], l[2], l[3], kind, floors, kind === 'motel' ? 0x2a8a9a : kind === 'hotel' ? 0xe8e0d0 : kind === 'bar' || kind === 'diner' ? 0xc43c3c : -1);
   }
 }
 
@@ -712,6 +770,7 @@ function genResidential(b: Block, r: () => number, out: ChunkData): void {
     } else {
       roofClutter(out, r, x0, z0, x1, z1, G + h, 2);
     }
+    frontDoor(out, b, x0, z0, x1, z1, apartment ? 'apartments' : 'house', apartment ? Math.round(h / 3.6) : 2, apartment ? -1 : 0xe8e0d0);
     if (r() < 0.8) treeAt(out, lerp(l[0] + 2, l[2] - 2, r()), l[1] + 2 + r() * 1.5, r, 0);
     if (r() < 0.5) treeAt(out, lerp(l[0] + 2, l[2] - 2, r()), l[3] - 2 - r() * 1.5, r, r() < 0.3 ? 2 : 0);
   }
@@ -738,6 +797,7 @@ function genHood(b: Block, r: () => number, out: ChunkData): void {
       const x0 = l[0] + 1, x1 = l[2] - 1, z0 = l[1] + 1, z1 = l[3] - 3;
       box(out.boxes, x0, z0, x1, z1, G, 4.6, pick(r, PAL.faded), MODE.PUNCHED);
       neonSign(out, r, x0, z1 - 0.2, x1, z1, G + 3.2, Math.min(6, x1 - x0 - 1));
+      frontDoor(out, b, x0, z0, x1, z1, 'store', 1, 0x3a3f46);
       continue;
     }
     const walkup = kind > 0.78;
@@ -752,6 +812,7 @@ function genHood(b: Block, r: () => number, out: ChunkData): void {
     box(out.boxes, x0, z0, x1, z1, G, h, col, MODE.PUNCHED);
     box(out.boxes, x0 - 0.4, z0 - 0.4, x1 + 0.4, z1 + 0.4, G + h, 0.35, pick(r, PAL.dark), MODE.WALL, false);
     if (walkup) roofClutter(out, r, x0, z0, x1, z1, G + h + 0.35, 1);
+    frontDoor(out, b, x0, z0, x1, z1, walkup ? 'apartments' : 'house', walkup ? Math.round(h / 3.3) : 1);
     // chain-link fence along the front and a gate gap; some yards have a beat-up car or an old couch
     const fz = l[1] + 0.4;
     const gx = lerp(l[0] + 2, l[2] - 3, r());
@@ -794,6 +855,7 @@ function genIndustrial(b: Block, r: () => number, out: ChunkData): void {
     const col = pick(r, PAL.industrial);
     box(out.boxes, x0, z0, x1, z1, G, h, col, MODE.CLERESTORY);
     box(out.boxes, x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5, G + h, 0.6, 0x555a60, MODE.METAL, false);
+    frontDoor(out, b, x0, z0, x1, z1, 'warehouse', 1);
     if (x1 - x0 > 40) box(out.boxes, x0 + 6, z1, x0 + 28, z1 + 14, G, 5.5, pick(r, PAL.industrial), MODE.WALL);
     roofClutter(out, r, x0, z0, x1, z1, G + h + 0.6, 4);
     if (r() < 0.5) cyl(out.cyls, lerp(x0 + 8, x1 - 8, r()), G + h, lerp(z0 + 6, z1 - 6, r()), 1.6, 24 + r() * 12, 0x80858a, MODE.METAL);
@@ -852,6 +914,7 @@ function genMall(b: Block, r: () => number, out: ChunkData): void {
   box(out.boxes, x0 + 20, z0 - 3, x0 + 70, z0 + 3, G, 11, 0xbfd2d8, MODE.GLASS);
   box(out.boxes, x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5, G + 15, 0.8, 0x7c6f60, MODE.METAL, false);
   boxC(out.boxes, x0 + 45, G + 15, z0 - 2, 36, 5, 0.8, 0xff2e88, MODE.NEON, false);
+  placeDoor(out, x0 + 45, z0 - 3, 0, -1, 'mall', 2, hash2(b.i, b.j, 61));
   roofClutter(out, r, x0, z0, x1, z1, G + 15.8, 6);
   for (let i = 0; i < 8; i++) treeAt(out, lerp(x0, x1, (i + 0.5) / 8), z1 + 7, r, 1);
 }
@@ -864,6 +927,7 @@ function genPolice(b: Block, r: () => number, out: ChunkData): void {
   boxC(out.boxes, (x0 + x1) / 2, G + 44, (z0 + z1) / 2, 0.8, 34, 0.8, 0x70757c, MODE.METAL, false);
   boxC(out.boxes, (x0 + x1) / 2, G + 78, (z0 + z1) / 2, 1.3, 1.3, 1.3, 0xff3322, MODE.NEON, false);
   boxC(out.boxes, (x0 + x1) / 2, G + 6, z0 - 0.3, Math.min(30, x1 - x0 - 10), 1.4, 0.6, 0x2f7bff, MODE.NEON, false);
+  placeDoor(out, (x0 + x1) / 2, z0, 0, -1, 'police', 4, hash2(b.i, b.j, 62), 0x2a2d33);
   box(out.boxes, x0 + 4, z1 + 6, x0 + 40, z1 + 10, G, 2.6, 0x3a3f46, MODE.WALL);
   roofClutter(out, r, x0, z0, x1, z1, G + 14, 3);
 }
@@ -881,6 +945,7 @@ function genHospital(b: Block, r: () => number, out: ChunkData): void {
   // red cross sign
   boxC(out.boxes, cx, G + 38, b.z0 - 0.3 + 0.8, 9, 2.4, 0.5, 0xff2d2d, MODE.NEON, false);
   boxC(out.boxes, cx, G + 38, b.z0 - 0.3 + 0.8, 2.4, 9, 0.5, 0xff2d2d, MODE.NEON, false);
+  placeDoor(out, cx, cz - 18, 0, -1, 'hospital', 12, hash2(b.i, b.j, 63), 0xe7e8e4);
   for (let i = 0; i < 6; i++) treeAt(out, lerp(b.x0 + 12, b.x1 - 12, r()), b.z1 - 6 - r() * 6, r, 0);
 }
 
@@ -946,6 +1011,7 @@ function genPier(inside: (x: number, z: number) => boolean, out: ChunkData): voi
     boxC(out.boxes, PIER.x1 + 14, 4.5, PIER.z, 9, 3.4, 7, 0xf2ead8, MODE.PUNCHED);
     boxC(out.boxes, PIER.x1 + 14, 7.9, PIER.z, 10, 0.5, 8, 0xe85a4f, MODE.WALL, false);
     boxC(out.boxes, PIER.x1 + 8.8, 8.8, PIER.z, 0.5, 2, 7, 0x27e6ff, MODE.NEON, false);
+    placeDoor(out, PIER.x1 + 14, PIER.z - 3.5, 0, -1, 'diner', 1, 77, 0xe85a4f, 4.5);
   }
   void len;
 }
@@ -989,6 +1055,12 @@ function genVilla(x: number, z: number, yaw: number, r: () => number, out: Chunk
   boxC(out.boxes, x, base, z, w, ground, d, col, MODE.PUNCHED, true, ry);
   boxC(out.boxes, x + 3 * c - 0 * s, base + ground, z + 3 * s, w * 0.7, 3.4, d * 0.8, col, MODE.GLASS, true, ry);
   boxC(out.boxes, x, base + ground + 3.4, z, w * 0.85, 0.5, d * 0.95, 0x40454c, MODE.WALL, false, ry);
+  {
+    // the front door on the downhill (v = -d/2) side, at the ground under it
+    const fx = x + (d / 2) * s, fz = z - (d / 2) * c;
+    const doorY = terrainHeight(fx + s * 1.2, fz - c * 1.2);
+    placeDoor(out, fx, fz, s, -c, 'mansion', 2, hash2(Math.round(x), Math.round(z), 64), 0x40454c, Math.max(base, doorY - 0.05));
+  }
   treeAt(out, x - 11 * c, z - 11 * s, r, 1, base + 0.2);
   treeAt(out, x + 12 * c, z + 9 * s, r, 2, base + 0.2);
 }

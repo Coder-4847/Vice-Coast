@@ -41,7 +41,7 @@ export function buildCinderFlats(): Kit {
   // Sidewinder Motel: a long row of rooms, an office with a neon sign and an empty pool
   {
     const p = north(-122, 36, 8);
-    k.building(p.x, p.z, 36, 7, 3.4, p.yaw, 0xd8c4a0, { roof: 'shed', roofColor: 0x7a5a48, mode: MODE.PUNCHED, pitch: 0.12 });
+    k.building(p.x, p.z, 36, 7, 3.4, p.yaw, 0xd8c4a0, { door: 'motel', roof: 'shed', roofColor: 0x7a5a48, mode: MODE.PUNCHED, pitch: 0.12 });
     for (let i = 0; i < 12; i++) { const [dx, dz] = k.at(p.x, p.z, p.yaw, -16.5 + i * 3, 3.55); k.box(dx, dz, 1.0, 0.1, 2.1, i % 3 === 0 ? 0x2d6a8a : 0x7a2f2a, { solid: false }); }
     const o = north(-92, 10, 9);
     k.building(o.x, o.z, 9, 9, 3.8, o.yaw, 0xeadfc6, { roof: 'gable', roofColor: 0x8a4b38, mode: MODE.PUNCHED });
@@ -149,7 +149,7 @@ export function buildCinderFlats(): Kit {
         const [x, z] = L(u, v);
         const yaw = Y + (r() - 0.5) * 0.08;
         const col = pick(r, [0xf1ece4, 0xe4d9bb, 0xb8d6d2, 0xd9c7a8, 0xc9d6c8]);
-        k.building(x, z, 9.5, 3.2, 2.6, yaw, col, { roof: 'shed', roofColor: 0xb8b8b4, mode: MODE.PUNCHED, pitch: 0.05, overhang: 0.25 });
+        k.building(x, z, 9.5, 3.2, 2.6, yaw, col, { door: 'trailer', doorBack: true, roof: 'shed', roofColor: 0xb8b8b4, mode: MODE.PUNCHED, pitch: 0.05, overhang: 0.25 });
         const [ax, az] = k.at(x, z, yaw, 0, 3.0);
         k.box(ax, az, 6, 2.2, 0.15, pick(r, [0x2f6b8a, 0xc23a2a, 0x4a7a4a]), { y0: k.ground(ax, az) + 2.2, ry: -yaw, solid: false, rx: -0.12 });
         if (r() < 0.6) { const [cx, cz] = k.at(x, z, yaw, 8, 4.2); k.box(cx, cz, 4.4, 1.9, 1.3, pick(r, [0x8a3a2f, 0x3a5a8a, 0x777777, 0x5a6a4a]), { ry: -yaw + (r() - 0.5) * 0.3 }); }
