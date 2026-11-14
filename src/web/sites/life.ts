@@ -101,12 +101,13 @@ export const BANK: Site = {
     const e = ctx.c.eco;
     const move = (n: number, toBank: boolean): HTMLElement => button(`${toBank ? 'Deposit' : 'Withdraw'} ${n === Infinity ? 'all' : money(n)}`, () => { if (toBank) e.deposit(n === Infinity ? e.cash : n); else e.withdraw(n === Infinity ? e.bank : n); ctx.g.audio.uiBlip('ok'); ctx.refresh(); }, 'w-btn', toBank ? e.cash <= 0 : e.bank <= 0);
     const upkeep = e.p.props.reduce((a, o) => a + (o.free ? 0 : PROPERTY_BY_ID[o.id]?.upkeep ?? 0), 0);
-    const income = e.p.biz.reduce((a, id) => a + (BUSINESSES.find((b) => b.id === id)?.income ?? 0), 0);
-    el.append(frame(ctx, { name: 'Valeria Savings', logo: h('span', '', h('b', '', 'VALERIA'), ' SAVINGS'), tagline: 'Banking since 1902' }, [['Accounts', 'valeriasavings.vc'], ['Invest', 'vex.vc']],
+    const em = ctx.g.empire;
+    const income = em ? em.owned().reduce((a, d) => a + em.takings(d), 0) : 0;
+    el.append(frame(ctx, { name: 'Valeria Savings', logo: h('span', '', h('b', '', 'VALERIA'), ' SAVINGS'), tagline: 'Banking since 1902' }, [['Accounts', 'valeriasavings.vc'], ['Invest', 'vex.vc'], ['Businesses', 'ledger.vc']],
       div('w-grid3',
         card(h('div', 'w-kicker', 'Current account'), h('div', 'w-big', money(e.bank)), p('Safe from muggers and the police.', 'muted small')),
         card(h('div', 'w-kicker', 'Cash on you'), h('div', 'w-big', money(e.cash)), p('You lose some when Wasted or Busted.', 'muted small')),
-        card(h('div', 'w-kicker', 'Daily'), kv('Property upkeep', `−${money(upkeep)}`), kv('Business takings', `+${money(income)}`), ctx.s ? kv('Shares', money(ctx.s.market.portfolioValue())) : null),
+        card(h('div', 'w-kicker', 'Daily'), kv('Property upkeep', `−${money(upkeep)}`), kv('Business takings', `+${money(income)}`), e.p.dirty > 0 ? kv('Waiting to launder', money(e.p.dirty)) : null, ctx.s ? kv('Shares', money(ctx.s.market.portfolioValue())) : null),
       ),
       section('Transfer', div('w-actions', move(1000, true), move(10000, true), move(Infinity, true)), div('w-actions', move(1000, false), move(10000, false), move(Infinity, false))),
       section('Recent transactions', ...(e.log.length ? e.log.slice(0, 25).map((t) => div('w-tr w-tx', h('span', 'muted', `Day ${t.day}`), h('span', '', t.reason), h('span', `r ${t.delta >= 0 ? 'w-up' : 'w-down'}`, `${t.delta >= 0 ? '+' : '−'}${money(Math.abs(t.delta))}`))) : [p('Nothing since you logged in.', 'muted')])),

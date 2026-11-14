@@ -44,6 +44,9 @@ export type VehicleWhere =
   | { kind: 'world'; x: number; z: number; yaw: number }
   | { kind: 'destroyed'; prop: string };
 
+/** A business you own: upgrades bought, and for operations their supplies (0-100), stock ($) and heat (0-100). */
+export interface BizState { upgrades: string[]; supplies: number; stock: number; heat: number; popularity: number; visited: number; earned: number }
+
 /** One thing in an online order. */
 export interface CartLine { kind: 'weapon' | 'ammo' | 'attach' | 'supply'; id: string; key?: 'ext' | 'supp' | 'scope'; qty: number; label: string; price: number }
 export type DropKind = 'courier' | 'air' | 'home' | 'dead';
@@ -119,6 +122,10 @@ export interface Profile {
   crafts: OwnedCraft[];
   /** Online orders on their way or waiting to be collected. */
   drops: Drop[];
+  /** Per-business state (upgrades, supplies, stock, popularity…), by business id. */
+  empire: Record<string, BizState>;
+  /** Money from illegal operations that still has to be laundered. Half is lost when you are Busted. */
+  dirty: number;
 }
 
 export interface SaveData {

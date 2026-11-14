@@ -48,7 +48,7 @@ export function atmPage(c: Commerce): Page {
 
 // ============================================================================================================ properties
 
-function confirmPage(title: string, text: string, yes: string, onYes: () => void): Page {
+export function confirmPage(title: string, text: string, yes: string, onYes: () => void): Page {
   return {
     title,
     hideMoney: true,

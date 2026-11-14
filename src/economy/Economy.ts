@@ -1,5 +1,5 @@
 import { Emitter } from '../core/Emitter';
-import { BUSINESS_BY_ID, DEFAULT_KIT, DEFAULT_OUTFIT, INSURANCE_FEE, PROPERTY_BY_ID, REPAIR_COST, SELL_RATE, START_BANK, START_CASH } from './catalog';
+import { DEFAULT_KIT, DEFAULT_OUTFIT, INSURANCE_FEE, PROPERTY_BY_ID, REPAIR_COST, SELL_RATE, START_BANK, START_CASH } from './catalog';
 import type { OwnedProperty, OwnedVehicle, Profile, SaveData, Stats, VehicleCustom } from './types';
 import { WEAPONS, perWeapon, type WeaponId } from '../player/Weapons';
 import { newStory } from '../story/types';
@@ -23,6 +23,8 @@ export const newProfile = (): Profile => ({
   biz: [],
   crafts: [],
   drops: [],
+  empire: {},
+  dirty: 0,
 });
 
 /** Fill any fields a save from an older build is missing. */
@@ -39,6 +41,8 @@ export function migrate(p: Partial<Profile>): Profile {
     biz: p.biz ?? [],
     crafts: p.crafts ?? [],
     drops: p.drops ?? [],
+    empire: p.empire ?? {},
+    dirty: p.dirty ?? 0,
     props: p.props ?? [],
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,
@@ -112,6 +116,14 @@ export class Economy extends Emitter<EconomyEvents> {
   earn(n: number, reason: string): void {
     if (n <= 0) return;
     this.p.cash += n;
+    this.p.stats.earned += n;
+    this.emit('change', { cash: this.p.cash, bank: this.p.bank, delta: n, reason });
+  }
+
+  /** Money paid straight into the bank (business takings, laundered cash). */
+  bankIn(n: number, reason: string): void {
+    if (n <= 0) return;
+    this.p.bank += n;
     this.p.stats.earned += n;
     this.emit('change', { cash: this.p.cash, bank: this.p.bank, delta: n, reason });
   }
@@ -197,15 +209,6 @@ export class Economy extends Emitter<EconomyEvents> {
       }
     }
     if (total > 0) { notes.unshift(`Upkeep paid: ${money(total)}`); this.message('Valeria Savings', `Property upkeep of ${money(total)} was taken from your account.`); }
-    // businesses pay their takings into the bank (good days and bad days)
-    let takings = 0;
-    for (const id of this.p.biz) {
-      const b = BUSINESS_BY_ID[id];
-      if (!b) continue;
-      const k = Math.sin((this.p.day + 1) * 12.9898 + id.length * 78.233) * 43758.5453;
-      takings += Math.round(b.income * (0.7 + 0.6 * (k - Math.floor(k))));
-    }
-    if (takings > 0) { this.p.bank += takings; this.p.stats.earned += takings; notes.push(`Business takings: ${money(takings)}`); this.message('Valeria Savings', `Your businesses paid ${money(takings)} into your account.`); this.emit('change', { cash: this.p.cash, bank: this.p.bank, delta: takings, reason: 'Business takings' }); }
     this.emit('change', { cash: this.p.cash, bank: this.p.bank, delta: 0, reason: 'day' });
     return notes;
   }

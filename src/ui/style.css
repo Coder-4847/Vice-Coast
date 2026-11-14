@@ -1112,3 +1112,5 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 .w-choice.on { border-color: var(--w-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--w-accent) 30%, transparent); }
 .w-deliv { display: flex; flex-direction: column; gap: 2px; }
 .w-total b { font-size: 18px; }
+.w-meter { height: 10px; border-radius: 6px; background: var(--w-line); overflow: hidden; margin: 6px 0 10px; }
+.w-meter-fill { height: 100%; background: linear-gradient(90deg, #ff2e88, #ffb02e); }

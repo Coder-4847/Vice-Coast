@@ -6,6 +6,7 @@ import { VEX } from './vex';
 import { APEX, KEYSTONE, MORS, ROADKINGS } from './shops';
 import { BLUEWATER, SKYLINE, SURPLUS } from './fleet';
 import { BRASS, GHOST } from './guns';
+import { LEDGER } from './biz';
 import { AERO, BANK, COASTLIST, FRIENDR, GOV, LUCKY, NEWS, PAWS, SKYWATCH, tickerStrip } from './life';
 
 /** Extra words people might search for, per site. */
@@ -13,7 +14,7 @@ const KEYWORDS: Record<string, string> = {
   'vex.vc': 'stocks shares market invest trading exchange portfolio',
   'apexautos.vc': 'cars buy car vehicle dealer new sports bike motorcycle',
   'roadkings.vc': 'used cars cheap car second hand',
-  'keystone.vc': 'house home property real estate apartment buy business nightclub',
+  'keystone.vc': 'house home property real estate apartment buy business businesses nightclub motel diner food restaurant car wash laundromat taxi',
   'coastlinedaily.vc': 'news headlines paper',
   'skywatch.vc': 'weather forecast rain',
   'valeriasavings.vc': 'bank money account transfer deposit',
@@ -25,7 +26,8 @@ const KEYWORDS: Record<string, string> = {
   'poundandpaws.vc': 'dog pet adopt rufus',
   'sanverano.gov': 'government dmv police wanted tax',
   'brassandbarrel.vc': 'guns gun weapons ammo ammunition rifle pistol shotgun armour buy delivery',
-  'ghostline.onion': 'black market rocket launcher rpg laser explosives sticky illegal dark web onion',
+  'ghostline.onion': 'black market rocket launcher rpg laser explosives sticky illegal dark web onion drugs grow lab counterfeit cartel weed meth forgery',
+  'ledger.vc': 'business businesses manage my nightclub club motel laundering launder dirty money takings supplies accounts',
   'skylineaviation.vc': 'plane planes aircraft helicopter heli jet buy private',
   'bluewatermarine.vc': 'boat boats yacht jet ski speedboat buy',
   'halloransurplus.vc': 'military tank jet fighter attack helicopter apc army surplus',
@@ -72,4 +74,4 @@ const WAVE: Site = {
   render(ctx, el) { el.append(portal(ctx, SITES)); },
 };
 
-export const SITES: Site[] = [WAVE, VEX, APEX, ROADKINGS, BRASS, GHOST, SKYLINE, BLUEWATER, SURPLUS, KEYSTONE, MORS, NEWS, SKYWATCH, BANK, FRIENDR, COASTLIST, LUCKY, AERO, PAWS, GOV];
+export const SITES: Site[] = [WAVE, VEX, APEX, ROADKINGS, BRASS, GHOST, SKYLINE, BLUEWATER, SURPLUS, KEYSTONE, LEDGER, MORS, NEWS, SKYWATCH, BANK, FRIENDR, COASTLIST, LUCKY, AERO, PAWS, GOV];

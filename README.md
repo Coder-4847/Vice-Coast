@@ -178,11 +178,12 @@ you can type into (plain words search the web), back / forward, and bookmarks. S
 | **vex.vc** — Verano Exchange | 14 companies, prices that move every hour, 3 months of history, charts (today / 1 month / 3 months), buy and sell any number of shares ($5 fee), a portfolio with average cost and profit / loss, market news |
 | **skylineaviation.vc**, **bluewatermarine.vc** | Helicopters, prop planes, a stunt plane and a private jet; a jet ski, speedboat, fishing boat and a yacht. Pick a paint and the hangar or berth it goes to (Valeria Hangar 3, the new **Cinder Flats Hangar**, the Dusk Harbor Boat House or the new **Costa Merida Marina Berth**). **My fleet**: show on map, return to berth (and repair) for a fee, sell for 60% |
 | **brassandbarrel.vc** | Every legal gun, ammunition, extended mags / suppressors / optics and armour, with stats. A cart and three deliveries: **courier** ($150, a crate near you in ~40 s), **express air drop** ($750, a crate parachutes down in ~12 s, orange smoke) or **safehouse** (free, waiting at your door). Not while the police are after you |
-| **ghostline.onion** (hidden: search "black market" or read the classifieds) | The RPG, the Helios laser and sticky charges, plus three cheap "found" guns a day. Dead drops only: a crate 200–400 m away, marked on your map; sometimes the police are watching it |
+| **ghostline.onion** (hidden: search "black market" or read the classifieds) | The RPG, the Helios laser and sticky charges, plus three cheap "found" guns a day. Dead drops only: a crate 200–400 m away, marked on your map; sometimes the police are watching it. **Property** tab: the five illegal operations |
 | **halloransurplus.vc** | Ex-military: the Hornet attack helicopter, the Lancer fighter jet, the Warden APC and the Bulwark tank. Aircraft go to a hangar; armour is dropped off near you and can be called again from My fleet ($2,500) |
 | **apexautos.vc** | Every new car and bike with stats and a paint choice; delivered to a garage with space, or parked near you |
 | **roadkings.vc** | Nine used cars a day at 40–80% of the new price, each sold once |
-| **keystone.vc** | Every home for sale (now 14, including a Midtown loft, a Southside bungalow, a harbour loft, a Pinecrest cottage and a Bayview condo) and **8 businesses** — taco truck to nightclub — that pay their takings into your bank every morning |
+| **keystone.vc** | Every home for sale (now 14, including a Midtown loft, a Southside bungalow, a harbour loft, a Pinecrest cottage and a Bayview condo) and **12 legal businesses**, from a taco truck to a nightclub (see *Businesses* below) |
+| **ledger.vc** | Your businesses: takings, dirty money and laundering, supplies / stock / heat for each operation, upgrades, club promotions and supply orders from anywhere |
 | **valeriasavings.vc** | Balances, transfers, daily upkeep vs takings, recent transactions |
 | **coastlinedaily.vc**, **skywatch.vc** | News (it reports your robberies, car thefts, burglaries and business deals), sports, weather and a five-day forecast |
 | **islaaero.vc** | Charter flights to the airport, Isla Rojo, Cinder Flats, Pinecrest and Costa Merida |
@@ -191,6 +192,19 @@ you can type into (plain words search the web), back / forward, and bookmarks. S
 **Stocks.** Prices drift from yesterday's close toward today's through the day and settle each morning. Company news moves
 them, the story moves them, and so do you: rob Petrolia or FreshMart stores and their shares dip the next day; steal cars and
 Redline Customs rises; buy cars and Valeria Motors gains. Shares are paid from cash then the bank; sales go into the bank.
+
+### Businesses
+
+Every business has its own building on the map (grey `$` until you own it, green afterwards; illegal operations only appear once
+they are yours). Walk up to the door of one you own and press `E` to go inside; the **office laptop** runs it.
+
+| Kind | Businesses | How it pays |
+| --- | --- | --- |
+| **Legal fronts** (keystone.vc) | Canal Taco Truck, Pinecrest Bait & Tackle, Bayside Burger Shack, Sunwash Car Wash, Route 9 Diner, Harbor Storage Units, Spin City Laundromat, Sea Breeze and Starlite motels, Marlow Cab Co., Cinder Flats Airfield | Clean takings into the bank at 06:00 each day, and each one **launders** a set amount of dirty money a day (15% fee). Upgrades: staff, marketing, "creative bookkeeping" (+50% laundering) |
+| **The Velvet Room** nightclub ($420k) | A dance floor of lit tiles, DJ booth and LED wall, bar, roped-off VIP lounge, bouncers, and an office with a safe | Takings follow **popularity**, which falls every day. Promotions ($5,000, +25) and turning up yourself between 20:00 and 04:00 (+8) bring the crowd back; at night the floor is packed, by day it's nearly empty. Upgrades: resident DJ (popularity falls half as fast), a full refit, the books |
+| **Illegal operations** (ghostline.onion) | Marlow Copy Centre (forged documents), Pine Hollow Grow-op, Southside Print Shop (counterfeit cash), Dry Creek Lab, Coastline Import Warehouse (the cartel) | Buy supplies (or **steal** them from a guarded rival stash); the operation turns them into stock over 20–48 game hours. **Sell** it on a van run to a drop across the map (full value, a time limit, sometimes a police tip-off) or to a fence (55%). Either way it's **dirty money**: launder it through your fronts. Heat rises with every load and run and a police raid can take most of the stock. Upgrades: equipment (+30% value), staff (+30% speed), security (60% fewer raids) |
+
+Dirty money shows on the bank page and on ledger.vc; half of it is seized if you're Busted. Sold businesses return 70% of the price.
 
 ### Interiors
 
@@ -371,6 +385,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 29. **Phase E** ✅ — interiors for nearly every building (shops, stores, apartments with hallways, hotels and motels with rooms to rent, houses to burgle, offices, bars, diners, gyms, police HQ, the hospital, the mall, warehouses, your own homes), robbery stores you walk into, new first-person hands (one skinned mesh with knuckles, finger pads, creases and nails; skin with pores, wrinkles, veins and warm subsurface light), and world AO no longer smearing across the hands
 30. **Phase F** ✅ — an in-game internet (15 sites, a browser with address bar, history and bookmarks), the Verano Exchange stock market (14 companies, hourly prices, charts, portfolio, news, player-driven moves), buying cars and homes online, used cars, businesses with daily income, five new homes, charter flights, online banking, a newspaper that reports what you did
 31. **Phase G** ✅ — boats, aircraft and military hardware sold online (three dealers, 13 craft), a hangar at Cinder Flats and marina berths in Costa Merida, owned craft saved with their paint and berth, fleet management (locate, recover and repair, sell, armour delivery)
-32. **Phase H** ✅ (this build) — an online gun store with a cart and courier, air-drop or safehouse delivery, a hidden black-market site with dead drops (and the odd police sting), packages saved until you collect them
+32. **Phase H** ✅ — an online gun store with a cart and courier, air-drop or safehouse delivery, a hidden black-market site with dead drops (and the odd police sting), packages saved until you collect them
+33. **Phase I** ✅ (this build) — businesses you own and walk into: 12 legal fronts (food joints, a car wash, a laundromat, motels, a cab firm, an airfield) and a nightclub with popularity, plus five illegal operations up to a cartel warehouse; supplies, stock, van sell runs, supply raids, heat and police raids; dirty money laundered through your fronts; upgrades; a business dashboard site
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.
