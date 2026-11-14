@@ -207,9 +207,22 @@ yacht are still to come.
 **Radio.** Six stations, synthesized live: rock, hip-hop, electronic, latin, jazz/lounge and talk, with DJs, adverts and news as subtitles (and optional spoken lines).
 Press `Q` in any vehicle or aircraft; click a card on the strip to jump to a station. **Radio volume** is in Settings → Audio.
 
+**The street is alive.** People stand chatting on corners (speech bubbles and a babble of voices), friends sit on the kerb,
+drunks cheer with bottles at night, a fistfight draws a crowd filming it on their phones, a smoker leans by a wall, a hot-dog
+vendor calls out, tourists take photos, and the police make arrests beside their cruisers. People talk back: bump into someone
+and they let you know, point a gun at them and their hands go up before they run, roll up in something expensive and somebody
+admires it. **Paramedics** come for the fallen (sometimes they bring someone back), **fire crews** put out fires, **dogs** trot
+beside their owners (strays roam Southside and bark at you), and **pigeons** peck on the pavement until you get close or fire a shot.
+
+**Cheat codes:** press `` ` `` to open the cheat box, type a code and press Enter (off during missions): `TOOLUP` (every weapon),
+`PATCHUP` (health and armour), `CLEANSLATE` (lose the cops), `RAISEHELL` (+2 stars), `FASTLANE` (sports car), `OFFROAD` (4x4),
+`WHIRLYBIRD` (gunship), `SUNSHINE` / `STORMFRONT` (weather), `PAYDAY` (+$50,000).
+
 **Random street events** turn up every few minutes while you free-roam the city, marked with a blue `$` or `!`: a **security van**
 making a stop (two guards; hold `E` at the rear doors for the cash, then deal with the police) or a **purse snatcher** (stop him,
-pick up the wallet, then return it to its owner for a reward or keep what is inside).
+pick up the wallet, then return it to its owner for a reward or keep what is inside), a **hitchhiker** waving you down (drive them
+to the marker), or two men outside a store who need a **getaway driver** (two stars the moment they climb in; lose the cops, then
+drop them at the hideout for a few thousand).
 
 **Side activities** start from flag markers (⚑) that appear within a kilometre: **street, circuit, rally and downhill races** against AI rivals, **bike, boat and air races**
 against the clock, **taxi, courier, bounty, repo and vigilante jobs**, **flight school and a stunt course**. They pay in full every time and can be replayed.
@@ -298,6 +311,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 23. **Rework, phases 8 + 9** ✅ — street theft (parked cars, locked doors, window smashing, alarms, hotwiring, carjacking), seven new vehicles (sedan, police Interceptor, van, SUV, muscle car, sports car, dirt bike) with new van and SUV bodies, the Lancer fighter jet and Hornet attack helicopter with rockets plus a jet strip at Fort Halloran, eleven more stores to rob, and two new heists: The Pinecrest Score and Halloran Armory
 24. **Rework, phases 10 + 11** ✅ — a fourth ending, **All In** (all three together: a car chase, a tank through a roadblock and a gunship hunt for Crane's convoy, then Brandt's last stand), final fights added to Clean Slate and Clear Skies, epilogue texts, an end-credits roll with your numbers and endings seen; random street events (security vans to rob, purse snatchers to chase); an eating animation for snacks
 25. **Living world, phase A** ✅ — hit markers by result (white hit, yellow downed, red kill, bigger for head shots, with sounds); people flinch when hit, limp and clutch wounds, fall the way the shot pushes them with flailing limbs and a sprawl, or go down writhing and crawling before they bleed out (a downed person counts as neutralised and can be finished); blood splatters on walls and pavement behind wounds, pools spread under bodies, blood at the screen edges when you are hurt; first-person hand animations for smashing a car window, pulling a driver out and eating, and sparks under the dash while hotwiring
-26. **Living world, phase B** ✅ (this build) — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
+26. **Living world, phase B** ✅ — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
+27. **Living world, phase C** ✅ (this build) — street scenes (chats, kerb sitters, drunks with bottles, fistfights with an audience, smokers, a hot-dog vendor, tourists, arrests), speech bubbles with synthesised voices, people reacting to bumps, guns and nice cars, paramedics who treat (and sometimes revive) the fallen, fire crews with fire trucks, dogs with owners and strays, pigeons that scatter, hitchhiker and getaway-driver events, a cheat console; fixed the sniper-scope overlay showing on every weapon
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

@@ -25,6 +25,9 @@ import { a11y } from './core/a11y';
 import { AimAssist } from './combat/AimAssist';
 import { Snacks } from './player/Snacks';
 import { CarTheft } from './crime/CarTheft';
+import { StreetLife } from './npc/StreetLife';
+import { Animals } from './npc/Animals';
+import { Cheats } from './core/Cheats';
 import { Ordnance } from './combat/Ordnance';
 import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
@@ -320,6 +323,9 @@ export class Game {
       this.radio = new RadioControl(this);
       this.driveBy = new DriveBy(this);
       this.theft = new CarTheft(this);
+      this.street = new StreetLife(this);
+      this.animals = new Animals(this);
+      this.cheats = new Cheats(this);
     }
     this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
     this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
@@ -728,6 +734,9 @@ export class Game {
   ordnance: Ordnance | null = null;
   readonly snacks = new Snacks(this);
   theft: CarTheft | null = null;
+  street: StreetLife | null = null;
+  animals: Animals | null = null;
+  cheats: Cheats | null = null;
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -784,6 +793,8 @@ export class Game {
     this.ordnance?.update(dt);
     this.snacks.update(dt);
     this.theft?.update(dt);
+    this.street?.update(dt);
+    this.animals?.update(dt);
     this.story?.update(dt);
     this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();

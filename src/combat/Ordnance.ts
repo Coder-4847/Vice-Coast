@@ -8,7 +8,7 @@ import type { Vehicle } from '../vehicles/Vehicle';
 interface Rocket { pos: THREE.Vector3; vel: THREE.Vector3; mesh: THREE.Group; life: number; smokeT: number; exclude?: Collider }
 interface Beam { mesh: THREE.Mesh; life: number }
 interface Thrown { kind: 'frag' | 'fire' | 'sticky'; pos: THREE.Vector3; vel: THREE.Vector3; mesh: THREE.Mesh; fuse: number; stuck: boolean; on: Vehicle | null; local: THREE.Vector3; bounces: number }
-interface Fire { pos: THREE.Vector3; t: number; r: number; flames: THREE.Mesh[]; tickT: number; smokeT: number }
+export interface Fire { pos: THREE.Vector3; t: number; r: number; flames: THREE.Mesh[]; tickT: number; smokeT: number }
 
 const _d = new THREE.Vector3();
 const _n = new THREE.Vector3();
@@ -29,7 +29,7 @@ export class Ordnance {
   private readonly flameGeo = new THREE.ConeGeometry(0.06, 0.5, 8).rotateX(Math.PI / 2);
 
   private readonly thrown: Thrown[] = [];
-  private readonly fires: Fire[] = [];
+  readonly fires: Fire[] = [];
   private readonly throwGeo = {
     frag: new THREE.SphereGeometry(0.045, 10, 8).scale(1, 1.25, 1),
     fire: new THREE.CylinderGeometry(0.035, 0.035, 0.22, 10),
@@ -228,7 +228,7 @@ export class Ordnance {
         m.rotation.y += dt * 2;
       }
       f.smokeT -= dt;
-      if (f.smokeT <= 0) { f.smokeT = 0.15; g.effects?.smoke(f.pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, 0.5, (Math.random() - 0.5) * 3)), true); }
+      if (f.smokeT <= 0) { f.smokeT = 0.3; g.effects?.smoke(f.pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, 0.5, (Math.random() - 0.5) * 3)), true); }
       f.tickT -= dt;
       if (f.tickT <= 0) {
         f.tickT = 0.3;

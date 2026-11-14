@@ -935,3 +935,9 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 .scope-v { top: calc(50% - min(36vh, 36vw)); bottom: calc(50% - min(36vh, 36vw)); left: 50%; width: 1px; }
 .scope-dot { left: calc(50% - 2px); top: calc(50% - 2px); width: 4px; height: 4px; border-radius: 50%; background: #ff3b30 !important; }
 .cross.scoped { opacity: 0 !important; }
+/* ---- cheat console --------------------------------------------------------------------------------------------- */
+.cheat-box { position: fixed; left: 50%; bottom: 18%; transform: translateX(-50%); z-index: 80; }
+.cheat-input { width: min(320px, 80vw); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--glass-strong); color: var(--text); font: 600 var(--fs-md) var(--mono); letter-spacing: 0.2em; text-transform: uppercase; outline: none; }
+.cheat-input:focus { border-color: var(--accent); }
+.cheat-box.is-hidden { display: none; }
+.scope.is-hidden { display: none; }

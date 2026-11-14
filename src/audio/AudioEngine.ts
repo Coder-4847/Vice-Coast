@@ -360,6 +360,66 @@ export class AudioEngine {
     osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
   }
 
+  /**
+   * Someone talking: a few syllables of voiced babble (a buzzy source through two moving vowel formants), pitched by
+   * `voice` (0 deep … 1 high) and lasting about `secs`. Not words, just the rhythm and colour of speech.
+   */
+  babble(pos: Node3, voice = 0.5, secs = 1.2, loud = false): void {
+    if (!this.ready()) return;
+    const ctx = this.ctx!;
+    const t0 = this.now();
+    const o = this.out(pos, loud ? 9 : 5);
+    const base = 95 + voice * 150;
+    const syl = Math.max(2, Math.round(secs * 4.2));
+    const out = ctx.createGain();
+    out.gain.value = loud ? 0.16 : 0.09;
+    out.connect(o);
+    const src = ctx.createOscillator();
+    src.type = 'sawtooth';
+    const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 5;
+    const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 7;
+    const env = ctx.createGain();
+    env.gain.value = 0;
+    src.connect(f1).connect(env); src.connect(f2).connect(env);
+    env.connect(out);
+    let t = t0;
+    for (let i = 0; i < syl; i++) {
+      const d = 0.12 + Math.random() * 0.12;
+      const vowel = [[730, 1090], [270, 2290], [530, 1840], [570, 840], [300, 870]][Math.floor(Math.random() * 5)]!;
+      src.frequency.setValueAtTime(base * (0.9 + Math.random() * 0.25) * (loud ? 1.25 : 1), t);
+      f1.frequency.setValueAtTime(vowel[0]!, t); f2.frequency.setValueAtTime(vowel[1]!, t);
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(1, t + 0.025);
+      env.gain.setValueAtTime(1, t + d * 0.7);
+      env.gain.linearRampToValueAtTime(0.0001, t + d);
+      t += d + (Math.random() < 0.25 ? 0.12 : 0.03);
+    }
+    src.start(t0); src.stop(t + 0.05);
+  }
+
+  /** A dog: one or two short barks. */
+  bark(pos: Node3, big = 0.5): void {
+    if (!this.ready()) return;
+    const ctx = this.ctx!;
+    const n = 1 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < n; i++) {
+      const t = this.now() + i * 0.22;
+      const o = this.out(pos, 12);
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      const f = 420 - big * 220;
+      osc.frequency.setValueAtTime(f * 1.4, t);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.12);
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900 - big * 300; bp.Q.value = 2.5;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      osc.connect(bp).connect(g).connect(o);
+      osc.start(t); osc.stop(t + 0.16);
+    }
+  }
+
   /** Menu sounds: a soft tick when the selection moves, a two-note chime to confirm, a lower one to go back. */
   uiBlip(kind: 'move' | 'ok' | 'back'): void {
     if (!this.ready()) return;

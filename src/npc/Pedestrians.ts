@@ -157,6 +157,8 @@ export class Ped {
   health = 100;
   fall = 0;
   fallSign = 1;
+  /** A held pose for street scenes: squaring up, cheering with a bottle, smoking, sitting, kneeling, hands up, CPR. */
+  pose: '' | 'fight' | 'cheer' | 'smoke' | 'sit' | 'kneel' | 'hands' | 'cpr' | 'hose' | 'wave' = '';
   /** Downed but alive: seconds of writhing and crawling left before they bleed out (0 = dead, or never was). */
   dying = 0;
   /** How badly hurt (0 … 1): wounded people limp and clutch the wound. */
@@ -342,7 +344,7 @@ export class Pedestrians {
       for (const q of this.peds) if (q.active && q.role === 'civ' && !q.keep && q.dist > far) { far = q.dist; p = q; }
       if (!p || far < 40) return null;
     }
-    p.role = 'civ'; p.ai = null; p.aim = false; p.armed = false; p.keep = false; p.armor = 0; p.sees = false; p.buddy = null;
+    p.role = 'civ'; p.ai = null; p.aim = false; p.armed = false; p.keep = false; p.armor = 0; p.sees = false; p.buddy = null; p.pose = '';
     p.active = true;
     p.id = this.nextId++;
     this.outfit(p, arch, district ?? this.districtAt(x, z));
@@ -546,7 +548,7 @@ export class Pedestrians {
     for (const p of this.peds) {
       if (p.active && p.state === 'down') {
         p.idleT -= dt;
-        if (p.idleT < -45) p.active = false;
+        if (p.idleT < -45 && !p.keep) p.active = false;
       }
     }
     // despawn those far away or out of sight
@@ -882,6 +884,15 @@ export class PedRenderer {
         if (p.dying > 0 && f >= 1) roll += Math.sin(p.phase * 1.3) * 0.12;
       }
       if (p.flinch > 0) pitch -= (p.flinch / 0.32) * 0.28 * p.flinchSign;
+      const posing = p.pose !== '' && p.state !== 'down' && p.state !== 'flee';
+      const at = performance.now() / 1000 + p.seed * 7;
+      if (posing) {
+        if (p.pose === 'sit') lift -= 0.45 * h;
+        else if (p.pose === 'kneel' || p.pose === 'cpr') lift -= 0.42 * h;
+        else if (p.pose === 'fight') { pitch += 0.12; roll += Math.sin(at * 3.1) * 0.05; }
+        else if (p.pose === 'cheer') roll += Math.sin(at * 1.7) * 0.09;
+        if (p.pose === 'cpr') pitch += 0.35 + Math.max(0, Math.sin(at * 11)) * 0.08;
+      }
       if (p.state === 'lie') { pitch = -1.5; lift = 0.1; }
       if (p.state === 'idle' || p.state === 'wait' || p.state === 'film') pitch += Math.sin(p.phase + p.seed * 5) * 0.02;
       const bob = p.speed > 0.1 && p.state !== 'down' ? Math.abs(Math.sin(p.phase)) * 0.025 * h : 0;
@@ -917,6 +928,20 @@ export class PedRenderer {
         if (moving) { legR *= 0.55; pitch += Math.max(0, Math.sin(p.phase)) * 0.05; }
       }
       if (p.flinch > 0) { const k = p.flinch / 0.32; armL -= k * 0.9; armR -= k * 0.9; }
+      let held: 0 | 1 | 2 = 0; // 1 bottle, 2 cigarette, in the right hand
+      if (posing) {
+        switch (p.pose) {
+          case 'fight': { const j = Math.sin(at * 7), k = Math.sin(at * 7 + 2.1); armL = -1.55 - Math.max(0, j) * 0.25; armR = -1.35 - Math.max(0, k) * 0.35; abL = abR = -0.25; legL = 0.25; legR = -0.2; break; }
+          case 'cheer': armR = -2.7 + Math.sin(at * 5) * 0.3; armL = -2.3 + Math.sin(at * 5 + 1.2) * 0.4; abL = 0.3; held = 1; break;
+          case 'smoke': { const drag = (at % 6) < 1.6; armR = drag ? -2.45 : -0.45; abR = drag ? -0.35 : 0.05; held = 2; break; }
+          case 'sit': legL = legR = -1.45; armL = armR = -0.35; break;
+          case 'kneel': legL = legR = 1.45; armL = armR = -2.9; abL = abR = 0.95; break;
+          case 'hands': armL = armR = -2.9; abL = abR = 0.45; break;
+          case 'cpr': legL = legR = 1.45; armL = armR = -1.15 - Math.max(0, Math.sin(at * 11)) * 0.15; abL = abR = -0.3; break;
+          case 'wave': armR = -2.3 + Math.sin(at * 5) * 0.35; abR = 0.55; break;
+          case 'hose': armL = -1.45; armR = -1.25; abL = -0.2; abR = -0.3; legL = 0.2; legR = -0.15; break;
+        }
+      }
       if (p.aim) { armL = -1.5; armR = -1.5; }
       else if (p.state === 'film') { armL = -1.35; armR = -1.35; }
       else if (p.arch === 'protester' || p.accessory === 2) { armL = -2.85; armR = -2.85; }
@@ -939,6 +964,15 @@ export class PedRenderer {
         this.set(this.legs, nl, _q, side * 0.095 * w, 0.84 * h, 0, bx, by, bz, w, h, w, L.pants);
         this.set(this.shoes, nl, _q, side * 0.095 * w, 0.84 * h, 0, bx, by, bz, w, h, w, L.shoe);
         nl++;
+      }
+      // a bottle or a cigarette in the right hand
+      if (held) {
+        const L2 = 0.6 * h, a = armR;
+        _q2.setFromAxisAngle(_axisX, a);
+        _q.copy(_qb).multiply(_q2);
+        const hx = 0.255 * w, hy = 1.42 * h - Math.cos(a) * L2, hz = -Math.sin(a) * L2;
+        if (held === 1) this.set(this.acc, nacc++, _q, hx, hy, hz, bx, by, bz, 0.06, 0.24, 0.06, 0x2f6a3a);
+        else this.set(this.acc, nacc++, _q, hx, hy, hz, bx, by, bz, 0.012, 0.07, 0.012, 0xf2efe6);
       }
       // accessories
       if ((p.role !== 'civ' && p.role !== 'actor' && p.role !== 'clerk' || (p.role === 'actor' || p.role === 'clerk') && p.aim && p.armed) && p.state !== 'down') {

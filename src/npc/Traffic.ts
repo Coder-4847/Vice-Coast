@@ -11,7 +11,7 @@ const G = CITY.height;
 const HW_SPEED: Record<string, number> = { highway: 24, road: 13, street: 9.5 };
 const WORLD_GRAVITY = 16;
 
-export type EmergencyKind = 'police' | 'ambulance';
+export type EmergencyKind = 'police' | 'ambulance' | 'fire';
 
 export interface CarType {
   id: string;
@@ -45,6 +45,7 @@ export const CAR_TYPES: CarType[] = [
     extras: [{ ox: 0, oy: 2.35, oz: 0.3, sx: 1.3, sy: 0.5, sz: 1.5, turret: true }, { ox: 0, oy: 2.45, oz: 1.6, sx: 0.14, sy: 0.14, sz: 1.5, turret: true }] },
   { id: 'tank', L: 7.6, W: 3.4, clear: 0.45, bodyH: 1.15, cabinH: 0.01, cabinL: 0.1, cabinX: 0, wheelR: 0.7, weight: 0, hp: 1400, sturdy: 99, colors: [0x4a5238],
     extras: [{ ox: 0, oy: 1.95, oz: -0.2, sx: 2.9, sy: 0.95, sz: 3.6, turret: true }, { ox: 0, oy: 2.1, oz: 3.4, sx: 0.3, sy: 0.3, sz: 4.4, turret: true }] },
+  { id: 'firetruck', L: 8.4, W: 2.5, clear: 0.4, bodyH: 1.7, cabinH: 0.75, cabinL: 2.1, cabinX: 2.9, wheelR: 0.5, weight: 0, emergency: 'fire', hp: 600, sturdy: 14, colors: [0xb3171a] },
   { id: 'ambulance', L: 5.6, W: 2.1, clear: 0.3, bodyH: 1.4, cabinH: 0.6, cabinL: 1.5, cabinX: 1.9, wheelR: 0.36, weight: 0, emergency: 'ambulance', colors: [0xf2f2ee] },
 ];
 const TYPE = Object.fromEntries(CAR_TYPES.map((t) => [t.id, t])) as Record<string, CarType>;
@@ -272,7 +273,7 @@ export class Traffic {
   }
 
   /** Send an emergency vehicle to the junction nearest (x, z). Returns the car, or null if none could be placed. */
-  dispatch(kind: EmergencyKind, x: number, z: number): TrafficCar | null {
+  dispatch(kind: EmergencyKind, x: number, z: number, minD = 230, maxD = 520): TrafficCar | null {
     const c = this.free();
     if (!c) return null;
     // destination node: the closest valid junction
@@ -287,11 +288,11 @@ export class Traffic {
       const { lane, u } = this.net.random(this.rnd);
       this.net.point(lane, u, _pt);
       const d = Math.hypot(_pt.x - x, _pt.z - z);
-      if (d < 230 || d > 520) continue;
+      if (d < minD || d > maxD) continue;
       if (!this.clearAt(lane, u, 14)) continue;
       const route = this.net.route(lane.b, best);
       if (!route) continue;
-      const type = kind === 'police' ? TYPE.police! : TYPE.ambulance!;
+      const type = kind === 'police' ? TYPE.police! : kind === 'fire' ? TYPE.firetruck! : TYPE.ambulance!;
       c.route = route;
       c.routeIdx = 0;
       this.activate(c, type, lane, u, lane.speed);

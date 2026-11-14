@@ -3,10 +3,12 @@ import type { Story } from './Story';
 import type { Vehicle } from '../vehicles/Vehicle';
 import type { Ped } from '../npc/Pedestrians';
 import { money } from '../economy/Economy';
+import { HEAT } from '../combat/Wanted';
 
 type Ev =
   | { kind: 'van'; v: Vehicle; beacon: number; x: number; z: number; prog: number; t: number; robbed: boolean }
-  | { kind: 'thief'; thief: Ped; victim: Ped; beacon: number; t: number; fleeT: number; wallet: { x: number; z: number } | null; carrying: boolean; cash: number };
+  | { kind: 'thief'; thief: Ped; victim: Ped; beacon: number; t: number; fleeT: number; wallet: { x: number; z: number } | null; carrying: boolean; cash: number }
+  | { kind: 'ride'; who: Ped[]; beacon: number; t: number; dest: { x: number; z: number } | null; pay: number; getaway: boolean; car: Vehicle | null };
 
 const _b = new THREE.Vector3();
 
@@ -28,9 +30,9 @@ export class RandomEvents {
   get active(): boolean { return !!this.ev; }
 
   /** Start one right now (tests, debugging). */
-  force(kind: 'van' | 'thief'): boolean {
+  force(kind: 'van' | 'thief' | 'hitch' | 'getaway'): boolean {
     if (this.ev) this.end();
-    return kind === 'van' ? this.startVan() : this.startThief();
+    return kind === 'van' ? this.startVan() : kind === 'thief' ? this.startThief() : this.startRide(kind === 'getaway');
   }
 
   update(dt: number): void {
@@ -44,7 +46,8 @@ export class RandomEvents {
     this.nextT = 150 + Math.random() * 120;
     if ((g.wanted?.stars ?? 0) > 0) return;
     if (!g.world.city.plan.inCity(g.player.pos.x, g.player.pos.z)) return;
-    if (Math.random() < 0.5) this.startVan(); else this.startThief();
+    const r = Math.random();
+    if (r < 0.3) this.startVan(); else if (r < 0.6) this.startThief(); else this.startRide(r > 0.85);
   }
 
   // ------------------------------------------------------------------------------------------------ the van
@@ -97,6 +100,92 @@ export class RandomEvents {
     return false;
   }
 
+  // ------------------------------------------------------------------------------------------------ rides
+
+  /** Somebody at the kerb waving you down: a hitchhiker, or two robbers who need a getaway driver. */
+  private startRide(getaway: boolean): boolean {
+    const s = this.s, g = s.g, p = g.player!.pos, pd = g.npcs?.peds;
+    if (!pd) return false;
+    for (let i = 0; i < 6; i++) {
+      const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 50;
+      const c = s.snap(p.x + Math.cos(a) * d, p.z + Math.sin(a) * d, 1.0);
+      const who: Ped[] = [];
+      for (let k = 0; k < (getaway ? 2 : 1); k++) {
+        const q = pd.place(c.x + k * 1.1, c.z + k * 0.4, 'local', 'stand', a + Math.PI);
+        if (!q) continue;
+        q.keep = true; q.stateT = 1e6; q.pose = 'wave';
+        if (getaway) { q.role = 'thug'; q.look = { ...q.look, shirt: 0x1d1f23, sleeve: 0x1d1f23, pants: 0x2a2d32 }; }
+        who.push(q);
+      }
+      if (!who.length) continue;
+      const beacon = s.beacons.add(c.x, c.z, { color: '#4aa8ff', glyph: getaway ? '$' : '☞', name: getaway ? 'Getaway job' : 'Hitchhiker', tall: 10 });
+      this.ev = { kind: 'ride', who, beacon, t: 150, dest: null, pay: getaway ? 2500 + Math.floor(Math.random() * 2500) : 150 + Math.floor(Math.random() * 300), getaway, car: null };
+      s.hud.showTip(getaway ? 'Two men outside a store are waving at passing cars. They look in a hurry.' : 'Somebody is hitching a ride nearby.', 6);
+      return true;
+    }
+    return false;
+  }
+
+  private stepRide(dt: number, ev: Extract<Ev, { kind: 'ride' }>): void {
+    const s = this.s, g = s.g;
+    const d = g.driving;
+    const car = d?.mode === 'driving' ? d.vehicle : null;
+    const lead = ev.who[0]!;
+    if (!ev.dest) {
+      const dist = car ? Math.hypot(car.position.x - lead.x, car.position.z - lead.z) : 1e9;
+      const pd = Math.hypot(g.player!.pos.x - lead.x, g.player!.pos.z - lead.z);
+      s.hud.setObjective(ev.getaway ? 'Getaway job' : 'Hitchhiker', car ? 'Pull up next to them' : 'You need a car to give them a ride', pd < 300 ? `${Math.round(pd)} m` : '');
+      if (ev.who.some((q) => !q.active || q.state === 'down' || q.state === 'flee') || ev.t <= 0) { this.end(); return; }
+      if (pd < 30 && Math.random() < dt * 0.4) g.street?.speech.say(lead, ev.getaway ? 'Hey! You! Drive!' : 'Need a ride? Anywhere north!', 2.2, ev.getaway);
+      if (car && dist < 8 && Math.abs(car.speed) < 2.5) {
+        // they climb in
+        for (const q of ev.who) { q.active = false; q.keep = false; }
+        ev.car = car;
+        const p = g.player!.pos;
+        for (let i = 0; i < 8; i++) {
+          const a = Math.random() * Math.PI * 2, r = 500 + Math.random() * 500;
+          const x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
+          if (!g.world.city.plan.inCity(x, z)) continue;
+          ev.dest = s.snap(x, z, 3);
+          break;
+        }
+        ev.dest ??= s.snap(p.x + 400, p.z, 3);
+        s.beacons.move(ev.beacon, ev.dest.x, ev.dest.z);
+        s.setWaypoint(ev.dest.x, ev.dest.z);
+        ev.t = 240;
+        if (ev.getaway) {
+          g.wanted?.report(HEAT[2]! + 6, p.x, p.z, true);
+          s.hud.showBanner('Getaway', 'DRIVE!', 'Lose the cops, then take them to the hideout', 'bad', 3);
+        } else s.hud.showBanner('Hitchhiker', 'Thanks for stopping!', 'Drop them at the marker', 'good', 2.5);
+        g.audio.mech('cloth');
+      }
+      return;
+    }
+    // on the way
+    const dd = car ? Math.hypot(car.position.x - ev.dest.x, car.position.z - ev.dest.z) : 1e9;
+    const stars = g.wanted?.stars ?? 0;
+    s.hud.setObjective(ev.getaway ? 'Getaway job' : 'Hitchhiker', ev.getaway && stars > 0 ? 'Lose the cops' : 'Drive them to the marker', `${Math.round(dd)} m · ${Math.ceil(ev.t)} s`);
+    if (!car || car !== ev.car || car.exploded || ev.t <= 0) {
+      g.ui.toast(ev.getaway ? 'Your passengers bailed out.' : 'Your passenger got out and walked.');
+      s.clearWaypoint();
+      this.end();
+      return;
+    }
+    if (dd < 25 && Math.abs(car.speed) < 4 && !(ev.getaway && stars > 0)) {
+      g.commerce?.eco.earn(ev.pay, ev.getaway ? 'Getaway job' : 'Hitchhiker');
+      s.hud.showBanner(ev.getaway ? 'Getaway job' : 'Hitchhiker', ev.getaway ? 'CLEAN GETAWAY' : 'DROPPED OFF', `+${money(ev.pay)}`, 'good', 3);
+      // they hop out and wander off
+      const pd = g.npcs?.peds;
+      for (const q of ev.who) {
+        const out = pd?.place(car.position.x + 2.4, car.position.z + 1, 'local', 'idle', 0);
+        if (out) { out.look = { ...q.look }; out.stateT = 0.5; pd!.resume(out); }
+      }
+      s.clearWaypoint();
+      s.actWin(ev.getaway ? 'event.getaway' : 'event.hitch', 1);
+      this.end();
+    }
+  }
+
   // ------------------------------------------------------------------------------------------------ per frame
 
   private step(dt: number): void {
@@ -132,6 +221,7 @@ export class RandomEvents {
       } else ev.prog = Math.max(0, ev.prog - dt * 0.5);
       return;
     }
+    if (ev.kind === 'ride') { this.stepRide(dt, ev); return; }
     // ---- the thief
     const th = ev.thief, vic = ev.victim;
     if (!ev.wallet && !ev.carrying) {
@@ -187,6 +277,8 @@ export class RandomEvents {
       const v = ev.v;
       if (!v.occupied && g.driving?.vehicle !== v) g.vehicles?.remove(v);
       else { v.ambient = true; v.locked = false; }
+    } else if (ev.kind === 'ride') {
+      for (const q of ev.who) if (q.active) { q.keep = false; q.pose = ''; if (q.role === 'thug') q.role = 'civ'; q.state = 'idle'; g.npcs?.peds.resume(q); }
     } else {
       ev.thief.keep = false; ev.victim.keep = false;
       if (ev.victim.state === 'idle') g.npcs?.peds.resume(ev.victim);
