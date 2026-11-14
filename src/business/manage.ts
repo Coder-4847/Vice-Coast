@@ -5,6 +5,7 @@ import { confirmPage } from '../economy/screens';
 import { row, section, type Page, type PageHost } from '../ui/Modal';
 import { h } from '../ui/dom';
 import { upgradeCost, upgradesFor } from './Empire';
+import { CARTEL_JOBS, CLUB_JOBS } from './missions';
 
 const info = (text: string): HTMLElement => h('p', 'm-info', text);
 const kv = (k: string, v: string): HTMLElement => h('div', 'm-kv', h('span', '', k), h('b', '', v));
@@ -58,6 +59,26 @@ export function managePage(g: Game, id: string): Page {
           }),
         );
         if (em.job) b.append(info('You are already on a job. Finish it first.'));
+      }
+
+      // jobs: the club manager and the cartel have work
+      const jobs = d.type === 'club' ? CLUB_JOBS.map((j) => ({ id: j.id, title: j.title, blurb: j.blurb, right: '', make: j.make }))
+        : d.type === 'cartel' ? CARTEL_JOBS.map((j) => ({ id: j.id, title: j.title, blurb: j.blurb, right: `${money(j.pay)} dirty`, make: j.make })) : [];
+      if (jobs.length) {
+        b.append(section(d.type === 'club' ? 'Jobs from Nadia (club manager)' : 'Jobs from Inés Calderón'));
+        for (const j of jobs) {
+          const ready = em.jobReady(id, j.id);
+          b.append(row({
+            label: j.title, sub: ready ? j.blurb : 'Done for today. Come back tomorrow.', right: j.right, disabled: !ready || !!em.job || !!g.story?.mission,
+            onClick: () => { const err = em.startJob(id, j.id, j.make(id)); if (err) { host.toast(err); return; } host.close(); },
+          }));
+        }
+      }
+      if (em.alert?.id === id) {
+        b.append(section('Police raid'), row({
+          label: 'Pay off the precinct', sub: 'The raid is called off and the heat drops. Or stay and fight: step outside.', right: money(em.bribeCost(id)), disabled: eco.worth < em.bribeCost(id),
+          onClick: () => { if (em.bribe(id)) { host.toast('The raid has been "postponed".'); save(); host.refresh(); } },
+        }));
       }
 
       b.append(section('Upgrades'));

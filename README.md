@@ -206,6 +206,22 @@ they are yours). Walk up to the door of one you own and press `E` to go inside; 
 
 Dirty money shows on the bank page and on ledger.vc; half of it is seized if you're Busted. Sold businesses return 70% of the price.
 
+**Business missions** (each job once per game day):
+
+| Job | Where | What happens |
+| --- | --- | --- |
+| **Police raid** | Any illegal operation running hot (heat over 55) | A red `!` appears on the map with a countdown (2½–5 minutes). Get there and a mission starts: two patrol cars and 5–8 officers at the door, then lose a two-star chase. Win and the stock is safe and heat drops by 40. Or pay the precinct on ledger.vc or the laptop ($5,000 + 20% of the stock). Ignore it and the police take 60% of the stock and half the supplies |
+| **Ambush** | Sell runs | Sometimes (more often with high heat) two rival cars come after the van and try to run it off the road; if they pin it, their crews get out shooting |
+| **VIP pickup** | The Velvet Room laptop | Collect a celebrity (Jaxon Reign, Sienna Cortez or Ronnie Blaze) in the club's black Huntley, shake off a paparazzi car and bike, and get them to the door before they get bored. Popularity +15, $3,000 plus a tip for speed and a clean car |
+| **Trouble at the door** | The Velvet Room laptop | A Southside crew is shaking down the queue: clear them out. Popularity +10, $1,500 |
+| **Inland run** | Coastline Import laptop | Inés Calderón's van to the Cinder Flats stash house against the clock, with two rival cars ramming you halfway. $60,000 dirty |
+| **Rip-off** | Coastline Import laptop | Hit the Lazaro crew at the Cinder Flats rail siding, load their shipment, lose the sheriff. $45,000 dirty |
+| **Loose lips** | Coastline Import laptop | An informant is driving to the police: stop his car before he gets there. $35,000 dirty |
+
+The cartel warehouse (containers, pallets of product, a packing line, a cash-counting table, guards and Calderón's office), Marlow Cab
+Co. (cabs in the bays and a dispatch office), Cinder Flats Airfield (a hangar with a light plane, fuel drums and crates) and Harbor
+Storage Units (rows of roll-up doors) now have interiors of their own.
+
 ### Interiors
 
 Almost every building has a door you can use: a lit entrance on the side facing the street. Walk up and press `E` (houses
@@ -386,6 +402,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 30. **Phase F** ✅ — an in-game internet (15 sites, a browser with address bar, history and bookmarks), the Verano Exchange stock market (14 companies, hourly prices, charts, portfolio, news, player-driven moves), buying cars and homes online, used cars, businesses with daily income, five new homes, charter flights, online banking, a newspaper that reports what you did
 31. **Phase G** ✅ — boats, aircraft and military hardware sold online (three dealers, 13 craft), a hangar at Cinder Flats and marina berths in Costa Merida, owned craft saved with their paint and berth, fleet management (locate, recover and repair, sell, armour delivery)
 32. **Phase H** ✅ — an online gun store with a cart and courier, air-drop or safehouse delivery, a hidden black-market site with dead drops (and the odd police sting), packages saved until you collect them
-33. **Phase I** ✅ (this build) — businesses you own and walk into: 12 legal fronts (food joints, a car wash, a laundromat, motels, a cab firm, an airfield) and a nightclub with popularity, plus five illegal operations up to a cartel warehouse; supplies, stock, van sell runs, supply raids, heat and police raids; dirty money laundered through your fronts; upgrades; a business dashboard site
+33. **Phase I** ✅ — businesses you own and walk into: 12 legal fronts (food joints, a car wash, a laundromat, motels, a cab firm, an airfield) and a nightclub with popularity, plus five illegal operations up to a cartel warehouse; supplies, stock, van sell runs, supply raids, heat and police raids; dirty money laundered through your fronts; upgrades; a business dashboard site
+34. **Phase J** ✅ (this build) — business missions: police raids you fight off (or bribe), rival ambushes on sell runs, nightclub VIP pickups and door trouble, three cartel jobs paying dirty money, and new interiors for the cartel warehouse, cab firm, airfield hangar and storage units
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

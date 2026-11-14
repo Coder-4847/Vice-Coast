@@ -842,6 +842,128 @@ function docshop(b: Builder, _v: Venue, ops: Ops): void {
   b.person(-2.5, 8.3, pi, 'staff', 'sit');
 }
 
+/** A parked car or van: a body, a cabin with dark glass and four wheels (along z). */
+function carProp(b: Builder, x: number, z: number, col: number, van = false): void {
+  const L = van ? 5.2 : 4.4, Wd = 1.85;
+  b.box(x, 0.32, z, Wd, van ? 1.5 : 0.7, L, S('metal', col), true);
+  if (!van) { b.box(x, 1.02, z - 0.2, Wd - 0.15, 0.55, L * 0.5, S('plain', 0x1a2430), false, false); b.box(x, 1.57, z - 0.2, Wd - 0.25, 0.05, L * 0.46, S('metal', col), false, false); }
+  else b.box(x, 1.1, z + L / 2 - 0.02, Wd - 0.2, 0.55, 0.04, S('plain', 0x1a2430), false, false);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.box(x + sx * (Wd / 2 - 0.05), 0, z + sz * (L / 2 - 0.8), 0.24, 0.64, 0.64, S('plain', 0x111111), false, false);
+}
+
+function cartelWarehouse(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 28, D = 24;
+  b.room(-W / 2, 0, W / 2, D, 9, { floor: S('concrete', 0x9a9890, 4), wall: S('metal', 0x8a8e94, 2), ceil: S('metal', 0x5a5e62, 3), amb: amb(0x6a6a66), gaps: [{ side: 0, at: 0, w: 1.2, h: 2.2 }] });
+  F.doorLeaf(b, 0, 0.05, 0, 'EXIT', 0x5a6a7a);
+  b.entry = { x: 0, z: 1.3, yaw: pi };
+  b.spot(0, 0.6, 'Leave', () => ops.exit(), 1);
+  for (let x = -10; x <= 10; x += 5) for (let z = 4; z < D; z += 6) { b.fixture(x, z, 9, 'round', 0xfff0d0, 1.0); b.light(x, 7, z, 0xfff0d0, 1.4, 9); }
+  // shipping containers along the back, doors open on one
+  const cc = [0xa83a2a, 0x2a5a8a, 0x3a7a4a, 0xc88a2a];
+  for (let i = 0; i < 4; i++) { b.box(-11 + i * 6.2, 0, D - 2, 2.5, 2.6, 6, S('metal', cc[i]!, 1.2), true); b.box(-11 + i * 6.2, 2.6, D - 2, 2.5, 2.6, 6, S('metal', cc[(i + 2) % 4]!, 1.2), true); }
+  b.glow(-11, 0.6, D - 5.02, 2.2, 1.6, 0.02, 0x2a2014, 1);
+  // the product: pallets of wrapped bricks and a packing line
+  for (let p = 0; p < 4; p++) {
+    const px = -9 + p * 3.2, pz = 12;
+    b.box(px, 0, pz, 1.4, 0.15, 1.2, S('wood', 0xb89a6a));
+    for (let k = 0; k < 12; k++) b.box(px - 0.45 + (k % 3) * 0.45, 0.15 + Math.floor(k / 6) * 0.22, pz - 0.3 + (Math.floor(k / 3) % 2) * 0.6, 0.4, 0.2, 0.5, S('plain', k % 2 ? 0xe8e0c8 : 0xd8d0b0), false, false);
+  }
+  F.table(b, 5, 9, 5, 1.2, S('metal', 0xc8ccd0));
+  for (let k = 0; k < 10; k++) b.box(3.2 + k * 0.4, 0.75, 9 + (k % 2) * 0.25 - 0.1, 0.3, 0.12, 0.4, S('plain', 0xe8e0c8), false, false);
+  b.person(4, 8, 0, 'staff'); b.person(6.2, 10, pi, 'staff');
+  // cash counting table and a van being loaded
+  F.table(b, 9, 15, 2.4, 1.2, S('wood', 0x6b4a30));
+  for (let k = 0; k < 8; k++) b.box(8.2 + (k % 4) * 0.45, 0.75, 14.8 + Math.floor(k / 4) * 0.4, 0.16, 0.1 + (k % 3) * 0.05, 0.08, S('plain', 0x3a8a4a), false, false);
+  b.person(9, 14.2, 0, 'staff', 'sit');
+  carProp(b, -6, 5.5, 0x3a3f46, true);
+  F.forklift(b, 2, 4, 3);
+  // armed guards and the boss's office up front
+  b.person(-3, 2, pi, 'guard'); b.person(12, 7, -pi / 2, 'guard'); b.person(-12, 16, pi / 2, 'guard');
+  b.partition('z', W / 2 - 5, 0, 5.5, 3.2, S('panel', 0x6a5a48, 1.4), { at: 4.6, w: 0.9 });
+  b.partition('x', 5.5, W / 2 - 5, W / 2, 3.2, S('panel', 0x6a5a48, 1.4));
+  b.beginZone(W / 2 - 5, 0, W / 2, 5.5, amb(0x6a6058));
+  b.fixture(W / 2 - 2.5, 2.8, 3.2, 'round', 0xfff0dc, 1.0);
+  b.box(W / 2 - 2.5, 0, 2.8, 3, 0.02, 2.2, S('carpet', 0x6a1a1a, 1), false, false);
+  laptopDesk(b, W / 2 - 2.5, 3.4, 1, ops, 'Manage the warehouse (laptop)');
+  b.person(W / 2 - 1.2, 4.6, -pi / 2, 'staff', 'sit');
+  b.zone = 0;
+  b.sign('COASTLINE IMPORT', 0, 6.5, D - 0.12, 7, 1, '#e8b84a', '#141414');
+}
+
+function cabDepot(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 20, D = 16;
+  b.room(-W / 2, 0, W / 2, D, 6, { floor: S('concrete', 0x8a8a86, 3), wall: S('brick', 0xe8e0d0, 2.4), amb: amb(0x7a7670), gaps: [{ side: 0, at: -6, w: 1.2, h: 2.2 }] });
+  entrance(b, -6, 0, ops);
+  for (let x = -6; x <= 6; x += 6) for (let z = 3; z < D; z += 5) b.fixture(x, z, 6, 'strip', 0xfff2dc, 1.1);
+  // cabs in the bays
+  for (let i = 0; i < 3; i++) { carProp(b, -1 + i * 3.6, 9, 0xf2c230); b.glow(-1 + i * 3.6, 0.01, 9, 2.6, 0.01, 5.6, 0xf2f2e8, 0.2); }
+  b.box(W / 2 - 1, 0, 9, 1.6, 1.4, 3, S('metal', 0xd83a2a), true); // tool chest
+  b.person(4.5, 6.2, 0, 'staff');
+  // the dispatch office: radios, a wall map, Dolores
+  b.partition('z', -3, 0, 6, 6, S('panel', 0xd8d0c0, 1.4), { at: 1.5, w: 0.9 });
+  b.beginZone(-W / 2, 0, -3, 6, amb(0x8a8680));
+  b.fixture(-6.5, 3, 6, 'panel', 0xfff4e8, 1.0);
+  F.desk(b, -8, 3, 1, true, 1.6);
+  b.box(-W / 2 + 0.12, 1.2, 3, 0.04, 1.4, 3.6, S('plain', 0xe8e4d8), false, false);
+  for (let k = 0; k < 9; k++) b.glow(-W / 2 + 0.16, 1.4 + (k % 3) * 0.4, 1.6 + Math.floor(k / 3) * 1.2, 0.02, 0.08, 0.08, k % 2 ? 0xff3a3a : 0x3ad87a, 1.4);
+  b.person(-8.8, 3, pi / 2, 'clerk', 'sit');
+  laptopDesk(b, -5, 4.6, 1, ops);
+  b.zone = 0;
+  b.sign('MARLOW CAB CO.', 3, 4.6, D - 0.12, 6, 1, '#141414', '#f2c230');
+}
+
+function hangar(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 30, D = 26;
+  b.room(-W / 2, 0, W / 2, D, 10, { floor: S('concrete', 0xb0aca4, 5), wall: S('metal', 0xc8ccd0, 2), ceil: S('metal', 0x7a7e82, 3), amb: amb(0x7a7a78), gaps: [{ side: 0, at: -10, w: 1.2, h: 2.2 }] });
+  entrance(b, -10, 0, ops);
+  for (let x = -10; x <= 10; x += 10) for (let z = 5; z < D; z += 8) { b.fixture(x, z, 10, 'round', 0xfff4e0, 1.1); b.light(x, 8, z, 0xfff4e0, 1.5, 11); }
+  // a light plane: fuselage, wings, tail, prop
+  const px = 3, pz = 13, white = S('metal', 0xf2f2f2), red = S('metal', 0xc83a2a);
+  b.box(px, 0.9, pz, 1.4, 1.4, 8, white, true);
+  b.box(px, 1.6, pz + 2.2, 11, 0.12, 1.6, white, false, false);
+  b.box(px, 1.2, pz - 3.6, 3.6, 0.1, 1.0, white, false, false);
+  b.box(px, 1.3, pz - 3.8, 0.1, 1.6, 1.0, red, false, false);
+  b.box(px, 0.9, pz + 4.05, 0.1, 1.6, 0.1, S('plain', 0x1a1a1a), false, false);
+  b.box(px, 1.4, pz + 1.4, 1.3, 0.4, 1.6, S('plain', 0x1a2430), false, false);
+  b.box(px, 1.0, pz, 1.42, 0.12, 8, red, false, false);
+  for (const sx of [-1.2, 1.2]) b.box(px + sx, 0, pz + 1.2, 0.2, 0.9, 0.45, S('plain', 0x111111), false, false);
+  // fuel drums, a tug and the crates nobody filed paperwork for
+  for (let k = 0; k < 6; k++) b.cyl(W / 2 - 1 - (k % 2) * 0.7, 0, 3 + Math.floor(k / 2) * 0.8, 0.3, 0.9, S('metal', 0x2a6a3a), true, 12);
+  F.crates(b, -11, 18, 5);
+  F.forklift(b, -7, 10, 1);
+  b.person(5.5, 9, -pi / 2, 'staff');
+  // the office in the corner
+  b.box(-W / 2 + 4, 0, 6, 8, 3, 0.1, S('panel', 0xd8d0c0, 1.4), true);
+  b.beginZone(-W / 2, 0, -W / 2 + 8, 6, amb(0x8a8680));
+  b.fixture(-W / 2 + 4, 3, 3, 'panel', 0xfff4e8, 1.0);
+  laptopDesk(b, -W / 2 + 2, 4.6, 1, ops);
+  F.sofa(b, -W / 2 + 6.4, 4.4, 2, 0x5a4a3a, 2);
+  b.person(-W / 2 + 6, 2.2, 0, 'staff', 'sit');
+  b.zone = 0;
+}
+
+function storageUnits(b: Builder, _v: Venue, ops: Ops): void {
+  const W = 16, D = 22;
+  b.room(-W / 2, 0, W / 2, D, 4, { floor: S('concrete', 0x9a9a96, 3), wall: S('metal', 0xd8d8d4, 2), ceil: S('metal', 0x8a8e92, 3), amb: amb(0x7a7a78), gaps: [{ side: 0, at: 0, w: 1.9, h: 2.4 }] });
+  entrance(b, 0, 0, ops, true);
+  for (let z = 3; z < D; z += 4) b.fixture(0, z, 4, 'strip', 0xf4f8ff, 1.0);
+  // two rows of roll-up doors in orange
+  for (const side of [-1, 1]) for (let i = 0; i < 6; i++) {
+    const z = 4 + i * 3, x = side * (W / 2 - 0.08);
+    b.box(x, 0, z, 0.06, 2.6, 2.6, S('metal', 0xe8a82a, 1.4), false, false);
+    for (let r = 0; r < 8; r++) b.box(x - side * 0.04, 0.15 + r * 0.32, z, 0.02, 0.03, 2.5, S('plain', 0xb8801a), false, false);
+    b.box(x - side * 0.05, 2.65, z, 0.04, 0.25, 0.5, S('plain', 0x1a1a1a), false, false);
+  }
+  // one is open: what is inside is nobody's business
+  b.box(W / 2 - 1.4, 0, 16, 2.4, 1.2, 1.2, S('wood', 0x8a6a40), true);
+  b.box(W / 2 - 1.4, 1.2, 16, 1.6, 0.8, 0.9, S('plain', 0x2a2d33), true);
+  b.person(-2, 12, pi / 2, 'patron');
+  // the manager's booth by the door
+  F.counter(b, -W / 2 + 2, 3, 1, 2.4, S('panel', 0xe8a82a, 1));
+  b.person(-W / 2 + 1.2, 3, pi / 2, 'clerk');
+  laptopDesk(b, W / 2 - 2, 2.2, 0, ops);
+}
+
 /** A business you own: its own interior, or a familiar one with the office laptop added by the door. */
 function business(b: Builder, v: Venue, ops: Ops): void {
   const t = v.sub ?? 'shop';
@@ -857,7 +979,10 @@ function business(b: Builder, v: Venue, ops: Ops): void {
     case 'food': return own(() => food(b, { ...v, sub: v.biz === 'diner' ? 'diner' : v.biz === 'tacotruck' ? 'taco' : 'burger' }, ops));
     case 'shop': return own(() => store(b, { ...v, sub: 'grocery' }, ops));
     case 'motel': return own(() => motelOffice(b, v, ops));
-    case 'cartel': return own(() => { warehouse(b, v, ops); for (let k = 0; k < 6; k++) F.crates(b, -6 + k * 2.4, 16, 3); b.person(-8, 14, 0, 'guard'); b.person(8, 6, pi, 'guard'); });
+    case 'cartel': return cartelWarehouse(b, v, ops);
+    case 'cab': return cabDepot(b, v, ops);
+    case 'airstrip': return hangar(b, v, ops);
+    case 'storage': return storageUnits(b, v, ops);
     default: return own(() => warehouse(b, v, ops));
   }
 }

@@ -7,6 +7,8 @@ import type { BizState } from '../economy/types';
 import { MARKERS } from '../ui/mapData';
 import { terrainHeight } from '../world/Terrain';
 import { callPolice } from '../crime/heat';
+import type { MissionDef } from '../story/Missions';
+import { raidMission } from './missions';
 
 /** Upgrades for each kind of business. `cost` is a share of the business's price. */
 export interface Upgrade { id: string; name: string; blurb: string; cost: number }
@@ -49,7 +51,11 @@ interface Site { def: BusinessDef; x: number; z: number; yaw: number; door: { x:
 interface Job {
   kind: 'sell' | 'supply'; id: string; t: number; limit: number; dest: { x: number; z: number; label: string }; beacon: number; value: number;
   van?: Vehicle; crate?: THREE.Group; hostiles?: string; boarded?: boolean;
+  /** Sell runs: seconds after boarding when a rival crew comes for the van (-1 = not this time), and their cars. */
+  ambushAt?: number; rivals?: { v: Vehicle; out: boolean; still: number }[];
 }
+/** The police are on their way to an operation: get there and fight them off, pay them off, or lose the stock. */
+interface Alert { id: string; left: number; beacon: number }
 
 function sign(text: string, color: string, bg = '#101218'): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -85,10 +91,14 @@ export class Empire {
   readonly sites = new Map<string, Site>();
   prompt: string | null = null;
   job: Job | null = null;
+  alert: Alert | null = null;
+  /** A business mission chosen on the laptop: starts once you are back outside. */
+  private pending: MissionDef | null = null;
+  private alertCool = 0;
   private lastAbs = -1;
   private tickT = 0;
   private readonly group = new THREE.Group();
-  readonly stats = { sold: 0, supplyRuns: 0, raids: 0, laundered: 0 };
+  readonly stats: { sold: number; supplyRuns: number; raids: number; laundered: number; defended?: number; ambushes?: number } = { sold: 0, supplyRuns: 0, raids: 0, laundered: 0 };
 
   constructor(private readonly g: Game) {
     this.build();
@@ -115,6 +125,108 @@ export class Empire {
     return (em[id] ??= { upgrades: [], supplies: 0, stock: 0, heat: 0, popularity: 50, visited: -1, earned: 0 });
   }
   has(id: string, up: string): boolean { return this.state(id).upgrades.includes(up); }
+
+  /** Business jobs are once a day each. */
+  jobReady(id: string, job: string): boolean { return (this.state(id).jobs?.[job] ?? -1) !== this.eco.p.day; }
+
+  /** Start a business mission from the laptop: walk out, then it begins. */
+  startJob(id: string, job: string, def: MissionDef): string | null {
+    const g = this.g;
+    if (this.job) return 'Finish the job you are on first.';
+    if (g.story?.mission) return 'You are already on a job.';
+    if ((g.wanted?.stars ?? 0) > 0) return 'Lose the police first.';
+    if (!this.jobReady(id, job)) return 'That job is done for today. Come back tomorrow.';
+    (this.state(id).jobs ??= {})[job] = this.eco.p.day;
+    this.pending = def;
+    if (g.interiors?.inside) g.interiors.leave();
+    return null;
+  }
+
+  /** Club popularity from jobs and promotions. */
+  boost(id: string, n: number): void { const st = this.state(id); st.popularity = Math.min(100, st.popularity + n); }
+
+  /** The police got in: most of the stock and half the supplies are gone. */
+  applyRaid(id: string): void {
+    const d = BUSINESS_BY_ID[id];
+    if (!d || !this.owns(id)) return;
+    const st = this.state(id);
+    st.stock = Math.round(st.stock * 0.4);
+    st.supplies = Math.round(st.supplies * 0.5);
+    st.heat = Math.max(0, st.heat - 35);
+    this.stats.raids++;
+    this.eco.message('ghostline', `The police raided ${d.name}. They took most of the ${d.product} and half the supplies. Keep the heat down: fewer loads, fewer runs, better security.`);
+    this.g.ui.toast(`${d.name} was raided`);
+  }
+
+  raidDefended(id: string): void {
+    const st = this.state(id);
+    st.heat = Math.max(0, st.heat - 40);
+    this.stats.defended = (this.stats.defended ?? 0) + 1;
+    this.eco.message('ghostline', `You held ${BUSINESS_BY_ID[id]!.name}. The stock is safe and the heat is off for now.`);
+  }
+
+  /** What the precinct wants to look the other way. */
+  bribeCost(id: string): number { return Math.round(5000 + this.state(id).stock * 0.2); }
+
+  bribe(id: string): boolean {
+    if (this.alert?.id !== id || !this.eco.charge(this.bribeCost(id), 'Consulting fee (precinct)')) return false;
+    const st = this.state(id);
+    st.heat = Math.max(0, st.heat - 30);
+    this.endAlert();
+    this.eco.message('ghostline', `Money changed hands. The raid on ${BUSINESS_BY_ID[id]!.name} has been "postponed".`);
+    return true;
+  }
+
+  private endAlert(): void {
+    if (!this.alert) return;
+    this.g.story?.beacons.remove(this.alert.beacon);
+    this.alert = null;
+  }
+
+  /** Each game hour an operation running hot may draw a raid. */
+  private maybeAlert(hours: number): void {
+    const g = this.g;
+    if (this.alert || this.job || this.alertCool > 0 || g.story?.mission || g.story?.cutscenes.active) return;
+    for (const d of this.owned()) {
+      if (d.legal) continue;
+      const st = this.state(d.id);
+      if (st.heat <= 55) continue;
+      const chance = ((st.heat - 45) / 400) * (this.has(d.id, 'security') ? 0.4 : 1) * hours;
+      if (Math.random() >= chance) continue;
+      const s = this.sites.get(d.id)!;
+      const left = 150 + Math.min(150, Math.hypot(s.x - g.player!.pos.x, s.z - g.player!.pos.z) / 12);
+      const beacon = g.story!.beacons.add(s.door.x, s.door.z, { color: '#ff3a3a', glyph: '!', name: `Raid: ${d.name}` });
+      this.alert = { id: d.id, left, beacon };
+      g.audio.uiBlip('back');
+      g.story?.hud.showBanner('Business', 'Police raid', `${d.name} is about to be raided. Get there, or pay them off on ledger.vc (${money(this.bribeCost(d.id))}).`, 'bad', 5);
+      this.eco.message('ghostline', `Heads up: the police are moving on ${d.name}. You have about ${Math.round(left / 60)} minutes. Be there, or pay the precinct on ledger.vc.`);
+      return;
+    }
+  }
+
+  private tickAlert(dt: number): void {
+    const a = this.alert!, g = this.g;
+    a.left -= dt;
+    const s = this.sites.get(a.id)!, pl = g.player!.pos;
+    const near = Math.hypot(s.door.x - pl.x, s.door.z - pl.z) < 70;
+    if (!g.story?.mission && !g.interiors?.inside) {
+      g.story?.hud.setObjective('Police raid', near ? 'Fight off the raid' : `Get to ${s.def.name}`, `${Math.floor(Math.max(0, a.left) / 60)}:${String(Math.floor(Math.max(0, a.left) % 60)).padStart(2, '0')} · or bribe them on ledger.vc`);
+    }
+    if (near && !g.story?.mission && (g.wanted?.stars ?? 0) === 0 && !g.interiors?.inside) {
+      const id = a.id;
+      this.endAlert();
+      g.story?.hud.setObjective(null, null);
+      if (!g.story?.startMission(raidMission(id))) this.applyRaid(id);
+      return;
+    }
+    if (a.left <= 0) {
+      const id = a.id;
+      this.endAlert();
+      g.story?.hud.setObjective(null, null);
+      this.applyRaid(id);
+      this.alertCool = 600;
+    }
+  }
 
   // ------------------------------------------------------------------------------------------------ buildings
 
@@ -260,6 +372,7 @@ export class Empire {
     const dh = (tod.hour - this.lastAbs + 24) % 24;
     this.lastAbs = tod.hour;
     if (dh <= 0) return;
+    if (dh < 6) this.maybeAlert(dh);
     for (const d of this.owned()) {
       if (d.legal) continue;
       const st = this.state(d.id);
@@ -286,16 +399,8 @@ export class Empire {
         st.earned += t;
         if (d.type === 'club') st.popularity = Math.max(0, st.popularity - (this.has(d.id, 'dj') ? 5 : 10));
       } else {
+        // heat cools overnight; raids come during the day as alerts (see maybeAlert)
         st.heat = Math.max(0, st.heat - 10);
-        const chance = st.heat > 55 ? ((st.heat - 45) / 120) * (this.has(d.id, 'security') ? 0.4 : 1) : 0;
-        if (Math.random() < chance) {
-          st.stock = Math.round(st.stock * 0.4);
-          st.supplies = Math.round(st.supplies * 0.5);
-          st.heat = Math.max(0, st.heat - 35);
-          this.stats.raids++;
-          notes.push(`${d.name} was raided`);
-          e.message('ghostline', `The police raided ${d.name}. They took most of the ${d.product} and half the supplies. Keep the heat down: fewer loads, fewer runs, better security.`);
-        }
       }
     }
     if (takings > 0) { e.bankIn(takings, 'Business takings'); notes.push(`Business takings: ${money(takings)}`); }
@@ -321,7 +426,14 @@ export class Empire {
     if (!g.commerce || !g.player || g.state !== 'playing') return;
     this.tickT -= dt;
     if (this.tickT <= 0) { this.tickT = 1; this.produce(); }
+    if (this.alertCool > 0) this.alertCool -= dt;
     if (this.job) this.tickJob(dt);
+    if (this.alert) this.tickAlert(dt);
+    if (this.pending && !g.interiors?.inside && !g.interiors?.busy) {
+      const def = this.pending;
+      this.pending = null;
+      if (!g.story?.startMission(def)) g.ui.toast('The job could not start right now.');
+    }
     // doors
     const st = g.story;
     if (g.driving?.mode !== 'foot' || g.interiors?.inside || g.interiors?.busy || st?.mission || st?.cutscenes.active || g.combat?.flow) return;
@@ -371,7 +483,8 @@ export class Empire {
     st.stock = 0;
     st.heat = Math.min(100, st.heat + 8);
     const beacon = g.story!.beacons.add(dest.x, dest.z, { color: '#3ae86a', glyph: '$', name: 'Drop' });
-    this.job = { kind: 'sell', id, t: 0, limit: Math.round(pick.d / 13 + 90), dest: { x: dest.x, z: dest.z, label: pick.label }, beacon, value, van };
+    const ambushAt = Math.random() < 0.35 + st.heat / 300 ? 20 + Math.random() * 40 : -1;
+    this.job = { kind: 'sell', id, t: 0, limit: Math.round(pick.d / 13 + 90), dest: { x: dest.x, z: dest.z, label: pick.label }, beacon, value, van, ambushAt, rivals: [] };
     g.map.setWaypoint({ x: dest.x, z: dest.z });
     // somebody talks: the police may already be waiting
     if (Math.random() < 0.3 + st.heat / 250) setTimeout(() => { if (this.job?.kind === 'sell') { callPolice(g, 2, this.job.van!.position.x, this.job.van!.position.z); g.ui.toast('Somebody tipped off the police!'); } }, 25000);
@@ -411,6 +524,7 @@ export class Empire {
       if (v.exploded || v.health <= 0) { this.fail('The van was destroyed, and the load with it.'); return; }
       const inVan = g.driving?.mode === 'driving' && g.driving.vehicle === v;
       if (inVan) j.boarded = true;
+      if (j.boarded) this.ambush(j, dt);
       const dist = Math.hypot(v.position.x - j.dest.x, v.position.z - j.dest.z);
       s.hud.setObjective('Sell run', inVan || j.boarded ? `Take the van to ${j.dest.label}` : 'Get in the van outside', `${money(j.value)} of ${d.product} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} · ${Math.round(dist)} m`);
       if (dist < 9 && Math.abs(v.speedKmh) < 15) {
@@ -436,9 +550,48 @@ export class Empire {
     }
   }
 
+  /** A rival crew comes after the van: two cars that ram it, and gunmen who jump out when it stops. */
+  private ambush(j: Job, dt: number): void {
+    const g = this.g, v = j.van!, st = g.story!;
+    if ((j.ambushAt ?? -1) >= 0) {
+      j.ambushAt! -= dt;
+      if (j.ambushAt! < 0) {
+        j.ambushAt = -1;
+        const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(v.quaternion);
+        const yaw = Math.atan2(fwd.x, fwd.z), fx = Math.sin(yaw), fz = Math.cos(yaw);
+        for (let i = 0; i < 2; i++) {
+          const p = g.commerce!.points.find(v.position.x - fx * (45 + i * 15) + (i ? 6 : -6), v.position.z - fz * (45 + i * 15), 3.4, { walkOnly: false, maxR: 60 });
+          const r = g.vehicles!.spawn(i ? 'barrage' : 'stallion', p.x, p.z, yaw, '#2a2a30');
+          st.drivers.drive(r, { target: () => ({ x: v.position.x, z: v.position.z }), kmh: 120, aggressive: true });
+          j.rivals!.push({ v: r, out: false, still: 0 });
+        }
+        this.stats.ambushes = (this.stats.ambushes ?? 0) + 1;
+        g.audio.uiBlip('back');
+        g.ui.toast('A rival crew is coming for the van!');
+        st.say('thug', 'That is the van! Run it off the road!');
+      }
+    }
+    for (const r of j.rivals ?? []) {
+      if (r.out || r.v.exploded) continue;
+      const d = Math.hypot(r.v.position.x - v.position.x, r.v.position.z - v.position.z);
+      r.still = d < 16 && Math.abs(r.v.speedKmh) < 12 ? r.still + dt : 0;
+      if (r.still > 1.2) {
+        // the crew bails out and comes on foot
+        r.out = true;
+        st.drivers.stop(r.v);
+        for (let k = 0; k < 2; k++) st.hostiles.spawn({ x: r.v.position.x + (k ? 2.2 : -2.2), z: r.v.position.z + 1.5, kind: k ? 'smg' : 'pistol', tag: `ambush-${j.id}`, hp: 75 });
+      }
+    }
+  }
+
   private cleanup(): void {
     const g = this.g, j = this.job;
     if (!j) return;
+    if (j.rivals?.length) {
+      const rv = j.rivals.map((r) => r.v);
+      for (const r of rv) g.story?.drivers.stop(r);
+      setTimeout(() => { for (const r of rv) if (g.driving?.vehicle !== r) g.vehicles?.remove(r); g.story?.hostiles.clear(`ambush-${j.id}`); }, 20000);
+    }
     g.story?.beacons.remove(j.beacon);
     g.story?.hud.setObjective(null, null);
     if (j.hostiles) { const tag = j.hostiles; setTimeout(() => g.story?.hostiles.clear(tag), 15000); }
@@ -455,6 +608,8 @@ export class Empire {
   /** A different save was loaded: drop any job in progress and redraw the map markers. */
   reset(): void {
     if (this.job) { const j = this.job; if (j.van && this.g.driving?.vehicle !== j.van) this.g.vehicles?.remove(j.van); j.van = undefined; this.cleanup(); }
+    this.endAlert();
+    this.pending = null;
     this.lastAbs = -1;
     this.refreshMarkers();
   }
