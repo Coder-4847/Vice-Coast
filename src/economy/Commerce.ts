@@ -17,6 +17,7 @@ import { KitSource } from '../world/towns/kit';
 import { SaveStore } from './SaveStore';
 import type { OwnedVehicle, SaveData, SlotInfo } from './types';
 import * as screens from './screens';
+import { browserPage } from '../web/Browser';
 import { Interiors } from '../interiors/Interiors';
 
 const BASE_MAG = Object.fromEntries(Object.values(WEAPONS).map((w) => [w.id, w.mag])) as Record<WeaponId, number>;
@@ -333,6 +334,11 @@ export class Commerce {
   }
 
   closeAll(): void { this.modal.close(); }
+
+  /** The web browser at an address (phone, home computers, office desks). */
+  openWeb(url = 'wave.vc'): void {
+    this.open(browserPage(this, url));
+  }
 
   /** Open a screen by name (the wardrobe from anywhere, and for tests). */
   openScreen(name: 'wardrobe' | 'clothing' | 'barber' | 'weapons' | 'food' | 'atm'): void {

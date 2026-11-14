@@ -1,6 +1,5 @@
-import { stocksApp } from '../economy/stocks';
 import type { Commerce } from '../economy/Commerce';
-import { PROPERTIES, SHOWROOM } from '../economy/catalog';
+import { PROPERTIES } from '../economy/catalog';
 import { money } from '../economy/Economy';
 import { VEHICLES } from '../vehicles/specs';
 import { h } from './dom';
@@ -15,6 +14,7 @@ import { row, section } from './Modal';
 interface App { id: string; name: string; glyph: string; color: string }
 
 const APPS: App[] = [
+  { id: 'web', name: 'Web', glyph: '◎', color: '#2a7aff' },
   { id: 'messages', name: 'Messages', glyph: '✉', color: '#4aa8ff' },
   { id: 'contacts', name: 'Contacts', glyph: '☎', color: '#5ad17a' },
   { id: 'map', name: 'Maps', glyph: '⌖', color: '#ff7a59' },
@@ -145,21 +145,28 @@ export class Phone {
       case 'bank': this.push('Valeria Savings', (el) => this.bank(el)); break;
       case 'taxi': this.push('Marlow Cab', (el) => this.taxi(el)); break;
       case 'garage': this.push('Garage', (el) => this.garage(el)); break;
-      case 'motors': this.push('Valeria Motors', (el) => this.motors(el)); break;
-      case 'realty': this.push('Valeria Realty', (el) => this.realty(el)); break;
+      case 'web': this.web('wave.vc'); break;
+      case 'motors': this.web('apexautos.vc'); break;
+      case 'realty': this.web('keystone.vc'); break;
       case 'insurance': this.push('Mors Mutual', (el) => this.insurance(el)); break;
       case 'missions': this.push('Missions', (el) => this.missions(el)); break;
       case 'switch': this.push('Characters', (el) => this.characters(el)); break;
       case 'progress': this.push('Progress', (el) => { const st = this.c.game.story; if (st) st.completion.render(el, { onMark: (k) => { const p = this.c.game.player!; const it = st.collect.nearest(k as import('../collect/defs').CKind, p.pos.x, p.pos.z); if (it) { this.c.game.map.setWaypoint({ x: it.x, z: it.z }); this.c.game.ui.toast('Waypoint set'); } } }); }); break;
       case 'toolkit': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(toolkitPage(st)); }, 400); break;
       case 'crew': this.close(); setTimeout(() => { const st = this.c.game.story; if (st) this.c.open(crewPage(st)); }, 400); break;
-      case 'stocks': { const st = this.c.game.story; if (st) { const open = (): void => { this.stack.pop(); this.push('Verano Exchange', (el) => stocksApp(st, el, open)); }; this.push('Verano Exchange', (el) => stocksApp(st, el, open)); } break; }
+      case 'stocks': this.web('vex.vc'); break;
       case 'camera': this.close(); setTimeout(() => this.c.photo(), 450); break;
       default:
     }
   }
 
   // ---------------------------------------------------------------------------------------------- apps
+
+  /** The phone's browser opens full screen. */
+  private web(url: string): void {
+    this.close();
+    setTimeout(() => this.c.openWeb(url), 350);
+  }
 
   private messages(el: HTMLElement): void {
     const list = this.c.eco.p.messages;
@@ -235,41 +242,6 @@ export class Phone {
     const wrecks = e.p.vehicles.filter((v) => v.where.kind === 'destroyed');
     if (!wrecks.length) { el.append(h('p', 'm-info', 'No open claims. If one of your cars is written off, it will show up here.')); return; }
     for (const o of wrecks) el.append(row({ label: `${VEHICLES[o.spec]!.name} · ${o.custom.plate}`, sub: 'Claim: replaced and repaired', right: money(e.insuranceFee(o)), disabled: e.worth < e.insuranceFee(o), onClick: () => { if (this.c.claimInsurance(o)) this.render(); } }));
-  }
-
-  private motors(el: HTMLElement): void {
-    const e = this.c.eco;
-    const garage = e.p.props.map((p) => PROPERTIES.find((d) => d.id === p.id)!).find((d) => d.bays === 'car' && e.stored(d.id).length < d.slots);
-    el.append(h('p', 'm-info', garage ? `Online orders are delivered to ${garage.name}.` : 'You need a garage with a free space to order online: buy a property first, or visit the showroom.'));
-    for (const id of SHOWROOM) {
-      const sp = VEHICLES[id]!;
-      el.append(row({
-        label: sp.name, swatch: sp.body.color, sub: `${sp.engine.topSpeedKmh} km/h top speed`, right: money(sp.price), disabled: !garage || e.worth < sp.price,
-        onClick: () => {
-          if (!garage || !e.charge(sp.price, `Bought ${sp.name}`)) return;
-          e.addVehicle(id, this.c.defaultCustomFor(id), sp.price, garage.id);
-          this.c.game.ui.toast(`${sp.name} delivered to ${garage.name}`);
-          void this.c.save(this.c.slot ?? 1, true);
-          this.render();
-        },
-      }));
-    }
-  }
-
-  private realty(el: HTMLElement): void {
-    const e = this.c.eco;
-    el.append(h('p', 'm-info', 'Visit a property to buy it. Pick one to mark it on your map.'));
-    for (const d of PROPERTIES) {
-      const own = e.owns(d.id);
-      el.append(row({
-        label: d.name, sub: `${d.region} · ${d.kind} · upkeep ${money(d.upkeep)}/day`, badge: own ? 'Owned' : '', right: own ? '' : money(d.price),
-        onClick: () => {
-          const pt = this.c.points.byRef(d.id);
-          if (pt) { this.c.game.map.setWaypoint({ x: pt.x, z: pt.z }); this.c.game.ui.toast(`Waypoint set: ${d.name}`); }
-        },
-      }));
-    }
-    el.append(section(''));
   }
 
   // ---------------------------------------------------------------------------------------------- story

@@ -31,6 +31,8 @@ export interface Ops {
   breakIn(v: Venue): void;
   loot(amount: number, what: string): void;
   knock(): void;
+  /** Open the web browser (computers and laptops). */
+  web(url?: string): void;
   /** The room you rented in this building today, if any. */
   key(v: Venue): Venue | null;
   atm(): void;
@@ -310,6 +312,8 @@ function unit(b: Builder, v: Venue, ops: Ops, rich = false): void {
     b.spot(bedX, bedZ - 1.4, 'Sleep / save', () => ops.sleep(), 1.2);
     b.spot(bx + 0.9, D * 0.45 + 1.0, 'Wardrobe', () => ops.wardrobe(), 0.9);
     b.spot(-W / 2 + split / 2, D * 0.42 + 1.2, 'Property menu', () => ops.property(), 1.0);
+    F.desk(b, -W / 2 + 0.75, D * 0.62, 2, true, 1.1);
+    b.spot(-W / 2 + 1.5, D * 0.62, 'Use the computer', () => ops.web(), 0.9);
   } else residents(b, v, ops, [-W / 2 + split / 2, D - 1.6], [bedX, bedZ], [
     [-W / 2 + split / 2, D * 0.42 + 0.9, 'the TV', 180 + Math.floor(b.r() * 140)],
     [bx + 0.8, D - 0.6, 'the jewellery box', 120 + Math.floor(b.r() * 380)],
@@ -342,7 +346,7 @@ function house(b: Builder, v: Venue, ops: Ops, size: 'small' | 'house' | 'mansio
     F.chair(b, 1.2, 1.6, 0);
     if (v.kind === 'cabin') { b.box(-W / 2 + 0.6, 0, D / 2 + 0.6, 0.9, 0.9, 0.7, S('metal', 0x1a1a1a), true); b.glow(-W / 2 + 0.6, 0.3, D / 2 + 0.95, 0.4, 0.3, 0.02, 0xff7a2a, 1.6); b.light(-W / 2 + 1.2, 0.6, D / 2 + 0.6, 0xff8a3a, 0.8, 3, false); }
     entranceDoor(b, 0, ops);
-    if (ops.owned) { b.spot(W / 2 - 3.3, D - 2.6, 'Sleep / save', () => ops.sleep(), 1.2); b.spot(-W / 2 + 1.6, D - 1.6, 'Property menu', () => ops.property(), 1.2); b.spot(1.2, 3.2, 'Wardrobe', () => ops.wardrobe(), 0.9); }
+    if (ops.owned) { b.spot(W / 2 - 3.3, D - 2.6, 'Sleep / save', () => ops.sleep(), 1.2); b.spot(-W / 2 + 1.6, D - 1.6, 'Property menu', () => ops.property(), 1.2); b.spot(1.2, 3.2, 'Wardrobe', () => ops.wardrobe(), 0.9); b.spot(1.9, 2.2, 'Use the laptop', () => ops.web(), 0.7); b.box(1.5, 0.75, 2.2, 0.32, 0.02, 0.24, S('metal', 0x2a2d33)); b.glow(1.5, 0.77, 2.08, 0.3, 0.2, 0.01, 0x9ac4ff, 0.8); }
     else residents(b, v, ops, [-W / 2 + 1.6, D - 1.3], [W / 2 - 3.3, D - 1.2], [[-W / 2 + 1.6, 3.4, 'the TV', 120 + Math.floor(b.r() * 100)], [1.2, 3.0, 'cash from the table', 20 + Math.floor(b.r() * 120)]]);
     return;
   }
@@ -384,6 +388,7 @@ function house(b: Builder, v: Venue, ops: Ops, size: 'small' | 'house' | 'mansio
     b.spot(bedX, mid - 2.4, 'Sleep / save', () => ops.sleep(), 1.2);
     b.spot(rx0 + 0.9, 1.4, 'Wardrobe', () => ops.wardrobe(), 0.9);
     b.spot((lx1 - W / 2) / 2, mid - 1.4, 'Property menu', () => ops.property(), 1.2);
+    b.spot(W / 2 - 1.2, mid + 1.2, 'Use the computer', () => ops.web(), 0.9);
   } else residents(b, v, ops, [(lx1 - W / 2) / 2, mid - 1.0], [bedX, bedZ], [
     [(lx1 - W / 2) / 2, 1.2, 'the TV', 200 + Math.floor(b.r() * 200)],
     [W / 2 - 0.9, mid - 0.8, 'the jewellery box', 150 + Math.floor(b.r() * (big ? 1600 : 400))],
@@ -532,6 +537,7 @@ function office(b: Builder, v: Venue, ops: Ops): void {
     F.vending(b, -W / 2 + 0.5, 6, 2);
     b.box(-W / 2 + 2.5, 0, D - 0.4, 1.4, 1.0, 0.6, S('metal', 0x8a8f96), true); // copier
     for (let k = 0; k < 4; k++) b.person(-4 + k * 2.2, 4.5 + (k % 2) * 3.2, pi, 'staff', 'sit');
+    b.spot(-4, 2.6, 'Use a computer', () => ops.web(), 0.9);
     const s = b.spot(W / 2 - 2, D - 1.8, 'Search the desk', () => { s.used = true; ops.loot(60 + (v.seed % 240), 'petty cash'); }, 1, 1.5);
     return;
   }

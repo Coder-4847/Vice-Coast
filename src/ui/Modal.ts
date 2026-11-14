@@ -18,7 +18,7 @@ export interface Page {
   title: string;
   kicker?: string;
   /** 'full' = centred panel on a dimmed backdrop; 'side' = a narrow panel that leaves the world visible. */
-  layout?: 'full' | 'side';
+  layout?: 'full' | 'side' | 'web';
   /** Shown top-right instead of the money counter. */
   hideMoney?: boolean;
   /** Builds the page content. Call `refresh()` after changing state. */

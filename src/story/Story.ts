@@ -19,6 +19,7 @@ import { Protagonists } from './Protagonists';
 import { Heists } from './Heists';
 import { Crew } from '../crew/Crew';
 import { Robberies } from '../crime/Robberies';
+import { Market } from '../economy/market';
 import { Allies, COMMANDS } from '../crew/Allies';
 import { CrewWheel } from '../ui/CrewWheel';
 import { HEIST_MISSIONS } from './content/heists';
@@ -53,6 +54,8 @@ export class Story {
   readonly heists: Heists;
   readonly crew: Crew;
   readonly robberies: Robberies;
+  /** The Verano Exchange. */
+  readonly market: Market;
   readonly allies: Allies;
   readonly collect: Collectibles;
   readonly completion: Completion;
@@ -87,6 +90,7 @@ export class Story {
     this.heists = new Heists(this);
     this.crew = new Crew(this);
     this.robberies = new Robberies(g, this);
+    this.market = new Market(this);
     this.allies = new Allies(g, this.hostiles, this.crew);
     this.collect = new Collectibles(this);
     this.completion = new Completion(this);

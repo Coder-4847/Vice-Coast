@@ -141,6 +141,7 @@ export class CarTheft {
       if (Math.random() < 0.5) { this.alarm = { v, t: 12, honk: 0 }; g.ui.toast('Car alarm!'); }
       g.police?.crime(this.alarm?.v === v ? 7 : 4, v.position.x, v.position.z);
       this.stats.stolen++;
+      this.g.story?.market.event('RDLN', 0.004);
       g.driving!.enter(v);
       return;
     }
@@ -167,6 +168,7 @@ export class CarTheft {
       g.police?.crime(police ? 30 : 9, sx, sz, police ? { cop: true } : undefined);
       g.audio.sport('groan', 0.9, v.position);
       this.stats.jacked++;
+      this.g.story?.market.event('RDLN', 0.004);
       g.driving!.enter(v);
     }
   }

@@ -104,6 +104,8 @@ export interface Profile {
   story: StoryState;
   /** Snacks in your pockets, by id (see SNACKS). */
   snacks: Record<string, number>;
+  /** Businesses owned (bought online): ids from BUSINESSES. */
+  biz: string[];
 }
 
 export interface SaveData {

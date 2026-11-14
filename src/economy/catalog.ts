@@ -32,10 +32,32 @@ export const PROPERTIES: PropertyDef[] = [
   { id: 'costa', name: 'Costa Merida Canal House', kind: 'house', region: 'Costa Merida', blurb: 'Three floors on the water with its own mooring and a roof terrace.', price: 240000, upkeep: 520, near: { x: 420, z: 3300 }, slots: 4, bays: 'car' },
   { id: 'hangar', name: 'Valeria Hangar 3', kind: 'hangar', region: 'Valeria International', blurb: 'A private hangar on the apron. Keep a plane or helicopter ready to go.', price: 180000, upkeep: 420, near: { x: 1260, z: 840 }, slots: 2, bays: 'plane' },
   { id: 'dock', name: 'Dusk Harbor Boat House', kind: 'dock', region: 'Dusk Harbor', blurb: 'A weathered boat shed on the finger piers with room for a boat and a workbench.', price: 70000, upkeep: 140, near: { x: 330, z: 1650 }, slots: 2, bays: 'boat' },
+  { id: 'loft', name: 'Marlow Street Loft', kind: 'apartment', region: 'Port Valeria', blurb: 'Exposed brick, tall windows and a freight elevator. Two parking spaces in the courtyard.', price: 145000, upkeep: 320, near: { x: 940, z: 130 }, slots: 2, bays: 'car' },
+  { id: 'bungalow', name: 'Southside Bungalow', kind: 'house', region: 'Southside', blurb: 'One storey, a chain-link fence and neighbours who mind their own business.', price: 38000, upkeep: 90, near: { x: 1420, z: 470 }, slots: 2, bays: 'car' },
+  { id: 'harborloft', name: 'Dockside Warehouse Loft', kind: 'apartment', region: 'Dusk Harbor', blurb: 'A converted net loft over the fish market. Smells of the sea, mostly.', price: 88000, upkeep: 210, near: { x: 500, z: 1760 }, slots: 3, bays: 'car' },
+  { id: 'cottage', name: 'Pinecrest Cottage', kind: 'house', region: 'Pinecrest Bay', blurb: 'Clapboard, a porch swing and a view of the bay through the pines.', price: 62000, upkeep: 130, near: { x: 720, z: -2290 }, slots: 2, bays: 'car' },
+  { id: 'condo', name: 'Bayview Condo', kind: 'penthouse', region: 'Port Valeria', blurb: 'Twentieth floor, floor-to-ceiling glass and a concierge who knows your name.', price: 265000, upkeep: 610, near: { x: 760, z: -120 }, slots: 3, bays: 'car' },
   { id: 'rojo', name: 'Isla Rojo Estate', kind: 'mansion', region: 'Isla Rojo', blurb: 'The island villa with its own airstrip and dock. The most expensive address in San Verano.', price: 2400000, upkeep: 3500, near: { x: -820, z: 1180 }, slots: 8, bays: 'car' },
 ];
 
 export const PROPERTY_BY_ID = Object.fromEntries(PROPERTIES.map((p) => [p.id, p]));
+
+// ------------------------------------------------------------------------------------------------ businesses
+
+/** Businesses bought online: no building to visit, just a share of the takings paid into the bank every morning. */
+export interface BusinessDef { id: string; name: string; kind: string; region: string; blurb: string; price: number; income: number }
+
+export const BUSINESSES: BusinessDef[] = [
+  { id: 'tacotruck', name: 'Canal Taco Truck', kind: 'Food truck', region: 'Costa Merida', blurb: 'One truck, one cook, a line round the block at lunchtime.', price: 15000, income: 190 },
+  { id: 'bait', name: 'Pinecrest Bait & Tackle', kind: 'Shop', region: 'Pinecrest Bay', blurb: 'Worms, hooks and gossip.', price: 28000, income: 330 },
+  { id: 'carwash', name: 'Sunwash Car Wash', kind: 'Car wash', region: 'Port Valeria', blurb: 'Hand wash, wax and a cash register that is very hard to audit.', price: 65000, income: 880 },
+  { id: 'storage', name: 'Harbor Storage Units', kind: 'Storage', region: 'Dusk Harbor', blurb: 'Two hundred lockers. Nobody asks what is in them.', price: 95000, income: 1250 },
+  { id: 'laundromat', name: 'Spin City Laundromat', kind: 'Laundromat', region: 'Southside', blurb: 'Coin machines that turn dirty money clean. Officially, clothes.', price: 120000, income: 1600 },
+  { id: 'cabco', name: 'Marlow Cab Co.', kind: 'Taxi firm', region: 'Port Valeria', blurb: 'A fleet of yellow sedans and a dispatcher called Dolores.', price: 180000, income: 2350 },
+  { id: 'airfield', name: 'Cinder Flats Airfield', kind: 'Airstrip', region: 'Cinder Flats', blurb: 'A dirt strip, a fuel tank and charter pilots who do not file flight plans.', price: 260000, income: 3300 },
+  { id: 'club', name: 'The Velvet Room', kind: 'Nightclub', region: 'Port Valeria', blurb: 'Velvet ropes, a VIP floor and a bass you feel in your teeth.', price: 420000, income: 5200 },
+];
+export const BUSINESS_BY_ID = Object.fromEntries(BUSINESSES.map((b) => [b.id, b]));
 
 // ------------------------------------------------------------------------------------------------ shops and ATMs
 

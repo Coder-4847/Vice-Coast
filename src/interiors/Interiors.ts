@@ -309,6 +309,7 @@ export class Interiors {
       },
       knock: () => this.say(this.pickLine(['Who is it?', 'Go away!', '...', 'Not today, thanks.', 'Room service? We didn\'t order anything.'])),
       atm: () => cm.open(screens.atmPage(cm)),
+      web: (url) => cm.openWeb(url ?? 'wave.vc'),
       say: (t) => this.say(t),
       occupied: (seed) => {
         const hr = g.world.tod.hour;

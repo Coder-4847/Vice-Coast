@@ -153,19 +153,40 @@ You start with $5,000 in cash and $2,500 in the bank. Coloured beams mark things
 | Where | What it does |
 | --- | --- |
 | ATMs (beach, downtown, mall, harbor, Costa Merida, Pinecrest, airport, …) | Deposit and withdraw. Cash is lost when you are Wasted (10%) or Busted (25%); the bank is safe and pays property upkeep |
-| Properties (9, from a $6,500 desert trailer to the $2.4 M Isla Rojo estate) | Buy; then **save**, **sleep** until 06:00 (heals, starts a new day), **wardrobe**, **garage**, set as home (respawn there), sell for 70%. Upkeep is billed daily; three unpaid days and it is repossessed |
+| Properties (14, from a $6,500 desert trailer to the $2.4 M Isla Rojo estate) | Buy; then **save**, **sleep** until 06:00 (heals, starts a new day), **wardrobe**, **garage**, set as home (respawn there), sell for 70%. Upkeep is billed daily; three unpaid days and it is repossessed |
 | Valeria Motors (showroom) | Browse the six cars in an orbit view, pick a paint, **buy** (delivered to a garage with space, or parked outside) or **test drive** for two minutes |
 | Redline Customs | Drive a car in and press `E`: register it to you (25% of its price) or sell it to the back room (30%). Owned cars get paint (18 colours, 5 finishes incl. pearlescent and chrome), trim, rims, glass tint, spoilers, underglow, plates, engine / brakes / suspension / turbo, run-flat tyres and bulletproof plating, previewed live |
 | Threadline, Costa Rags, The Clip Joint, Pinecrest Barbers | Jackets, gloves, sunglasses, hair style and colour (the figure preview updates as you choose; you see sleeves and gloves in first person and the whole figure in a car) |
 | Gun stores: Brass & Barrel (downtown), Kings Pawn & Arms (Southside), Dockside Arms (Dusk Harbor), Armeria Merida (Costa), Pinecrest Outfitters, Cinder Surplus | Switchblade, hatchet, pistol, SMG, shotgun, rifle, **RPG-7V** ($14,000) and the **Helios LX laser rifle** ($26,000); ammo, extended magazines, suppressors, optics, finishes, medkits, body armour and snacks to go |
 | Food places: burgers by the beach, Grindhouse Coffee downtown, Cluckin' Kings in Southside, Dock Diner, Bayside Diner in Pinecrest, Canal Cantina in Costa, Cinder Taqueria | Eat in to heal, or buy snacks to carry (up to ten) and eat them anywhere with `F` |
-| **Phone** (`T` · D-pad up) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), **online car dealer**, realty listings, insurance claims for written-off cars, and a **camera** that saves a PNG |
+| **Phone** (`T` · D-pad up) | Messages, contacts (ring the cab, your mechanic, the insurer), maps, bank, **cab** to your waypoint, **garage** (mechanic brings any of your cars to you for $150), the **Web** browser (Motors, Realty and Stocks open their websites), insurance claims for written-off cars, and a **camera** that saves a PNG |
 
 Money comes from wallets dropped by people you take down, cars sold at the back room, and property sales; steadier income arrives
 with missions and heists in later phases.
 
 **Saving:** three slots in browser storage, chosen on the title screen. The game autosaves every four minutes (when nobody is after
 you) and whenever you buy, sleep or leave a shop. **Menu → Saves** lets you save, load, delete, **export** a slot to a file and **import** one.
+
+### The internet and the stock market
+
+Open the **Web** app on the phone, or use the computer in any home you own (and on office floors). The browser has an address bar
+you can type into (plain words search the web), back / forward, and bookmarks. Sites:
+
+| Site | What you can do |
+| --- | --- |
+| **wave.vc** | The portal: search, a directory of every site, a live market strip |
+| **vex.vc** — Verano Exchange | 14 companies, prices that move every hour, 3 months of history, charts (today / 1 month / 3 months), buy and sell any number of shares ($5 fee), a portfolio with average cost and profit / loss, market news |
+| **apexautos.vc** | Every new car and bike with stats and a paint choice; delivered to a garage with space, or parked near you |
+| **roadkings.vc** | Nine used cars a day at 40–80% of the new price, each sold once |
+| **keystone.vc** | Every home for sale (now 14, including a Midtown loft, a Southside bungalow, a harbour loft, a Pinecrest cottage and a Bayview condo) and **8 businesses** — taco truck to nightclub — that pay their takings into your bank every morning |
+| **valeriasavings.vc** | Balances, transfers, daily upkeep vs takings, recent transactions |
+| **coastlinedaily.vc**, **skywatch.vc** | News (it reports your robberies, car thefts, burglaries and business deals), sports, weather and a five-day forecast |
+| **islaaero.vc** | Charter flights to the airport, Isla Rojo, Cinder Flats, Pinecrest and Costa Merida |
+| **friendr.vc**, **coastlist.vc**, **luckyseven.vc**, **poundandpaws.vc**, **morsmutual.vc**, **sanverano.gov** | A social feed, classifieds, online slots, adopt Rufus, insurance claims, and the state portal (DMV, property register, the police's most-wanted page about you) |
+
+**Stocks.** Prices drift from yesterday's close toward today's through the day and settle each morning. Company news moves
+them, the story moves them, and so do you: rob Petrolia or FreshMart stores and their shares dip the next day; steal cars and
+Redline Customs rises; buy cars and Valeria Motors gains. Shares are paid from cash then the bank; sales go into the bank.
 
 ### Interiors
 
@@ -298,6 +319,7 @@ src/
   economy/ money, save slots, properties, shops, garage and customisation screens, interaction points
   crew/    roster, loyalty / injuries / effects, field allies with a command wheel, crew pages
   crime/   walk-in robbery stores, clerks and the hold-up / ATM flows, shared police-call helper
+  web/     the in-game browser (Browser.ts), drawing helpers (charts, car and home art) and the sites
   interiors/ building interiors: room builder with baked vertex lighting, procedural textures, furniture kit, layouts per building kind, enter/leave and burglary
   story/   mission engine (generator scripts, checkpoints, medals), cutscene director, protagonists + abilities, gunmen and scripted drivers, heists and their interiors, content/ (missions, cutscenes, heists)
   craft/   boats, helicopters, planes, tanks: specs, arcade force models, procedural models, piloting (camera, HUD, weapons), skydive
@@ -342,6 +364,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 26. **Living world, phase B** ✅ — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
 27. **Living world, phase C** ✅ — street scenes (chats, kerb sitters, drunks with bottles, fistfights with an audience, smokers, a hot-dog vendor, tourists, arrests), speech bubbles with synthesised voices, people reacting to bumps, guns and nice cars, paramedics who treat (and sometimes revive) the fallen, fire crews with fire trucks, dogs with owners and strays, pigeons that scatter, hitchhiker and getaway-driver events, a cheat console; fixed the sniper-scope overlay showing on every weapon
 28. **Phase D** ✅ — fist fighting, a cover system (low and high cover), stealth takedowns, Rufus the dog (adopt, follow, attack on command, defend you), bumpers and doors that hang and fall off
-29. **Phase E** ✅ (this build) — interiors for nearly every building (shops, stores, apartments with hallways, hotels and motels with rooms to rent, houses to burgle, offices, bars, diners, gyms, police HQ, the hospital, the mall, warehouses, your own homes), robbery stores you walk into, new first-person hands (one skinned mesh with knuckles, finger pads, creases and nails; skin with pores, wrinkles, veins and warm subsurface light), and world AO no longer smearing across the hands
+29. **Phase E** ✅ — interiors for nearly every building (shops, stores, apartments with hallways, hotels and motels with rooms to rent, houses to burgle, offices, bars, diners, gyms, police HQ, the hospital, the mall, warehouses, your own homes), robbery stores you walk into, new first-person hands (one skinned mesh with knuckles, finger pads, creases and nails; skin with pores, wrinkles, veins and warm subsurface light), and world AO no longer smearing across the hands
+30. **Phase F** ✅ (this build) — an in-game internet (15 sites, a browser with address bar, history and bookmarks), the Verano Exchange stock market (14 companies, hourly prices, charts, portfolio, news, player-driven moves), buying cars and homes online, used cars, businesses with daily income, five new homes, charter flights, online banking, a newspaper that reports what you did
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

@@ -152,6 +152,10 @@ export class Robberies {
       this.rob.count++;
       this.rob.take += loot;
       g.ui.toast(`Robbed ${a.store.def.name}: ${money(loot)}`);
+      // the chain's share price notices
+      const nm = a.store.def.name;
+      if (/Petrolia/.test(nm)) this.s.market.event('PTRL', -0.03);
+      else if (/FreshMart|Kwik Stop|24\/7|Grocer|Basket/.test(nm)) this.s.market.event('FRSH', -0.02);
     }
     this.rob.cooldown[a.store.def.id] = this.day + 2;
   }
