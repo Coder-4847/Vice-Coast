@@ -50,9 +50,11 @@ Click the game to capture the mouse. You spawn on a beach shooting range facing 
 | Jump · **vault · climb** | `Space` (prompt appears at a ledge) | `A` (✕) |
 | Sprint (stamina) · crouch | `Shift` · `C` | `L3` · `R3` |
 | Draw / holster · inspect | `1` · `G` | D-pad ↓ · — |
-| Eat a snack from your pockets | `F` | `B` (○) |
 | Weapon wheel (hold, point, release) · quick select | `Tab` · `2`–`9` by group: melee, pistols, SMGs, shotguns, rifles, heavy, launchers, thrown (press again to cycle) | `LB` + right stick |
 | Throw (grenade, molotov, sticky) · set off sticky charges | `LMB` · `R` | `RT` · `X` |
+| Take cover · stealth takedown (behind an unaware guard) | `Q` · `E` | `B` · `Y` |
+| Dog: attack what you aim at / come here | `K` | — |
+| Eat a snack | `F` | hold `B` |
 | Swim | walk into the sea; `C` dives, `Space` surfaces | same |
 | Switch character (wheel) · special ability | `Z` · `X` | D-pad ← · `RB` |
 | Crew commands (hold / follow / attack / breach) | `B` | D-pad → |
@@ -71,7 +73,12 @@ pistol, **Breacher S12** semi-auto shotgun, **Sentinel C4** carbine, **Hammerhea
 bolt-action sniper rifle (aim to look through an 8× scope; it is wildly inaccurate from the hip), a **Slugger bat**, and three throwables:
 **frag grenades** (bounce, then explode after three seconds), **molotovs** (a sheet of fire that burns people and cars) and **sticky
 charges** (they stick to walls and cars, and `R` sets every one of them off). A grenade and the sniper rifle also wait in crates on the range.
-Cars now take visible damage: crashes dent the body where they hit, bullets leave holes, windows craze and then shatter. Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
+**Fists** are always with you (key `2`): left-right jabs from a boxer's guard. **Cover:** press `Q` next to a wall, a car or a crate and
+you press up against it; behind something low you stay crouched and pop up when you aim. **Stealth takedowns:** crouch up behind a guard
+who has not noticed you and press `E` to drop them silently. **Rufus:** adopt a dog from the Pound & Paws shelter on your phone ($500);
+he follows at your heel, waits in the car, goes for whatever you aim at when you press `K`, and jumps in when somebody shoots at you.
+Cars now take visible damage: crashes dent the body where they hit, bullets leave holes, windows craze and then shatter, and bumpers and the
+driver's door hang loose and then fall off into the road. Armour soaks 70 % of each hit; health regenerates up to 60 % after a few quiet seconds. Shooting people, killing officers,
 running people down and blowing things up add *heat*; it only counts in full if somebody saw it. Each star brings a bigger response:
 
 | ★ | Response |
@@ -312,6 +319,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 24. **Rework, phases 10 + 11** ✅ — a fourth ending, **All In** (all three together: a car chase, a tank through a roadblock and a gunship hunt for Crane's convoy, then Brandt's last stand), final fights added to Clean Slate and Clear Skies, epilogue texts, an end-credits roll with your numbers and endings seen; random street events (security vans to rob, purse snatchers to chase); an eating animation for snacks
 25. **Living world, phase A** ✅ — hit markers by result (white hit, yellow downed, red kill, bigger for head shots, with sounds); people flinch when hit, limp and clutch wounds, fall the way the shot pushes them with flailing limbs and a sprawl, or go down writhing and crawling before they bleed out (a downed person counts as neutralised and can be finished); blood splatters on walls and pavement behind wounds, pools spread under bodies, blood at the screen edges when you are hurt; first-person hand animations for smashing a car window, pulling a driver out and eating, and sparks under the dash while hotwiring
 26. **Living world, phase B** ✅ — ten new weapons (revolver, machine pistol, combat shotgun, carbine, belt-fed MG, scoped sniper rifle, bat, frag grenades, molotovs, sticky charges) with their own models, an 8× sniper scope, fire that spreads damage, quick select by weapon group and a weapon wheel that only shows what you own; car damage (dents where you crash, bullet holes, crazed and shattered glass, all repaired after a respawn); pedestrians rebuilt with faces (eyes, brows, nose, lips, ears), hands, shaped torsos and tapered limbs
-27. **Living world, phase C** ✅ (this build) — street scenes (chats, kerb sitters, drunks with bottles, fistfights with an audience, smokers, a hot-dog vendor, tourists, arrests), speech bubbles with synthesised voices, people reacting to bumps, guns and nice cars, paramedics who treat (and sometimes revive) the fallen, fire crews with fire trucks, dogs with owners and strays, pigeons that scatter, hitchhiker and getaway-driver events, a cheat console; fixed the sniper-scope overlay showing on every weapon
+27. **Living world, phase C** ✅ — street scenes (chats, kerb sitters, drunks with bottles, fistfights with an audience, smokers, a hot-dog vendor, tourists, arrests), speech bubbles with synthesised voices, people reacting to bumps, guns and nice cars, paramedics who treat (and sometimes revive) the fallen, fire crews with fire trucks, dogs with owners and strays, pigeons that scatter, hitchhiker and getaway-driver events, a cheat console; fixed the sniper-scope overlay showing on every weapon
+28. **Phase D** ✅ (this build) — fist fighting, a cover system (low and high cover), stealth takedowns, Rufus the dog (adopt, follow, attack on command, defend you), bumpers and doors that hang and fall off
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

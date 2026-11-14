@@ -28,6 +28,7 @@ import { CarTheft } from './crime/CarTheft';
 import { StreetLife } from './npc/StreetLife';
 import { Animals } from './npc/Animals';
 import { Cheats } from './core/Cheats';
+import { CloseQuarters } from './combat/CloseQuarters';
 import { Ordnance } from './combat/Ordnance';
 import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
@@ -326,6 +327,7 @@ export class Game {
       this.street = new StreetLife(this);
       this.animals = new Animals(this);
       this.cheats = new Cheats(this);
+      this.close = new CloseQuarters(this);
     }
     this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
     this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
@@ -737,6 +739,7 @@ export class Game {
   street: StreetLife | null = null;
   animals: Animals | null = null;
   cheats: Cheats | null = null;
+  close: CloseQuarters | null = null;
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -795,6 +798,7 @@ export class Game {
     this.theft?.update(dt);
     this.street?.update(dt);
     this.animals?.update(dt);
+    this.close?.update(dt);
     this.story?.update(dt);
     this.radio?.update(dt);
     if (this.state === 'playing' && this.input.pressed('phone') && !this.story?.sceneBlocksInput()) this.openPhone();
@@ -839,7 +843,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : driving?.hint ? `${driving.hint.locked ? 'Break into' : 'Enter'} ${driving.hint.spec.name}` : this.theft?.prompt ? this.theft.prompt : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
+        enter: this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : this.close?.prompt ? this.close.prompt : driving?.hint ? `${driving.hint.locked ? 'Break into' : 'Enter'} ${driving.hint.spec.name}` : this.theft?.prompt ? this.theft.prompt : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }

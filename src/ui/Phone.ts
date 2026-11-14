@@ -191,6 +191,7 @@ export class Phone {
       row({ label: 'Redline Rick (mechanic)', sub: 'Brings your car to you', onClick: () => call('Redline Rick', '“Which one do you want, boss? $150 and I’ll have it there in a flash.”', () => this.push('Garage', (e) => this.garage(e))) }),
       row({ label: 'Mors Mutual', sub: 'Insurance claims', onClick: () => call('Mors Mutual', '“Please hold… Thank you. Which vehicle was written off?”', () => this.push('Mors Mutual', (e) => this.insurance(e))) }),
       row({ label: 'Valeria Savings', sub: 'Your bank', onClick: () => call('Valeria Savings', '“Good day. Your balance is available in the Bank app.”') }),
+      row({ label: 'Pound & Paws shelter', sub: this.c.game.story?.st.flags.dog ? 'Rufus says hi' : 'Adopt a dog: $500', onClick: () => call('Pound & Paws', this.c.game.story?.st.flags.dog ? '“How is Rufus doing? Give him a scratch behind the ears from us.”' : '“We have a big golden boy called Rufus who needs a home. Five hundred dollars and he is yours.”', this.c.game.story?.st.flags.dog ? undefined : () => this.c.game.animals?.adopt()) }),
       row({ label: 'Mom', sub: 'You should call more often', onClick: () => call('Mom', '“Honey? Are you eating? You sound tired. Call me Sunday.”') }),
     );
   }

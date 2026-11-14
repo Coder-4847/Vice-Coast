@@ -46,7 +46,7 @@ export interface HitEvent {
 export class WeaponSystem {
   /** The weapon currently in hand, and what you carry. */
   def: WeaponDef = WEAPONS.vc9;
-  readonly inv: Record<WeaponId, { ammo: number; reserve: number; owned: boolean }> = perWeapon((id) => id === 'vc9' ? { ammo: 13, reserve: 60, owned: true } : { ammo: id === 'knife' || WEAPONS[id].melee ? 1 : 0, reserve: 0, owned: id === 'knife' });
+  readonly inv: Record<WeaponId, { ammo: number; reserve: number; owned: boolean }> = perWeapon((id) => id === 'vc9' ? { ammo: 13, reserve: 60, owned: true } : { ammo: id === 'knife' || WEAPONS[id].melee ? 1 : 0, reserve: 0, owned: id === 'knife' || id === 'fists' });
   private pendingId: WeaponId | null = null;
   /** Called when the held weapon changes (HUD, audio). */
   onSwap: ((def: WeaponDef) => void) | null = null;

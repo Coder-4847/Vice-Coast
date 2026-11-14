@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Game } from '../Game';
 import type { Ped } from './Pedestrians';
 
-interface Dog { x: number; z: number; y: number; yaw: number; speed: number; phase: number; owner: Ped | null; size: number; color: number; tx: number; tz: number; t: number; scared: number; barkT: number }
+interface Dog { x: number; z: number; y: number; yaw: number; speed: number; phase: number; owner: Ped | null; size: number; color: number; tx: number; tz: number; t: number; scared: number; barkT: number; companion?: boolean; target?: Ped | null; biteT?: number; hidden?: boolean }
 interface Pigeon { x: number; y: number; z: number; vx: number; vy: number; vz: number; yaw: number; peck: number; flying: boolean }
 
 const COATS = [0x8a6a4a, 0x2a2420, 0xd8c8a8, 0x6a4a2a, 0xb08050, 0x3a3a3c, 0xe8e2d8];
@@ -31,7 +31,99 @@ export class Animals {
   private readonly q2 = new THREE.Quaternion();
   private readonly v = new THREE.Vector3();
   private readonly s = new THREE.Vector3();
-  stats = { dogs: 0, pigeons: 0 };
+  stats = { dogs: 0, pigeons: 0, bites: 0 };
+  /** Your own dog, once adopted from the shelter (phone). */
+  private buddy: Dog | null = null;
+
+  /** Adopt Rufus: $500, then he lives with you for good. */
+  adopt(): void {
+    const g = this.g;
+    if (g.story?.st.flags.dog) return;
+    if (!g.commerce?.eco.spend(500, 'Pound & Paws')) { g.ui.toast('You need $500 to adopt Rufus.'); return; }
+    if (g.story) g.story.st.flags.dog = true;
+    g.ui.toast('Rufus is yours! He is waiting right behind you. Press K to send him at whatever you aim at.');
+  }
+
+  private companion(dt: number): void {
+    const g = this.g, pl = g.player!;
+    if (!g.story?.st.flags.dog) { if (this.buddy) { this.dogs.splice(this.dogs.indexOf(this.buddy), 1); this.buddy = null; } return; }
+    if (!this.buddy) {
+      this.buddy = { x: pl.pos.x - 1.5, z: pl.pos.z - 1.5, y: pl.pos.y, yaw: 0, speed: 0, phase: 0, owner: null, size: 1.25, color: 0xc89050, tx: 0, tz: 0, t: 0, scared: 0, barkT: 4, companion: true, target: null, biteT: 0 };
+      this.dogs.unshift(this.buddy);
+    }
+    const d = this.buddy;
+    // in a car or aircraft with you: out of sight, and right there when you get out
+    const away = g.driving?.mode !== 'foot' || !!g.piloting?.busy || pl.state === 'swim';
+    if (away) { d.hidden = true; d.target = null; d.x = pl.pos.x - 1.2; d.z = pl.pos.z - 1.2; return; }
+    if (d.hidden || Math.hypot(d.x - pl.pos.x, d.z - pl.pos.z) > 60) { d.hidden = false; const a = pl.yaw + Math.PI * 0.75; d.x = pl.pos.x + Math.sin(a) * 1.6; d.z = pl.pos.z + Math.cos(a) * 1.6; }
+    // orders: K sends him at what you aim at (or the nearest gunman); he also jumps in when you are being shot at
+    const hostiles = g.story.hostiles;
+    if (g.input.pressed('dog')) {
+      let t: Ped | null = null;
+      const e = pl.eyePosition, dir = new THREE.Vector3();
+      pl.lookDirection(dir);
+      const hit = g.npcs?.rayHit(e.x, e.y, e.z, dir.x, dir.y, dir.z, 45);
+      if (hit && (hit.target as Ped).x !== undefined) t = hit.target as Ped;
+      if (!t) t = this.nearestThreat(d, 30);
+      d.target = t && t.state !== 'down' ? t : null;
+      this.g.audio.bark(new THREE.Vector3(d.x, d.y + 0.5, d.z), 0.8);
+      g.ui.toast(d.target ? 'Rufus! Get him!' : 'Rufus! Here, boy!');
+    }
+    if (!d.target && (g.combat?.vitals.sinceHit ?? 99) < 1.5) d.target = this.nearestThreat(d, 22);
+    void hostiles;
+    const t = d.target;
+    if (t && (!t.active || t.state === 'down')) { d.target = null; this.g.audio.bark(new THREE.Vector3(d.x, d.y + 0.5, d.z), 0.8); }
+    if (d.target) {
+      const tx = d.target.x, tz = d.target.z;
+      const dist = Math.hypot(tx - d.x, tz - d.z);
+      this.moveDog(d, tx, tz, 7.5, dt);
+      d.biteT = (d.biteT ?? 0) - dt;
+      if (dist < 1.1 && d.biteT <= 0) {
+        d.biteT = 0.7;
+        const res = g.npcs!.peds.knockDown(d.target, (tx - d.x) * 2, (tz - d.z) * 2, 22, true, false);
+        d.target.flinch = 0.32;
+        this.stats.bites++;
+        g.audio.bark(new THREE.Vector3(d.x, d.y + 0.5, d.z), 0.9);
+        if (res === 'kill' || res === 'down') d.target = null;
+      }
+    } else {
+      // at heel, a step behind and to the right; trots to catch up
+      const fx = -Math.sin(pl.yaw), fz = -Math.cos(pl.yaw);
+      const hx = pl.pos.x - fx * 1.1 + fz * 0.9, hz = pl.pos.z - fz * 1.1 - fx * 0.9;
+      const far = Math.hypot(hx - d.x, hz - d.z);
+      this.moveDog(d, hx, hz, far > 4 ? 6.5 : Math.max(1.2, pl.speed2D * 1.1), dt);
+    }
+    d.y = g.world.heightAt(d.x, d.z);
+    d.phase += dt * (2 + d.speed * 4);
+  }
+
+  private nearestThreat(d: Dog, r: number): Ped | null {
+    const g = this.g;
+    let best: Ped | null = null, bd = r;
+    for (const p of g.story?.hostiles.list ?? []) {
+      if (!p.active || p.state === 'down' || !g.story!.hostiles.awake(p)) continue;
+      const dd = Math.hypot(p.x - d.x, p.z - d.z);
+      if (dd < bd) { bd = dd; best = p; }
+    }
+    // with the police after you, he goes for the nearest officer on foot
+    if (!best && (g.wanted?.stars ?? 0) > 0) for (const p of g.npcs?.peds.peds ?? []) {
+      if (!p.active || p.state === 'down' || p.role !== 'cop') continue;
+      const dd = Math.hypot(p.x - d.x, p.z - d.z);
+      if (dd < bd) { bd = dd; best = p; }
+    }
+    return best;
+  }
+
+  private moveDog(d: Dog, tx: number, tz: number, sp: number, dt: number): void {
+    const dx = tx - d.x, dz = tz - d.z, dist = Math.hypot(dx, dz);
+    if (dist > 0.3) {
+      const step = Math.min(dist, sp * dt);
+      d.x += (dx / dist) * step; d.z += (dz / dist) * step;
+      let dy = Math.atan2(dx, dz) - d.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      d.yaw += dy * Math.min(1, dt * 9);
+      d.speed = step / dt;
+    } else d.speed = 0;
+  }
 
   constructor(private readonly g: Game) {
     const mk = (geo: THREE.BufferGeometry, n: number, shadow = false): THREE.InstancedMesh => {
@@ -65,6 +157,7 @@ export class Animals {
       this.dogT = 4;
       for (let i = this.dogs.length - 1; i >= 0; i--) {
         const d = this.dogs[i]!;
+        if (d.companion) continue;
         if (Math.hypot(d.x - p.x, d.z - p.z) > 200 || (d.owner && !d.owner.active)) this.dogs.splice(i, 1);
       }
       if (inCity && this.dogs.length < 6) {
@@ -78,7 +171,8 @@ export class Animals {
         }
       }
     }
-    for (const d of this.dogs) this.stepDog(d, dt, p, shot);
+    this.companion(dt);
+    for (const d of this.dogs) if (!d.companion) this.stepDog(d, dt, p, shot);
     // ---- pigeons: a flock on a nearby pavement, by day
     const hour = g.world.tod.hour;
     this.birdT -= dt;
@@ -172,6 +266,7 @@ export class Animals {
     const ax = new THREE.Vector3(1, 0, 0), ay = new THREE.Vector3(0, 1, 0);
     for (const d of this.dogs) {
       if (nd >= 12) break;
+      if (d.hidden) continue;
       const s = d.size;
       this.q.setFromAxisAngle(ay, d.yaw);
       const off = (lx: number, ly: number, lz: number): THREE.Vector3 => this.v.set(lx * s, ly * s, lz * s).applyQuaternion(this.q);

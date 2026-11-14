@@ -5,7 +5,7 @@ export type Action =
   | 'jump' | 'sprint' | 'crouch' | 'interact'
   | 'fire' | 'aim' | 'reload'
   | 'weaponWheel' | 'radioWheel' | 'phone' | 'map' | 'pause' | 'character' | 'ability' | 'crew'
-  | 'holster' | 'inspect' | 'snack'
+  | 'holster' | 'inspect' | 'snack' | 'cover' | 'dog'
   | 'horn' | 'headlights' | 'cameraMode';
 
 export interface ActionBinding {
@@ -43,7 +43,9 @@ export const ACTION_DEFS: ActionDef[] = [
   { id: 'fire', label: 'Fire', group: 'Combat', kbm: ['Mouse0'], pad: [PAD.RT], rebindable: true },
   { id: 'aim', label: 'Aim', group: 'Combat', kbm: ['Mouse2'], pad: [PAD.LT], rebindable: true },
   { id: 'holster', label: 'Draw / holster weapon', group: 'Combat', kbm: ['Digit1'], pad: [PAD.DOWN], rebindable: true },
-  { id: 'snack', label: 'Eat a snack', group: 'Actions', kbm: ['KeyF'], pad: [PAD.B], rebindable: true },
+  { id: 'snack', label: 'Eat a snack', group: 'Actions', kbm: ['KeyF'], pad: [], rebindable: true },
+  { id: 'cover', label: 'Take cover (controller: hold to eat a snack)', group: 'Combat', kbm: ['KeyQ'], pad: [PAD.B], rebindable: true },
+  { id: 'dog', label: 'Dog: attack what you aim at / come here', group: 'Combat', kbm: ['KeyK'], pad: [], rebindable: true },
   { id: 'inspect', label: 'Inspect weapon', group: 'Combat', kbm: ['KeyG'], pad: [], rebindable: true },
   { id: 'horn', label: 'Vehicle horn', group: 'Vehicle', kbm: ['KeyH'], pad: [PAD.L3], rebindable: true },
   { id: 'headlights', label: 'Vehicle headlights', group: 'Vehicle', kbm: ['KeyL'], pad: [], rebindable: true },

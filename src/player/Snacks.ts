@@ -30,7 +30,13 @@ export class Snacks {
     const g = this.g;
     this.cool -= dt;
     this.animate(dt);
-    if (g.state !== 'playing' || !g.input.pressed('snack') || this.cool > 0) return;
+    if (g.state === 'playing' && g.input.pressed('snack')) this.eat();
+  }
+
+  /** Eat the best snack for the moment (F on the keyboard; hold B on a controller). */
+  eat(): void {
+    const g = this.g;
+    if (g.state !== 'playing' || this.cool > 0) return;
     if (g.story?.cutscenes.active || g.piloting?.busy) return;
     const vit = g.combat?.vitals;
     const bag = g.commerce?.eco.p.snacks;

@@ -49,8 +49,8 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
   return out;
 };
 
-export type ActKind = 'smash' | 'jack' | 'eat' | 'throw';
-const ACT_DUR: Record<ActKind, number> = { smash: 0.75, jack: 0.9, eat: 1.25, throw: 0.6 };
+export type ActKind = 'smash' | 'jack' | 'eat' | 'throw' | 'jabL' | 'jabR' | 'takedown';
+const ACT_DUR: Record<ActKind, number> = { smash: 0.75, jack: 0.9, eat: 1.25, throw: 0.6, jabL: 0.32, jabR: 0.32, takedown: 1.1 };
 
 const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
 const SPRINT = pose(0.12, -0.2, -0.38, -0.66, 0.44, 0.18);
@@ -238,6 +238,7 @@ export class Viewmodel {
 
   /** Weapon fired: kick, flash. */
   kick(strength: number): void {
+    if (this.currentId === 'fists') { this.swingSide = -this.swingSide; this.play(this.swingSide > 0 ? 'jabR' : 'jabL'); return; }
     if (WEAPONS[this.currentId].melee) { this.swingT = 0; this.swingSide = -this.swingSide; return; }
     this.kickZ.velocity += 1.25 * strength;
     this.kickPitch.velocity += 5.2 * strength;
@@ -512,6 +513,7 @@ export class Viewmodel {
     HandRig.mix(leftPose, leftPoseB, leftBlend, this.lPose);
     HandRig.mix(RESTING, this.lPose, grab * (1 - mt), this.lPose);
     HandRig.mix(this.lPose, p.mantle ? POSES.hook : this.lPose, mt, this.lPose);
+    if (this.currentId === 'fists' && !this.act) { HandRig.mix(this.rPose, POSES.fist, 0.9, this.rPose); HandRig.mix(this.lPose, POSES.fist, 0.9, this.lPose); }
     if (actW > 0) { HandRig.mix(this.rPose, this.actR, actW, this.rPose); HandRig.mix(this.lPose, this.actL, actW, this.lPose); }
     if (this.debug.pose === 'fist') { this.right.apply(POSES.fist); this.left.apply(POSES.fist); }
     else if (this.debug.pose === 'flat') { this.right.apply(POSES.flat); this.left.apply(POSES.flat); }
@@ -550,6 +552,21 @@ export class Viewmodel {
       R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.12, -0.08, -0.7, 0.4, 0, 0.6], [0.45, 0.12, -0.1, -0.68, 0.4, 0, 0.6], [0.8, 0.26, -0.24, -0.26, 0.2, -0.4, 0.4], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
       L = [[0, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3], [0.3, -0.1, -0.06, -0.7, 0.4, 0, -0.6], [0.45, -0.1, -0.08, -0.68, 0.4, 0, -0.6], [0.8, -0.26, -0.22, -0.26, 0.2, 0.4, -0.4], [1, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3]];
       pr = u < 0.3 ? POSES.flat : POSES.hook; pl = pr;
+    } else if (kind === 'jabL' || kind === 'jabR') {
+      // a straight punch from the guard and back
+      const s = kind === 'jabR' ? 1 : -1;
+      const guard: [number, number, number, number, number, number, number] = [0, s * 0.14, -0.15, -0.3, 0.2, -s * 0.2, s * 0.6];
+      const hit: [number, number, number, number, number, number, number] = [0.4, s * 0.03, -0.08, -0.62, 0.1, -s * 0.05, s * 0.1];
+      const back: [number, number, number, number, number, number, number] = [1, s * 0.14, -0.15, -0.3, 0.2, -s * 0.2, s * 0.6];
+      const idle: [number, number, number, number, number, number, number][] = [[0, -s * 0.2, -0.13, -0.36, 0.2, s * 0.2, -s * 0.6], [1, -s * 0.2, -0.13, -0.36, 0.2, s * 0.2, -s * 0.6]];
+      if (s > 0) { R = [guard, [0.4, hit[1], hit[2], hit[3], hit[4], hit[5], hit[6]], back]; L = idle; }
+      else { L = [guard, [0.4, hit[1], hit[2], hit[3], hit[4], hit[5], hit[6]], back]; R = idle; }
+      pr = POSES.fist; pl = POSES.fist;
+    } else if (kind === 'takedown') {
+      // grab from behind with the left, strike with the right
+      R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.22, 0.05, -0.2, 0.8, 0.4, 1.0], [0.5, 0.04, -0.1, -0.55, 0.2, 0.1, 0.4], [0.62, 0.05, -0.12, -0.53, 0.2, 0.1, 0.4], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
+      L = [[0, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3], [0.25, -0.08, -0.05, -0.55, 0.3, 0.2, -0.8], [0.8, -0.1, -0.12, -0.5, 0.3, 0.2, -0.8], [1, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3]];
+      pr = POSES.fist; pl = POSES.hook;
     } else if (kind === 'throw') {
       // wind up behind the shoulder, whip forward and release, follow through low
       R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.3, 0.08, -0.05, -0.6, -0.3, 0.4], [0.55, 0.05, 0.02, -0.6, 0.5, 0.1, 0.1], [0.75, -0.02, -0.2, -0.55, 0.8, 0.2, 0], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];

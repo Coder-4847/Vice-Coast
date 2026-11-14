@@ -240,6 +240,18 @@ export class CarModel {
     this.shell.add(body);
     this.bodyMesh = body;
     this.beltY = sil.belt;
+    // bumpers: separate pieces that can hang off and fall away; each hangs from one end
+    for (const end of [-1, 1] as const) {
+      const pivot = new THREE.Group();
+      const bw = W * 0.94;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.2, 0.14), this.bodyMat);
+      m.position.set(bw / 2, 0, 0);
+      m.castShadow = true;
+      pivot.add(m);
+      pivot.position.set(-bw / 2, sil.body[0]![1] + 0.08, end * (L / 2 + 0.03));
+      this.shell.add(pivot);
+      this.parts.push({ kind: end < 0 ? 'front' : 'rear', obj: pivot, home: pivot.position.clone(), hp: 1, state: 'ok' });
+    }
     this.restPos = (body.geometry.getAttribute('position').array as Float32Array).slice();
     body.geometry.computeBoundingBox();
     body.geometry.boundingBox!.getCenter(this.bodyCentre);
@@ -390,6 +402,7 @@ export class CarModel {
     const dz = cb[0]![0] + 0.1 - L / 2 + 0.0;
     this.door.position.set(spec.doorSide * (W / 2 + 0.002), (sil.belt + spec.clearance) / 2 - 0.02, dz);
     this.shell.add(this.door);
+    this.parts.push({ kind: 'door', obj: this.door, home: this.door.position.clone(), hp: 1, state: 'ok' });
 
     // --- driver ------------------------------------------------------------------------------------------------------------
     const jacket = new THREE.MeshStandardMaterial({ color: 0x3d4248, roughness: 0.9 });
@@ -616,6 +629,59 @@ export class CarModel {
   // ---------------------------------------------------------------------------------------------------- damage
 
   private bodyMesh!: THREE.Mesh;
+  /** Bumpers and the driver's door: ok → hanging → gone (lying in the road). */
+  private readonly parts: { kind: 'front' | 'rear' | 'door'; obj: THREE.Object3D; home: THREE.Vector3; hp: number; state: 'ok' | 'hang' | 'gone' }[] = [];
+  /** Pieces that have come off, falling then lying where they land (shared by every car). */
+  static readonly debris: { obj: THREE.Object3D; vy: number; vx: number; vz: number; spin: number; life: number }[] = [];
+
+  /** Hurt a part; it hangs at half, falls at zero. */
+  private hitPart(kind: 'front' | 'rear' | 'door', dmg: number): void {
+    const part = this.parts.find((q) => q.kind === kind);
+    if (!part || part.state === 'gone') return;
+    part.hp -= dmg;
+    if (part.hp <= 0) this.dropPart(part);
+    else if (part.hp < 0.5 && part.state === 'ok') {
+      part.state = 'hang';
+      // one end lets go: bumpers droop at the far end, the door sags open on its hinge
+      if (kind === 'door') { part.obj.rotation.z = 0.12 * this.vehicle.spec.doorSide; this.doorHang = 0.45; }
+      else part.obj.rotation.z = -0.32;
+    }
+  }
+
+  private doorHang = 0;
+
+  private dropPart(part: (typeof this.parts)[number]): void {
+    part.state = 'gone';
+    let root: THREE.Object3D = this.shell;
+    while (root.parent) root = root.parent;
+    // keep its world pose, then hand it to the scene as debris
+    part.obj.updateWorldMatrix(true, true);
+    const m = part.obj.matrixWorld.clone();
+    part.obj.removeFromParent();
+    m.decompose(part.obj.position, part.obj.quaternion, part.obj.scale);
+    root.add(part.obj);
+    const v = this.vehicle;
+    const lv = v.body.linvel();
+    CarModel.debris.push({ obj: part.obj, vx: lv.x * 0.6 + (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: lv.z * 0.6 + (Math.random() - 0.5) * 2, spin: (Math.random() - 0.5) * 6, life: 90 });
+    if (CarModel.debris.length > 40) { const old = CarModel.debris.shift()!; old.obj.removeFromParent(); }
+  }
+
+  /** Falling pieces land on the ground and stay a while. */
+  static updateDebris(dt: number, ground: (x: number, z: number) => number): void {
+    for (let i = CarModel.debris.length - 1; i >= 0; i--) {
+      const d = CarModel.debris[i]!;
+      d.life -= dt;
+      const o = d.obj;
+      const gy = ground(o.position.x, o.position.z) + 0.08;
+      if (o.position.y > gy || d.vy > 0) {
+        d.vy -= 9.8 * dt;
+        o.position.x += d.vx * dt; o.position.y += d.vy * dt; o.position.z += d.vz * dt;
+        o.rotateX(d.spin * dt); o.rotateZ(d.spin * 0.5 * dt);
+        if (o.position.y <= gy) { o.position.y = gy; d.vy = Math.abs(d.vy) > 2 ? -d.vy * 0.25 : 0; d.vx *= 0.5; d.vz *= 0.5; d.spin *= 0.4; }
+      }
+      if (d.life <= 0) { o.removeFromParent(); CarModel.debris.splice(i, 1); }
+    }
+  }
   private restPos!: Float32Array;
   private readonly bodyCentre = new THREE.Vector3();
   private beltY = 0.9;
@@ -662,6 +728,10 @@ export class CarModel {
   shot(p: THREE.Vector3): void {
     const local = this.bodyMesh.worldToLocal(p.clone());
     if (local.y > this.beltY) { this.crack(1); return; }
+    // bullets chew away at whatever piece they hit
+    const L = this.vehicle.spec.size.length;
+    if (Math.abs(local.z) > L / 2 - 0.35) this.hitPart(local.z < 0 ? 'front' : 'rear', 0.06);
+    else if (Math.sign(local.x) === this.vehicle.spec.doorSide) this.hitPart('door', 0.05);
     this.dent(local, 0.12, 0.012);
     if (this.holes.length >= 36) { const old = this.holes.shift()!; this.bodyMesh.remove(old); }
     const m = new THREE.Mesh(CarModel.holeGeo, CarModel.holeMat);
@@ -681,6 +751,21 @@ export class CarModel {
     for (const h of this.holes) this.bodyMesh.remove(h);
     this.holes.length = 0;
     this.cracks = 0;
+    // pieces back on
+    for (const part of this.parts) {
+      if (part.state === 'gone') {
+        const di = CarModel.debris.findIndex((d) => d.obj === part.obj);
+        if (di >= 0) CarModel.debris.splice(di, 1);
+        part.obj.removeFromParent();
+        part.obj.scale.set(1, 1, 1);
+        this.shell.add(part.obj);
+      }
+      part.obj.position.copy(part.home);
+      part.obj.rotation.set(0, 0, 0);
+      part.obj.quaternion.identity();
+      part.hp = 1; part.state = 'ok';
+    }
+    this.doorHang = 0;
     this.glassMat.opacity = this.baseGlassOpacity; this.glassMat.roughness = 0.04;
     this.glassMat.color.set(this.vehicle.spec.body.glassTint);
     if (this.vehicle.custom) this.applyCustom(this.vehicle.custom);
@@ -701,6 +786,9 @@ export class CarModel {
     const local = this.bodyMesh.worldToLocal(world);
     this.dent(local, 0.5 + s * 0.45, 0.06 + s * 0.12);
     if (s > 0.6) this.crack(s > 1 ? 3 : 1);
+    // the end (or side) that hit takes the knock: a bumper (front is −z), or the driver's door
+    if (Math.abs(lp.z) > Math.abs(lp.x) * 1.2) this.hitPart(lp.z < 0 ? 'front' : 'rear', s * 0.55);
+    else if (Math.sign(lp.x) === v.spec.doorSide) this.hitPart('door', s * 0.6);
   }
 
   update(): void {
@@ -719,7 +807,8 @@ export class CarModel {
     this.steeringWheel.rotation.z = -v.steerAngle * 2.6;
     // door
     const target = v.doorOpen;
-    this.door.rotation.y = spec.doorSide * target * 1.1 * -1;
+    // a hanging door stays partly open
+    this.door.rotation.y = spec.doorSide * Math.max(target * 1.1, this.doorHang) * -1;
     // driver visibility and IK arms on the wheel
     const show = v.occupied;
     this.driver.visible = show;

@@ -1,4 +1,4 @@
-export type WeaponId = 'vc9' | 'smg' | 'shotgun' | 'rifle' | 'knife' | 'hatchet' | 'rpg' | 'laser' | 'revolver' | 'micro' | 'combat' | 'sniper' | 'carbine' | 'lmg' | 'bat' | 'grenade' | 'molotov' | 'sticky';
+export type WeaponId = 'vc9' | 'smg' | 'shotgun' | 'rifle' | 'knife' | 'hatchet' | 'rpg' | 'laser' | 'revolver' | 'micro' | 'combat' | 'sniper' | 'carbine' | 'lmg' | 'bat' | 'grenade' | 'molotov' | 'sticky' | 'fists';
 
 export interface WeaponDef {
   id: WeaponId;
@@ -57,13 +57,14 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   carbine: { id: 'carbine', name: 'Sentinel C4', pistol: false, auto: true, interval: 0.085, mag: 30, reserveMax: 300, damage: 30, pellets: 1, spreadMul: 0.7, pelletSpread: 0, recoil: 0.95, kick: 0.95, range: 260, sound: 'rifle', blurb: 'Short-barrel carbine, steady on full auto', cat: 'rifle' },
   lmg: { id: 'lmg', name: 'Hammerhead M60', pistol: false, auto: true, interval: 0.1, mag: 100, reserveMax: 400, damage: 32, pellets: 1, spreadMul: 1.3, pelletSpread: 0, recoil: 1.3, kick: 1.2, range: 250, sound: 'rifle', blurb: 'Belt-fed machine gun. A hundred rounds per box', cat: 'heavy' },
   sniper: { id: 'sniper', name: 'Longbow M338', pistol: false, auto: false, interval: 1.25, mag: 5, reserveMax: 40, damage: 170, pellets: 1, spreadMul: 0.05, pelletSpread: 0, recoil: 4, kick: 3, range: 700, sound: 'rifle', blurb: 'Bolt-action .338 with an 8x scope', sniper: true, cat: 'heavy' },
+  fists: { id: 'fists', name: 'Fists', pistol: false, auto: false, interval: 0.36, mag: 1, reserveMax: 0, damage: 26, pellets: 1, spreadMul: 0, pelletSpread: 0, recoil: 0.3, kick: 0.6, range: 2.0, sound: 'pistol', blurb: 'Left, right. Knocks people down', melee: true, cat: 'melee' },
   bat: { id: 'bat', name: 'Slugger bat', pistol: false, auto: false, interval: 0.6, mag: 1, reserveMax: 0, damage: 85, pellets: 1, spreadMul: 0, pelletSpread: 0, recoil: 0.5, kick: 1.0, range: 2.5, sound: 'pistol', blurb: 'Ash, thirty-three inches, very persuasive', melee: true, cat: 'melee' },
   grenade: { id: 'grenade', name: 'Frag grenade', pistol: false, auto: false, interval: 0.9, mag: 1, reserveMax: 10, damage: 300, pellets: 1, spreadMul: 0, pelletSpread: 0, recoil: 0, kick: 0.6, range: 40, sound: 'pistol', blurb: 'Bounces, then three seconds later it does not', throwable: 'frag', cat: 'thrown' },
   molotov: { id: 'molotov', name: 'Molotov', pistol: false, auto: false, interval: 0.9, mag: 1, reserveMax: 10, damage: 0, pellets: 1, spreadMul: 0, pelletSpread: 0, recoil: 0, kick: 0.6, range: 35, sound: 'pistol', blurb: 'Bursts into a sheet of fire where it lands', throwable: 'fire', cat: 'thrown' },
   sticky: { id: 'sticky', name: 'Sticky charge', pistol: false, auto: false, interval: 0.7, mag: 1, reserveMax: 10, damage: 350, pellets: 1, spreadMul: 0, pelletSpread: 0, recoil: 0, kick: 0.5, range: 30, sound: 'pistol', blurb: 'Sticks to anything, cars included. R sets them all off', throwable: 'sticky', cat: 'thrown' },
 };
 
-export const WEAPON_ORDER: WeaponId[] = ['knife', 'bat', 'hatchet', 'vc9', 'revolver', 'micro', 'smg', 'shotgun', 'combat', 'carbine', 'rifle', 'lmg', 'sniper', 'rpg', 'laser', 'grenade', 'molotov', 'sticky'];
+export const WEAPON_ORDER: WeaponId[] = ['fists', 'knife', 'bat', 'hatchet', 'vc9', 'revolver', 'micro', 'smg', 'shotgun', 'combat', 'carbine', 'rifle', 'lmg', 'sniper', 'rpg', 'laser', 'grenade', 'molotov', 'sticky'];
 
 /** A value for every weapon (inventories, kits). */
 export const perWeapon = <T>(f: (id: WeaponId) => T): Record<WeaponId, T> => Object.fromEntries(WEAPON_ORDER.map((id) => [id, f(id)])) as Record<WeaponId, T>;

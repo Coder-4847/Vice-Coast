@@ -161,6 +161,14 @@ export class LongGun implements GunModel {
       magZ = -0.02; this.magLength = 0.1;
       rightPos = new THREE.Vector3(0.027, -0.075, 0.07); leftPos = new THREE.Vector3(-0.06, -0.022, -0.26);
       g.add(box(0.032, 0.09, 0.04, 0, -0.05, 0.075, shell));
+    } else if (this.id === 'fists') {
+      // nothing in the hands: the anchors hold both fists up in a boxer's guard
+      this.trigger.visible = false;
+      this.muzzle.set(0, 0.05, -0.2);
+      this.sightPoint.set(0, 0.12, -0.05);
+      magZ = 0.0; this.magLength = 0.0001;
+      rightPos = new THREE.Vector3(0.05, 0.02, -0.04); leftPos = new THREE.Vector3(-0.21, 0.05, -0.1);
+      gripRake = 0.6;
     } else if (this.id === 'revolver') {
       // a heavy six-shooter: round cylinder, ventilated rib, wooden grip, held two-handed
       const blued = mat(0x1c1f24, 0.28, 0.95), grip = mat(0x5a3a22, 0.6, 0.05);
@@ -306,7 +314,7 @@ export class LongGun implements GunModel {
     const magFrame = new THREE.Group();
     magFrame.position.set(0, magTop, magZ);
     magFrame.rotation.x = rake;
-    if (!['shotgun', 'knife', 'hatchet', 'rpg', 'revolver', 'combat', 'lmg', 'bat', 'grenade', 'molotov', 'sticky'].includes(this.id)) {
+    if (!['shotgun', 'knife', 'hatchet', 'rpg', 'revolver', 'combat', 'lmg', 'bat', 'grenade', 'molotov', 'sticky', 'fists'].includes(this.id)) {
       const body = box(0.026, this.magLength, 0.04, 0, -this.magLength / 2, 0, dark);
       const base = box(0.03, 0.01, 0.046, 0, -this.magLength - 0.002, 0, poly);
       this.magazine.add(body, base);

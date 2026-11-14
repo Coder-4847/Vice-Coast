@@ -118,6 +118,7 @@ export class VehicleManager {
 
   /** Per rendered frame: place the models on the interpolated physics transforms. */
   update(alpha: number): void {
+    CarModel.updateDebris(1 / 60, (x, z) => Math.max(terrainHeight(x, z), 0));
     for (const v of this.vehicles) {
       v.interpolate(alpha);
       const m = this.models.get(v);

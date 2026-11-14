@@ -66,6 +66,10 @@ export class Player {
   /** Smoothed 0–1 blends the viewmodel and camera read. */
   sprintBlend = 0;
   crouchBlend = 0;
+  /** Held low by something else (taking cover behind a low wall). */
+  forceCrouch = false;
+  /** In cover: the wall's outward normal (x, z); movement slides along it and never through. */
+  cover: { nx: number; nz: number } | null = null;
   swimBlend = 0;
   stamina = 1;
   exhausted = false;
@@ -105,7 +109,7 @@ export class Player {
   onJump: (() => void) | null = null;
 
   private readonly body: RigidBody;
-  private readonly collider: Collider;
+  readonly collider: Collider;
   private readonly kcc: KinematicCharacterController;
   private height = STAND_H;
   private eyeHeight = EYE_STAND;
@@ -370,7 +374,7 @@ export class Player {
   }
 
   private updateCrouch(dt: number): void {
-    const want = this.input.active('crouch') && this.state !== 'swim';
+    const want = (this.input.active('crouch') || this.forceCrouch) && this.state !== 'swim';
     let target = want ? 1 : 0;
     if (!want && this.crouchBlend > 0.05) {
       // Stay crouched while something is overhead.
