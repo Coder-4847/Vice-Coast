@@ -165,3 +165,74 @@ export function avatar(name: string, color: string): HTMLElement {
 
 export const pct = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 export const updown = (n: number): string => (n >= 0 ? 'w-up' : 'w-down');
+
+/** Side view of a boat, aircraft or armoured vehicle for listings. */
+export function craftArt(id: string, kind: string, color: string, w = 260, hgt = 120): SVGSVGElement {
+  const s = svg(w, hgt);
+  s.classList.add('w-car');
+  const dark = '#1d2a36', metal = '#8a9098';
+  const P = (d: string, fill: string, extra: Record<string, string | number> = {}): void => { s.append(node('path', { d, fill, ...extra })); };
+  if (kind === 'boat') {
+    s.append(node('rect', { x: 0, y: hgt - 26, width: w, height: 26, fill: '#3a7ab8', opacity: 0.35 }));
+    if (id === 'zephyr') {
+      P(`M60 ${hgt - 34} L200 ${hgt - 34} Q215 ${hgt - 40} 205 ${hgt - 50} L120 ${hgt - 52} L90 ${hgt - 62} L70 ${hgt - 50} Z`, color);
+      P(`M110 ${hgt - 52} L120 ${hgt - 72} L132 ${hgt - 72}`, 'none', { stroke: '#2a2d33', 'stroke-width': 4 });
+    } else if (id === 'aurelia') {
+      P(`M14 ${hgt - 30} L246 ${hgt - 30} L232 ${hgt - 54} L30 ${hgt - 54} Z`, color);
+      P(`M50 ${hgt - 54} L200 ${hgt - 54} L186 ${hgt - 74} L70 ${hgt - 74} Z`, '#f4f4f0');
+      P(`M84 ${hgt - 74} L170 ${hgt - 74} L160 ${hgt - 90} L96 ${hgt - 90} Z`, '#f4f4f0');
+      for (let x = 60; x < 190; x += 18) s.append(node('rect', { x, y: hgt - 68, width: 12, height: 7, fill: dark }));
+      s.append(node('rect', { x: 104, y: hgt - 86, width: 50, height: 8, fill: dark }));
+    } else if (id === 'gull') {
+      P(`M30 ${hgt - 30} L230 ${hgt - 30} L222 ${hgt - 52} L36 ${hgt - 52} Z`, color);
+      s.append(node('rect', { x: 130, y: hgt - 82, width: 60, height: 30, fill: '#e8e4dc' }));
+      s.append(node('rect', { x: 140, y: hgt - 76, width: 40, height: 10, fill: dark }));
+      P(`M70 ${hgt - 52} L70 ${hgt - 104} L120 ${hgt - 70}`, 'none', { stroke: '#2a2d33', 'stroke-width': 3 });
+    } else {
+      P(`M24 ${hgt - 30} L222 ${hgt - 30} Q248 ${hgt - 40} 240 ${hgt - 50} L40 ${hgt - 50} Z`, color);
+      P(`M90 ${hgt - 50} L150 ${hgt - 50} L140 ${hgt - 70} L104 ${hgt - 70} Z`, dark);
+      s.append(node('rect', { x: 30, y: hgt - 46, width: 200, height: 3, fill: 'rgba(255,255,255,0.4)' }));
+    }
+    return s;
+  }
+  s.append(node('ellipse', { cx: w / 2, cy: hgt - 10, rx: w * 0.4, ry: 5, fill: 'rgba(0,0,0,0.2)' }));
+  if (kind === 'heli') {
+    P(`M60 ${hgt - 40} Q60 ${hgt - 78} 110 ${hgt - 80} L160 ${hgt - 78} Q180 ${hgt - 70} 175 ${hgt - 46} L150 ${hgt - 36} L80 ${hgt - 34} Z`, color);
+    P(`M66 ${hgt - 60} Q70 ${hgt - 76} 100 ${hgt - 76} L104 ${hgt - 58} Z`, dark);
+    P(`M170 ${hgt - 60} L248 ${hgt - 66} L248 ${hgt - 58} L170 ${hgt - 48} Z`, color);
+    P(`M240 ${hgt - 66} L250 ${hgt - 84} L254 ${hgt - 84} L250 ${hgt - 58} Z`, color);
+    s.append(node('rect', { x: 20, y: hgt - 88, width: 200, height: 4, fill: '#2a2d33' }));
+    s.append(node('rect', { x: 116, y: hgt - 88, width: 8, height: 10, fill: '#2a2d33' }));
+    P(`M70 ${hgt - 18} L170 ${hgt - 18} M86 ${hgt - 18} L92 ${hgt - 34} M150 ${hgt - 18} L144 ${hgt - 34}`, 'none', { stroke: '#2a2d33', 'stroke-width': 3 });
+    if (id === 'hornet') { s.append(node('rect', { x: 96, y: hgt - 46, width: 50, height: 6, fill: '#2a2d33' })); s.append(node('rect', { x: 100, y: hgt - 44, width: 16, height: 8, fill: '#3a3d42' })); }
+    return s;
+  }
+  if (kind === 'plane') {
+    const jet = id === 'meridian' || id === 'lancer';
+    if (id === 'lancer') {
+      P(`M20 ${hgt - 50} L80 ${hgt - 58} L200 ${hgt - 58} L240 ${hgt - 90} L250 ${hgt - 90} L244 ${hgt - 54} L250 ${hgt - 46} L80 ${hgt - 42} Z`, color);
+      P(`M60 ${hgt - 58} Q80 ${hgt - 72} 104 ${hgt - 60} Z`, dark);
+      P(`M110 ${hgt - 48} L190 ${hgt - 48} L150 ${hgt - 28} Z`, color, { opacity: 0.8 });
+      return s;
+    }
+    P(`M20 ${hgt - 54} Q24 ${hgt - 70} 60 ${hgt - 72} L200 ${hgt - 70} L240 ${hgt - 100} L252 ${hgt - 100} L246 ${hgt - 62} Q240 ${hgt - 52} 210 ${hgt - 50} L50 ${hgt - 46} Q24 ${hgt - 46} 20 ${hgt - 54} Z`, color);
+    if (jet) { for (let x = 70; x < 190; x += 14) s.append(node('circle', { cx: x, cy: hgt - 62, r: 3, fill: dark })); s.append(node('rect', { x: 180, y: hgt - 74, width: 30, height: 10, rx: 5, fill: metal })); }
+    else { P(`M34 ${hgt - 62} L56 ${hgt - 70} L60 ${hgt - 58} Z`, dark); s.append(node('rect', { x: 14, y: hgt - 74, width: 4, height: 30, fill: '#2a2d33' })); }
+    P(`M90 ${id === 'skylark' ? hgt - 76 : hgt - 52} L170 ${id === 'skylark' ? hgt - 76 : hgt - 52} L150 ${id === 'skylark' ? hgt - 72 : hgt - 40} L100 ${id === 'skylark' ? hgt - 72 : hgt - 40} Z`, color, { opacity: 0.85 });
+    P(`M60 ${hgt - 46} L60 ${hgt - 24} M190 ${hgt - 50} L190 ${hgt - 24}`, 'none', { stroke: '#2a2d33', 'stroke-width': 3 });
+    s.append(node('circle', { cx: 60, cy: hgt - 20, r: 6, fill: '#16181c' }), node('circle', { cx: 190, cy: hgt - 20, r: 6, fill: '#16181c' }));
+    return s;
+  }
+  // armour
+  if (id === 'bulwark') {
+    P(`M30 ${hgt - 22} L230 ${hgt - 22} L246 ${hgt - 44} L20 ${hgt - 44} Z`, color);
+    P(`M80 ${hgt - 44} L180 ${hgt - 44} L170 ${hgt - 66} L96 ${hgt - 66} Z`, color);
+    s.append(node('rect', { x: 170, y: hgt - 60, width: 84, height: 6, fill: color }));
+  } else {
+    P(`M24 ${hgt - 22} L236 ${hgt - 22} L240 ${hgt - 56} L210 ${hgt - 70} L40 ${hgt - 70} L20 ${hgt - 50} Z`, color);
+    s.append(node('rect', { x: 110, y: hgt - 82, width: 30, height: 12, fill: color }), node('rect', { x: 138, y: hgt - 78, width: 30, height: 4, fill: '#2a2d33' }));
+    for (let x = 50; x < 220; x += 40) s.append(node('rect', { x, y: hgt - 62, width: 16, height: 8, fill: dark }));
+  }
+  for (let x = 46; x < 230; x += 30) { s.append(node('circle', { cx: x, cy: hgt - 18, r: 12, fill: '#16181c' })); s.append(node('circle', { cx: x, cy: hgt - 18, r: 5, fill: metal })); }
+  return s;
+}

@@ -30,7 +30,9 @@ export const PROPERTIES: PropertyDef[] = [
   { id: 'trailer', name: 'Cinder Flats Trailer', kind: 'trailer', region: 'Cinder Flats', blurb: 'A single-wide in the desert. Nobody asks questions out here.', price: 6500, upkeep: 20, near: { x: 3330, z: 610 }, slots: 2, bays: 'car' },
   { id: 'cabin', name: 'Kestrel Cabin', kind: 'cabin', region: 'Mount Kestrel', blurb: 'Pine logs, a wood stove and snow on the roof by November.', price: 95000, upkeep: 180, near: { x: 1110, z: -1680 }, slots: 2, bays: 'car' },
   { id: 'costa', name: 'Costa Merida Canal House', kind: 'house', region: 'Costa Merida', blurb: 'Three floors on the water with its own mooring and a roof terrace.', price: 240000, upkeep: 520, near: { x: 420, z: 3300 }, slots: 4, bays: 'car' },
-  { id: 'hangar', name: 'Valeria Hangar 3', kind: 'hangar', region: 'Valeria International', blurb: 'A private hangar on the apron. Keep a plane or helicopter ready to go.', price: 180000, upkeep: 420, near: { x: 1260, z: 840 }, slots: 2, bays: 'plane' },
+  { id: 'hangar', name: 'Valeria Hangar 3', kind: 'hangar', region: 'Valeria International', blurb: 'A private hangar on the apron. Keep a plane or helicopter ready to go.', price: 180000, upkeep: 420, near: { x: 1260, z: 840 }, slots: 4, bays: 'plane' },
+  { id: 'airfield', name: 'Cinder Flats Hangar', kind: 'hangar', region: 'Cinder Flats', blurb: 'A tin hangar beside the desert airstrip. Long runway, short memories.', price: 120000, upkeep: 260, near: { x: 3050, z: 1490 }, slots: 3, bays: 'plane' },
+  { id: 'marina', name: 'Costa Merida Marina Berth', kind: 'dock', region: 'Costa Merida', blurb: 'Three berths on the marina, a fuel pump and a harbourmaster who waves.', price: 55000, upkeep: 120, near: { x: 70, z: 3390 }, slots: 3, bays: 'boat' },
   { id: 'dock', name: 'Dusk Harbor Boat House', kind: 'dock', region: 'Dusk Harbor', blurb: 'A weathered boat shed on the finger piers with room for a boat and a workbench.', price: 70000, upkeep: 140, near: { x: 330, z: 1650 }, slots: 2, bays: 'boat' },
   { id: 'loft', name: 'Marlow Street Loft', kind: 'apartment', region: 'Port Valeria', blurb: 'Exposed brick, tall windows and a freight elevator. Two parking spaces in the courtyard.', price: 145000, upkeep: 320, near: { x: 940, z: 130 }, slots: 2, bays: 'car' },
   { id: 'bungalow', name: 'Southside Bungalow', kind: 'house', region: 'Southside', blurb: 'One storey, a chain-link fence and neighbours who mind their own business.', price: 38000, upkeep: 90, near: { x: 1420, z: 470 }, slots: 2, bays: 'car' },
@@ -58,6 +60,28 @@ export const BUSINESSES: BusinessDef[] = [
   { id: 'club', name: 'The Velvet Room', kind: 'Nightclub', region: 'Port Valeria', blurb: 'Velvet ropes, a VIP floor and a bass you feel in your teeth.', price: 420000, income: 5200 },
 ];
 export const BUSINESS_BY_ID = Object.fromEntries(BUSINESSES.map((b) => [b.id, b]));
+
+// ------------------------------------------------------------------------------------------------ boats and aircraft for sale
+
+/** Boats, aircraft and military hardware sold online. `shop`: which website sells it. */
+export interface CraftForSale { id: string; price: number; shop: 'air' | 'sea' | 'mil'; blurb: string; speed: number; seats: number; paints?: number[] }
+
+export const CRAFT_SHOP: CraftForSale[] = [
+  { id: 'zephyr', price: 12000, shop: 'sea', speed: 95, seats: 2, blurb: 'A jet ski. Fast, loud and very wet.', paints: [0xe8402a, 0x1f8ad8, 0xf2c230, 0x1a1a1a, 0xf4f4f0] },
+  { id: 'marlin', price: 65000, shop: 'sea', speed: 110, seats: 4, blurb: 'A twin-engine speedboat with a sun deck. The coast guard\'s least favourite boat.', paints: [0xf4f4f0, 0x1f3a6a, 0xc42a2a, 0x1a1a1a, 0x2a8a7a] },
+  { id: 'gull', price: 140000, shop: 'sea', speed: 45, seats: 6, blurb: 'A steel fishing boat with a wheelhouse. Smells of bait forever.', paints: [0x2a5a8a, 0xc43a2a, 0x3a6a3a, 0xe8e4dc] },
+  { id: 'aurelia', price: 1400000, shop: 'sea', speed: 60, seats: 12, blurb: 'Seventeen metres of yacht: three cabins, a flybridge and a hot tub.', paints: [0xf4f4f0, 0x1c2a44, 0x2a2a2a] },
+  { id: 'sparrow', price: 280000, shop: 'air', speed: 230, seats: 4, blurb: 'A light helicopter. Lands on a car park, a beach or a rooftop.', paints: [0xd83a2a, 0x1f6fd6, 0xf2c230, 0x1a1a1a, 0xf4f4f0] },
+  { id: 'newsbird', price: 520000, shop: 'air', speed: 255, seats: 6, blurb: 'A twin-turbine chopper with a camera ball. Make your own news.', paints: [0x1f3a6a, 0xf4f4f0, 0xc42a2a, 0x2a2d33] },
+  { id: 'skylark', price: 190000, shop: 'air', speed: 260, seats: 4, blurb: 'A high-wing prop plane. Forgiving, frugal, and lands almost anywhere.', paints: [0xf4f4f0, 0xd83a2a, 0x1f6fd6, 0xf2c230] },
+  { id: 'rook', price: 360000, shop: 'air', speed: 330, seats: 1, blurb: 'An aerobatic stunt plane. Loops, rolls, and very little luggage space.', paints: [0xe8c050, 0xd83a2a, 0x1a1a1a, 0x1f6fd6] },
+  { id: 'meridian', price: 2200000, shop: 'air', speed: 780, seats: 8, blurb: 'A private jet with leather seats and a bar. The fastest way to leave town.', paints: [0xf4f4f0, 0x1c2a44, 0x2a2a2a, 0xc8a24a] },
+  { id: 'hornet', price: 3800000, shop: 'mil', speed: 290, seats: 2, blurb: 'Attack helicopter with rocket pods. Ex-National Guard. Paperwork lost.', paints: [0x3c4a3a, 0x2a2d33, 0x5a5a4a] },
+  { id: 'lancer', price: 6500000, shop: 'mil', speed: 1400, seats: 1, blurb: 'A fighter jet with missiles. Decommissioned, allegedly.', paints: [0x5d6670, 0x2a2d33, 0x3c4a3a] },
+  { id: 'warden', price: 1200000, shop: 'mil', speed: 90, seats: 8, blurb: 'Armoured personnel carrier with a roof gun. Parks wherever it likes.', paints: [0x5a5a4a, 0x3c4a3a, 0x2a2d33] },
+  { id: 'bulwark', price: 4500000, shop: 'mil', speed: 65, seats: 3, blurb: 'A main battle tank. The traffic will move.', paints: [0x5a5a4a, 0x3c4a3a, 0x8a7a5a] },
+];
+export const CRAFT_FOR_SALE = Object.fromEntries(CRAFT_SHOP.map((c) => [c.id, c]));
 
 // ------------------------------------------------------------------------------------------------ shops and ATMs
 

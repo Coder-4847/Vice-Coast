@@ -137,7 +137,7 @@ function keystoneListing(ctx: WebCtx, id: string): HTMLElement[] {
   if (!d) return [p('Listing not found.')];
   const c = ctx.c, e = c.eco;
   const own = e.owns(id);
-  const garage = d.bays === 'car' ? `${d.slots} car${d.slots === 1 ? '' : 's'}` : d.bays === 'plane' ? 'A plane and a helicopter' : 'A speedboat berth';
+  const garage = d.bays === 'car' ? `${d.slots} car${d.slots === 1 ? '' : 's'}` : d.bays === 'plane' ? `${d.slots} aircraft bought online` : `${d.slots} boats bought online`;
   return [
     button('‹ All listings', () => ctx.go('keystone.vc'), 'w-link'),
     div('w-product',
@@ -145,7 +145,7 @@ function keystoneListing(ctx: WebCtx, id: string): HTMLElement[] {
       div('w-product-info',
         h('div', 'w-kicker', `${d.region} · ${d.kind}`), h('h1', '', d.name), h('div', 'w-big', own ? 'Yours' : money(d.price)),
         p(d.blurb),
-        kv('Upkeep', `${money(d.upkeep)} a day`), kv('Garage', garage), kv('Includes', 'Bed (save and sleep), wardrobe' + (d.bays === 'car' ? ', garage' : '')),
+        kv('Upkeep', `${money(d.upkeep)} a day`), kv(d.bays === 'car' ? 'Garage' : 'Capacity', garage), kv('Includes', d.bays === 'plane' ? 'Hangar space: buy aircraft at skylineaviation.vc' : d.bays === 'boat' ? 'Moorings: buy boats at bluewatermarine.vc' : 'Bed (save and sleep), wardrobe, garage'),
         own ? p('You own this property. Visit it to sleep, save, change clothes and manage the garage.', 'muted') : p('Paid from cash, then your bank account. Upkeep comes out of the bank every morning.', 'muted small'),
         own ? null : button(`Buy now · ${money(d.price)}`, () => {
           if (!e.buyProperty(id)) { ctx.toast('Not enough money'); return; }

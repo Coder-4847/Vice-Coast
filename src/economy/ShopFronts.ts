@@ -1,3 +1,4 @@
+import { PROPERTY_BY_ID } from './catalog';
 import { Kit, MODE, PAL, pick } from '../world/towns/kit';
 import { terrainHeight } from '../world/Terrain';
 import { GEO } from '../world/heightfield';
@@ -32,7 +33,8 @@ export function buildShopFronts(points: Point[], inCity: (x: number, z: number) 
     const bx = p.x;
     if (p.kind === 'property') {
       const id = p.ref;
-      if (id === 'hangar') {
+      const kind = PROPERTY_BY_ID[id]?.kind;
+      if (kind === 'hangar') {
         const A = GEO.airport;
         k.hangar(bx, p.z - 12, 24, 10, Math.PI / 2, 0xe8e6e0, 0x7a8086);
         void A;
@@ -52,7 +54,7 @@ export function buildShopFronts(points: Point[], inCity: (x: number, z: number) 
         k.frontDoor(bx, p.z - 8, 22, 12, Math.PI, 'house', true);
         k.box(bx + 4, p.z - 8, 18, 10, 3.4, 0xe8e4da, { y0: g + 6, mode: MODE.GLASS });
         k.box(bx - 6, p.z + 6, 14, 8, 0.15, 0x2a9bc9, { y0: g, mode: MODE.GLOW, solid: false });
-      } else if (id === 'dock') {
+      } else if (kind === 'dock') {
         k.building(bx, p.z - 5, 14, 8, 4.2, 0, 0x8a7a68, { door: false, roof: 'gable', roofColor: 0x2a5a7a, mode: MODE.PUNCHED });
         k.frontDoor(bx, p.z - 5, 14, 8, Math.PI, 'house', true);
       } else {

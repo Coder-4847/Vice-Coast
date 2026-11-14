@@ -21,6 +21,7 @@ export const newProfile = (): Profile => ({
   story: newStory(),
   snacks: { bar: 2 },
   biz: [],
+  crafts: [],
 });
 
 /** Fill any fields a save from an older build is missing. */
@@ -35,6 +36,7 @@ export function migrate(p: Partial<Profile>): Profile {
     stats: { ...base.stats, ...(p.stats ?? {}) } as Stats,
     snacks: { ...(p.snacks ?? base.snacks) },
     biz: p.biz ?? [],
+    crafts: p.crafts ?? [],
     props: p.props ?? [],
     vehicles: p.vehicles ?? [],
     clothes: p.clothes ?? base.clothes,

@@ -3,6 +3,7 @@ import type { Game } from '../Game';
 import { Modal, type Page } from '../ui/Modal';
 import type { Vehicle } from '../vehicles/Vehicle';
 import { VEHICLES } from '../vehicles/specs';
+import { CRAFT } from '../craft/specs';
 import { WEAPONS, type WeaponId } from '../player/Weapons';
 import { GROUP } from '../physics/Physics';
 import { terrainHeight, waterLevelAt } from '../world/Terrain';
@@ -259,6 +260,7 @@ export class Commerce {
       for (const o of p.vehicles) if (o.where.kind === 'world') this.spawnOwned(o, o.where.x, o.where.z, o.where.yaw);
     }
     if (fromSave) for (const o of p.props) this.spawnPropCrafts(o.id);
+    this.spawnOwnedCrafts();
     this.refreshMarkers();
     this.wreckTimers.clear();
   }
@@ -305,6 +307,50 @@ export class Commerce {
       c.spawn('marlin', s.x, s.z, Math.PI / 2);
     } else return;
     this.propCrafts.add(id);
+  }
+
+  /** Owned boats and aircraft, by uid, once they are in the world. */
+  readonly ownedCrafts = new Map<string, import('../craft/Craft').Craft>();
+
+  /** Put every bought boat and aircraft at its berth (once per session). */
+  spawnOwnedCrafts(): void {
+    const c = this.game.crafts;
+    if (!c) return;
+    const byBerth = new Map<string, number>();
+    for (const o of this.eco.p.crafts) {
+      if (o.berth === 'call') continue;
+      // every craft at a berth takes a space, spawned already or not
+      const i = byBerth.get(o.berth) ?? 0;
+      byBerth.set(o.berth, i + 1);
+      if (this.ownedCrafts.has(o.uid)) continue;
+      const at = this.berthSpot(o.berth, i, CRAFT[o.spec]?.kind === 'boat');
+      if (!at) continue;
+      this.ownedCrafts.set(o.uid, c.spawn(o.spec, at.x, at.z, at.yaw, { paint: o.paint }));
+    }
+  }
+
+  /** Where the i-th craft bought for a property is parked: on the apron or the airstrip for hangars, in the water for berths. */
+  berthSpot(propId: string, i: number, water: boolean): { x: number; z: number; yaw: number } | null {
+    const pt = this.points.byRef(propId);
+    if (!pt) return null;
+    if (water) {
+      const s = this.points.find(pt.x - 40, pt.z + 30, 9, { water: true, maxR: 160 });
+      return { x: s.x, z: s.z + i * 22, yaw: Math.PI / 2 };
+    }
+    if (propId === 'hangar') {
+      const a = GEO.airport;
+      return { x: a.x + 215 + i * 45, z: a.apronZ + 95, yaw: -Math.PI / 2 };
+    }
+    // one open spot by the hangar, then a row of parking spaces from there
+    const s = this.points.find(pt.x + 30, pt.z + 30, 12, { walkOnly: false, maxR: 140 });
+    return { x: s.x + i * 36, z: s.z, yaw: -Math.PI / 2 };
+  }
+
+  /** Free berths for a kind of craft at the properties you own. */
+  berthsFor(kind: string): { id: string; name: string; free: number }[] {
+    const bays = kind === 'boat' ? 'boat' : 'plane';
+    return this.eco.p.props.map((o) => PROPERTY_BY_ID[o.id]!).filter((d) => d.bays === bays)
+      .map((d) => ({ id: d.id, name: d.name, free: d.slots - this.eco.p.crafts.filter((c) => c.berth === d.id).length }));
   }
 
   /** Where a vehicle taken out of a property's garage appears. */

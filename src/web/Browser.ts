@@ -33,7 +33,7 @@ export interface Site {
 
 export const HOME = 'wave.vc';
 const BOOKMARKS: [string, string][] = [
-  ['Wave', 'wave.vc'], ['VEX', 'vex.vc'], ['Apex Autos', 'apexautos.vc'], ['Road Kings', 'roadkings.vc'], ['Keystone Realty', 'keystone.vc'],
+  ['Wave', 'wave.vc'], ['VEX', 'vex.vc'], ['Apex Autos', 'apexautos.vc'], ['Road Kings', 'roadkings.vc'], ['Skyline', 'skylineaviation.vc'], ['Bluewater', 'bluewatermarine.vc'], ['Keystone Realty', 'keystone.vc'],
   ['Coastline Daily', 'coastlinedaily.vc'], ['Valeria Savings', 'valeriasavings.vc'], ['Friendr', 'friendr.vc'],
 ];
 

@@ -34,6 +34,17 @@ export class CraftManager {
     return c;
   }
 
+  /** Take a craft out of the world (sold). */
+  remove(c: Craft): void {
+    const i = this.crafts.indexOf(c);
+    if (i < 0 || c.occupied) return;
+    this.crafts.splice(i, 1);
+    const v = this.visuals.get(c);
+    if (v) { this.group.remove(v.group); v.group.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); }); }
+    this.visuals.delete(c);
+    c.dispose();
+  }
+
   /** After a wasted / busted respawn: unattended craft go back to their berths, repaired. */
   resetAll(): void {
     for (const c of this.crafts) {

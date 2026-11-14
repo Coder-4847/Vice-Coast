@@ -44,6 +44,9 @@ export type VehicleWhere =
   | { kind: 'world'; x: number; z: number; yaw: number }
   | { kind: 'destroyed'; prop: string };
 
+/** A boat, aircraft or armoured vehicle you bought. `berth`: the property it lives at, or 'call' (delivered on request). */
+export interface OwnedCraft { uid: string; spec: string; paint: number; berth: string; value: number }
+
 export interface OwnedVehicle {
   uid: string;
   spec: string;
@@ -106,6 +109,8 @@ export interface Profile {
   snacks: Record<string, number>;
   /** Businesses owned (bought online): ids from BUSINESSES. */
   biz: string[];
+  /** Boats, aircraft and armour bought online. */
+  crafts: OwnedCraft[];
 }
 
 export interface SaveData {

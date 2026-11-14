@@ -1100,3 +1100,5 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
   .w-listing { grid-template-columns: 1fr; }
   .w-listing-buy { align-items: flex-start; }
 }
+.w-hero.sea { background: linear-gradient(140deg, #1a9ab0, #0a4a6a); }
+.w-hero.mil { background: linear-gradient(140deg, #4a5a2a, #1a2010); border: 1px solid var(--w-line); }

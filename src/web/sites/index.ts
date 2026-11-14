@@ -4,6 +4,7 @@ import { button, div } from '../ui';
 import { card, frame, p, section } from './common';
 import { VEX } from './vex';
 import { APEX, KEYSTONE, MORS, ROADKINGS } from './shops';
+import { BLUEWATER, SKYLINE, SURPLUS } from './fleet';
 import { AERO, BANK, COASTLIST, FRIENDR, GOV, LUCKY, NEWS, PAWS, SKYWATCH, tickerStrip } from './life';
 
 /** Extra words people might search for, per site. */
@@ -22,6 +23,9 @@ const KEYWORDS: Record<string, string> = {
   'islaaero.vc': 'flights fly plane travel airport island',
   'poundandpaws.vc': 'dog pet adopt rufus',
   'sanverano.gov': 'government dmv police wanted tax',
+  'skylineaviation.vc': 'plane planes aircraft helicopter heli jet buy private',
+  'bluewatermarine.vc': 'boat boats yacht jet ski speedboat buy',
+  'halloransurplus.vc': 'military tank jet fighter attack helicopter apc army surplus',
 };
 
 function portal(ctx: WebCtx, sites: Site[]): HTMLElement {
@@ -54,7 +58,7 @@ function portal(ctx: WebCtx, sites: Site[]): HTMLElement {
       button(div('w-tile t1', h('b', '', 'Buy a car today'), h('span', '', 'Apex Autos delivers')), () => ctx.go('apexautos.vc'), 'w-tilebtn'),
       button(div('w-tile t2', h('b', '', 'Own a nightclub'), h('span', '', 'Businesses at Keystone')), () => ctx.go('keystone.vc?tab=biz'), 'w-tilebtn'),
       button(div('w-tile t3', h('b', '', 'Markets today'), h('span', '', 'Verano Exchange')), () => ctx.go('vex.vc'), 'w-tilebtn'),
-      button(div('w-tile t4', h('b', '', 'Fly to Isla Rojo'), h('span', '', 'Isla Aerolíneas')), () => ctx.go('islaaero.vc'), 'w-tilebtn'),
+      button(div('w-tile t4', h('b', '', 'Your own jet'), h('span', '', 'Skyline Aviation')), () => ctx.go('skylineaviation.vc'), 'w-tilebtn'),
     )),
   );
 }
@@ -64,4 +68,4 @@ const WAVE: Site = {
   render(ctx, el) { el.append(portal(ctx, SITES)); },
 };
 
-export const SITES: Site[] = [WAVE, VEX, APEX, ROADKINGS, KEYSTONE, MORS, NEWS, SKYWATCH, BANK, FRIENDR, COASTLIST, LUCKY, AERO, PAWS, GOV];
+export const SITES: Site[] = [WAVE, VEX, APEX, ROADKINGS, SKYLINE, BLUEWATER, SURPLUS, KEYSTONE, MORS, NEWS, SKYWATCH, BANK, FRIENDR, COASTLIST, LUCKY, AERO, PAWS, GOV];
