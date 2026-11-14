@@ -260,6 +260,10 @@ export class Commerce {
       for (const o of p.vehicles) if (o.where.kind === 'world') this.spawnOwned(o, o.where.x, o.where.z, o.where.yaw);
     }
     if (fromSave) for (const o of p.props) this.spawnPropCrafts(o.id);
+    // a different save: take the last one's bought craft and packages out of the world first
+    for (const k of this.ownedCrafts.values()) this.game.crafts?.remove(k);
+    this.ownedCrafts.clear();
+    this.game.deliveries?.reset();
     this.spawnOwnedCrafts();
     this.refreshMarkers();
     this.wreckTimers.clear();

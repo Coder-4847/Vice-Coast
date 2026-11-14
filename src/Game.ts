@@ -30,6 +30,7 @@ import { Animals } from './npc/Animals';
 import { Cheats } from './core/Cheats';
 import { CloseQuarters } from './combat/CloseQuarters';
 import { Interiors } from './interiors/Interiors';
+import { Deliveries } from './economy/Deliveries';
 import { Ordnance } from './combat/Ordnance';
 import { DriveBy } from './combat/DriveBy';
 import { SoundCues } from './ui/SoundCues';
@@ -330,6 +331,7 @@ export class Game {
       this.cheats = new Cheats(this);
       this.close = new CloseQuarters(this);
       this.interiors = new Interiors(this);
+      this.deliveries = new Deliveries(this);
     }
     this.soundCues = new SoundCues(this.ui.hudRoot, this.camera);
     this.audio.onCue = (k, p) => { if (a11y.soundCues && this.state === 'playing') this.soundCues?.cue(k, p); };
@@ -744,6 +746,8 @@ export class Game {
   close: CloseQuarters | null = null;
   /** Enterable buildings. */
   interiors: Interiors | null = null;
+  /** Online orders: packages to collect. */
+  deliveries: Deliveries | null = null;
 
   /** Who aim assist may lock onto: armed enemies, police while wanted, and game animals on a hunt. */
   private *assistTargets(): Generator<{ x: number; y: number; z: number }> {
@@ -797,6 +801,7 @@ export class Game {
     }
     this.commerce?.update(dt);
     this.interiors?.update(dt);
+    this.deliveries?.update(dt);
     this.driveBy?.update(dt);
     this.ordnance?.update(dt);
     this.snacks.update(dt);
@@ -848,7 +853,7 @@ export class Game {
         fovDeg: this.camera.fov,
         viewportH: this.gfx.renderer.domElement.clientHeight,
         vehicle: v && inCar ? { name: v.spec.name, speedKmh: v.speedKmh, gear: v.gear, reversing: v.reversing, rpmFrac: v.rpm / v.spec.engine.redlineRpm, headlights: v.headlights, health: v.health } : null,
-        enter: this.interiors?.prompt ? this.interiors.prompt : this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : this.close?.prompt ? this.close.prompt : driving?.hint ? `${driving.hint.locked ? 'Break into' : 'Enter'} ${driving.hint.spec.name}` : this.theft?.prompt ? this.theft.prompt : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
+        enter: this.interiors?.prompt ? this.interiors.prompt : this.deliveries?.prompt ? this.deliveries.prompt : this.commerce?.prompt ? this.commerce.prompt : this.story?.prompt ? this.story.prompt : this.close?.prompt ? this.close.prompt : driving?.hint ? `${driving.hint.locked ? 'Break into' : 'Enter'} ${driving.hint.spec.name}` : this.theft?.prompt ? this.theft.prompt : piloting?.hint ? `${piloting.hint.spec.kind === 'boat' ? 'Board' : 'Enter'} ${piloting.hint.spec.name}` : null,
       });
     }
   }

@@ -1102,3 +1102,13 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 }
 .w-hero.sea { background: linear-gradient(140deg, #1a9ab0, #0a4a6a); }
 .w-hero.mil { background: linear-gradient(140deg, #4a5a2a, #1a2010); border: 1px solid var(--w-line); }
+.w-hero.guns { background: linear-gradient(140deg, #d8642a, #4a1a0a); }
+.w-terminal { font-family: var(--mono, ui-monospace, monospace); background: #05070a; color: #b07aff; border: 1px solid #2a1a4a; border-radius: 10px; padding: 18px 20px; }
+.w-terminal p { margin: 0 0 4px; }
+.w-mono { font-family: var(--mono, ui-monospace, monospace); font-weight: 700; }
+.w-kvrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--w-line); }
+.w-cartrow { grid-template-columns: 1fr 60px 100px 90px; }
+.w-choice { border: 1px solid var(--w-line); background: var(--w-card); padding: 10px 14px; }
+.w-choice.on { border-color: var(--w-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--w-accent) 30%, transparent); }
+.w-deliv { display: flex; flex-direction: column; gap: 2px; }
+.w-total b { font-size: 18px; }

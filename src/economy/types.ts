@@ -44,6 +44,12 @@ export type VehicleWhere =
   | { kind: 'world'; x: number; z: number; yaw: number }
   | { kind: 'destroyed'; prop: string };
 
+/** One thing in an online order. */
+export interface CartLine { kind: 'weapon' | 'ammo' | 'attach' | 'supply'; id: string; key?: 'ext' | 'supp' | 'scope'; qty: number; label: string; price: number }
+export type DropKind = 'courier' | 'air' | 'home' | 'dead';
+/** A package on its way (or waiting to be collected). `at`: play-seconds when it arrives. */
+export interface Drop { id: string; items: CartLine[]; kind: DropKind; x: number; z: number; at: number; home?: string; sting: boolean; landed: boolean }
+
 /** A boat, aircraft or armoured vehicle you bought. `berth`: the property it lives at, or 'call' (delivered on request). */
 export interface OwnedCraft { uid: string; spec: string; paint: number; berth: string; value: number }
 
@@ -111,6 +117,8 @@ export interface Profile {
   biz: string[];
   /** Boats, aircraft and armour bought online. */
   crafts: OwnedCraft[];
+  /** Online orders on their way or waiting to be collected. */
+  drops: Drop[];
 }
 
 export interface SaveData {

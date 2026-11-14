@@ -180,6 +180,7 @@ const ADS: [string, string, string][] = [
   ['Missed connections', 'You: red sports car, 190 km/h. Me: the cop you passed', 'Pull over next time. We should talk.'],
   ['Missed connections', 'Bowling alley, Tuesday', 'You bowled a strike, I spilled a soda on you. Coffee?'],
   ['Pets', 'Rufus needs a home', 'Big golden boy at Pound & Paws. Adopt online.'],
+  ['Services', 'Need something the gun stores won\'t sell?', 'Ask nobody. Type ghostline.onion and keep it to yourself.'],
   ['For sale', 'Metal detector', 'Found three bottle caps and a suspicious amount of shell casings. $80.'],
 ];
 
@@ -188,7 +189,7 @@ export const COASTLIST: Site = {
   render(ctx, el) {
     const cat = ctx.query.cat ?? '';
     const cats = [...new Set(ADS.map((a) => a[0]))];
-    const links: Record<string, string> = { 'Luxury homes': 'keystone.vc', 'Rufus needs a home': 'poundandpaws.vc', 'Lessons: flying, beginner': 'islaaero.vc' };
+    const links: Record<string, string> = { 'Need something the gun stores won\'t sell?': 'ghostline.onion', 'Luxury homes': 'keystone.vc', 'Rufus needs a home': 'poundandpaws.vc', 'Lessons: flying, beginner': 'islaaero.vc' };
     el.append(frame(ctx, { name: 'CoastList', logo: h('span', '', h('b', '', 'coastlist')), tagline: 'Buy, sell, regret' }, [['All', 'coastlist.vc'], ['Used cars', 'roadkings.vc']],
       div('w-tabs', button('All', () => ctx.go('coastlist.vc'), `w-tab${!cat ? ' on' : ''}`), ...cats.map((k) => button(k, () => ctx.go(`coastlist.vc?cat=${encodeURIComponent(k)}`), `w-tab${cat === k ? ' on' : ''}`))),
       div('w-list', ...ADS.filter((a) => !cat || a[0] === cat).map((a) => {

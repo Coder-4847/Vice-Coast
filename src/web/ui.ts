@@ -236,3 +236,49 @@ export function craftArt(id: string, kind: string, color: string, w = 260, hgt =
   for (let x = 46; x < 230; x += 30) { s.append(node('circle', { cx: x, cy: hgt - 18, r: 12, fill: '#16181c' })); s.append(node('circle', { cx: x, cy: hgt - 18, r: 5, fill: metal })); }
   return s;
 }
+
+/** Silhouette of a weapon for the gun store listings. */
+export function gunArt(id: string, cat: string, w = 240, hgt = 90): SVGSVGElement {
+  const s = svg(w, hgt);
+  s.classList.add('w-car');
+  const metal = '#1d2026', wood = '#6b4a2e', poly = '#2a2d33';
+  const P = (d: string, fill: string): void => { s.append(node('path', { d, fill })); };
+  const R = (x: number, y: number, ww: number, hh: number, fill: string, rx = 2): void => { s.append(node('rect', { x, y, width: ww, height: hh, rx, fill })); };
+  const m = hgt / 2;
+  if (cat === 'melee') {
+    if (id === 'bat') P(`M20 ${m + 4} L200 ${m - 8} Q220 ${m - 9} 222 ${m} Q220 ${m + 9} 200 ${m + 8} L20 ${m + 10} Z`, '#c49a6c');
+    else if (id === 'hatchet') { R(30, m - 4, 160, 8, wood, 4); P(`M170 ${m - 26} L210 ${m - 30} L214 ${m + 6} L180 ${m + 4} Z`, '#9aa0a8'); }
+    else if (id === 'fists') { s.append(node('circle', { cx: w / 2, cy: m, r: 26, fill: '#c88a64' })); }
+    else { R(40, m - 6, 70, 12, poly, 5); P(`M108 ${m - 6} L210 ${m - 2} L108 ${m + 4} Z`, '#c8ccd0'); }
+    return s;
+  }
+  if (cat === 'thrown') {
+    if (id === 'molotov') { P(`M100 ${m + 30} L100 ${m - 6} Q100 ${m - 16} 112 ${m - 20} L112 ${m - 34} L128 ${m - 34} L128 ${m - 20} Q140 ${m - 16} 140 ${m - 6} L140 ${m + 30} Z`, '#6a8a3a'); P(`M116 ${m - 34} Q120 ${m - 48} 124 ${m - 34}`, '#f2e6d0'); }
+    else if (id === 'sticky') { R(85, m - 14, 70, 32, '#5a5a4a', 4); R(95, m - 8, 20, 10, '#d83a2a', 2); R(122, m - 8, 24, 4, '#1a1a1a', 1); }
+    else { s.append(node('circle', { cx: 120, cy: m + 6, r: 24, fill: '#4a5238' })); R(110, m - 26, 20, 12, '#8a9098', 2); P(`M130 ${m - 24} Q150 ${m - 30} 146 ${m - 4}`, '#8a9098'); }
+    return s;
+  }
+  if (cat === 'pistol') {
+    if (id === 'revolver') { R(70, m - 14, 110, 12, metal); s.append(node('circle', { cx: 92, cy: m - 2, r: 13, fill: '#2a2d33' })); P(`M60 ${m - 6} L84 ${m - 6} L76 ${m + 30} L54 ${m + 30} Z`, wood); }
+    else { R(70, m - 18, 110, 20, metal, 3); P(`M74 ${m + 2} L104 ${m + 2} L98 ${m + 34} L72 ${m + 34} Z`, poly); P(`M104 ${m + 2} Q112 ${m + 14} 102 ${m + 14}`, 'none'); }
+    return s;
+  }
+  if (cat === 'launcher') {
+    if (id === 'laser') { R(20, m - 10, 200, 18, '#d8dde6', 6); R(40, m - 20, 80, 10, '#2a7ad8', 3); P(`M90 ${m + 8} L110 ${m + 8} L104 ${m + 30} L86 ${m + 30} Z`, poly); R(200, m - 6, 24, 10, '#4ae0ff', 3); }
+    else { R(14, m - 10, 210, 20, '#4a5238', 8); P(`M210 ${m - 18} L232 ${m - 12} L232 ${m + 12} L210 ${m + 18} Z`, '#3a3d2a'); P(`M90 ${m + 10} L106 ${m + 10} L100 ${m + 32} L86 ${m + 32} Z`, wood); R(120, m - 22, 26, 12, metal); }
+    return s;
+  }
+  // long guns: stock, receiver, barrel, magazine, grip
+  const long = cat === 'heavy' || cat === 'rifle';
+  const bx = cat === 'smg' ? 150 : cat === 'shotgun' ? 70 : 60;
+  R(14, m - 8, 46, 16, cat === 'shotgun' || id === 'sniper' ? wood : poly, 4);
+  R(56, m - 14, 90, 22, metal, 3);
+  R(146, m - 8, bx, 7, metal, 2);
+  if (cat === 'shotgun') R(146, m + 1, bx - 10, 8, wood, 3);
+  if (long || cat === 'smg') P(`M${cat === 'smg' ? 120 : 112} ${m + 8} L${cat === 'smg' ? 136 : 132} ${m + 8} L${cat === 'smg' ? 132 : 136} ${m + (id === 'lmg' ? 22 : 34)} L${cat === 'smg' ? 118 : 116} ${m + (id === 'lmg' ? 22 : 34)} Z`, poly);
+  if (id === 'lmg') R(96, m + 8, 30, 22, '#4a5238', 3);
+  P(`M76 ${m + 8} L92 ${m + 8} L86 ${m + 30} L70 ${m + 30} Z`, poly);
+  if (id === 'sniper') { R(84, m - 28, 64, 10, '#1a1a1a', 5); R(220, m - 7, 20, 5, metal, 1); }
+  if (cat === 'rifle' || cat === 'smg') R(80, m - 22, 30, 6, '#3a3d42', 2);
+  return s;
+}
