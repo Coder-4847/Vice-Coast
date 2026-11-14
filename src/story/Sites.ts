@@ -98,6 +98,16 @@ export class Site {
     this.box(-(hw + gap / 2) / 2 - 0.0, WALL_H / 2, -hd, hw - gap / 2, WALL_H, T, wall);
     this.box((hw + gap / 2) / 2, WALL_H / 2, -hd, hw - gap / 2, WALL_H, T, wall);
     this.box(0, WALL_H - 0.5, -hd, gap, 1.0, T, accent, false);
+    // the street doors: frosted glass with a frame and push bars. They are solid, so the set (which stands alone far out
+    // on the salt pan) cannot be walked out of, and you never see the desert through the doorway.
+    const frost = this.mat('frost', 0xdfe8ee, 0.85, 0.2, 0.0);
+    const dh = WALL_H - 1.0;
+    this.box(0, dh / 2, -hd, gap, dh, T * 0.6, frost);
+    this.box(0, dh / 2, -hd + 0.01, 0.08, dh, T * 0.7, steel, false);
+    for (const sx of [-1, 1]) {
+      this.box(sx * (gap / 2 - 0.04), dh / 2, -hd + 0.01, 0.08, dh, T * 0.7, steel, false);
+      this.box(sx * gap / 4, 1.05, -hd + T * 0.4 + 0.04, gap / 2 - 0.4, 0.05, 0.05, steel, false);
+    }
     // ceiling light panels
     for (let ix = -1; ix <= 1; ix++) for (let iz = -1; iz <= 1; iz++) this.box(ix * (w / 3.2), WALL_H - 0.02, iz * (d / 3.2) * 0.9, 1.6, 0.05, 0.6, light, false);
 

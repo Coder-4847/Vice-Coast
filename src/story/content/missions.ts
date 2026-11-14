@@ -3,7 +3,6 @@ import type { HostileOpts } from '../Hostiles';
 import type { Place } from '../types';
 import { ACT2 } from './act2';
 import { ACT3 } from './act3';
-import { PROLOGUE } from './prologue';
 
 /** A point near a place. */
 const off = (m: MissionRun, p: Place, dx = 0, dz = 0): { x: number; z: number } => { const w = m.at(p); return { x: w.x + dx, z: w.z + dz }; };
@@ -390,4 +389,5 @@ const ACT1: MissionDef[] = [
   },
 ];
 
-export const MISSIONS: MissionDef[] = [PROLOGUE, ...ACT1, ...ACT2, ...ACT3];
+/** The story. (The old 2011 prologue is no longer played: a new game starts at Mack's flat.) */
+export const MISSIONS: MissionDef[] = [...ACT1, ...ACT2, ...ACT3];

@@ -85,6 +85,11 @@ function overview(ctx: WebCtx): HTMLElement[] {
       div('w-listing-buy', h('div', 'w-price', `earned ${money(st.earned)}`), button('Open', () => ctx.go(`ledger.vc/${d.id}`), 'w-btn primary')),
     );
   }))));
+  if (em.alert) {
+    const a = em.alert, d = BUSINESSES.find((b) => b.id === a.id)!, cost = em.bribeCost(a.id);
+    out.unshift(card(h('div', 'w-kicker', 'Police raid incoming'), h('h3', '', d.name), p(`About ${Math.max(1, Math.round(a.left / 60))} minute(s) until the police go in. Get there and fight them off, or pay the precinct to look the other way.`),
+      button(`Pay off the precinct · ${money(cost)}`, () => { if (em.bribe(a.id)) { ctx.toast('The raid has been "postponed".'); save(ctx); } else ctx.toast('Not enough money'); ctx.refresh(); }, 'w-btn primary', e.worth < cost)));
+  }
   if (em.job) out.push(card(h('h3', '', 'Job in progress'), p(em.job.kind === 'sell' ? `Sell run to ${em.job.dest.label}.` : 'Supply run: steal the crates from the stash.')));
   return out;
 }

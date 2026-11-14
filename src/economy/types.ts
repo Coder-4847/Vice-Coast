@@ -45,7 +45,7 @@ export type VehicleWhere =
   | { kind: 'destroyed'; prop: string };
 
 /** A business you own: upgrades bought, and for operations their supplies (0-100), stock ($) and heat (0-100). */
-export interface BizState { upgrades: string[]; supplies: number; stock: number; heat: number; popularity: number; visited: number; earned: number }
+export interface BizState { upgrades: string[]; supplies: number; stock: number; heat: number; popularity: number; visited: number; earned: number; /** Business jobs: the day each was last done. */ jobs?: Record<string, number> }
 
 /** One thing in an online order. */
 export interface CartLine { kind: 'weapon' | 'ammo' | 'attach' | 'supply'; id: string; key?: 'ext' | 'supp' | 'scope'; qty: number; label: string; price: number }

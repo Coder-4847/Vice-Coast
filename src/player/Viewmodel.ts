@@ -232,7 +232,7 @@ export class Viewmodel {
     this.spareMag.clear();
     this.spareMag.add(...this.cloneMagazine());
     const sp = this.model.sightPoint;
-    this.adsPose = pose(-sp.x, -(sp.y + 0.001), -0.40 - sp.z, 0, 0, 0);
+    this.adsPose = pose(-sp.x, -sp.y, -(this.model.adsDist ?? 0.4) - sp.z, 0, 0, 0);
     this.magDropped = false;
   }
 

@@ -1043,7 +1043,7 @@ export class Game {
     } else {
       const p = this.player ? this.player.pos : cam.position;
       x = p.x; z = p.z;
-      const out = this.interiors?.outside();
+      const out = this.interiors?.outside() ?? this.story?.heists.street ?? null;
       if (out) { x = out.x; z = out.z; }
       const f = this.mapFwd.set(0, 0, -1).applyQuaternion(cam.quaternion);
       yaw = Math.atan2(-f.x, -f.z);

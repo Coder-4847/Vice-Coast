@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { WeaponId } from './Weapons';
+import { buildFirearm, buildMagazine, type GunMats } from './guns';
 
 /** The shared surface the viewmodel needs from any gun model (the pistol implements it too). */
 export interface GunModel {
@@ -10,6 +11,8 @@ export interface GunModel {
   readonly muzzle: THREE.Vector3;
   readonly eject: THREE.Vector3;
   readonly sightPoint: THREE.Vector3;
+  /** Eye-to-sight distance when aiming down the sights. */
+  readonly adsDist?: number;
   readonly magAxis: THREE.Vector3;
   readonly magBase: THREE.Vector3;
   readonly magLength: number;
@@ -50,6 +53,7 @@ export class LongGun implements GunModel {
   readonly muzzle = new THREE.Vector3();
   readonly eject = new THREE.Vector3(0.028, 0.05, -0.02);
   readonly sightPoint = new THREE.Vector3(0, 0.1, -0.05);
+  adsDist = 0.4;
   readonly magAxis = new THREE.Vector3(0, -1, 0);
   readonly magBase = new THREE.Vector3();
   magLength = 0.14;
@@ -76,7 +80,27 @@ export class LongGun implements GunModel {
     let magZ = 0, magTop = -0.02, rake = 0;
     let rightPos: THREE.Vector3, leftPos: THREE.Vector3;
     let gripRake = 0.25;
-    if (this.id === 'smg') {
+    let magStyle: 'curved' | 'stick' | 'none' | 'box' = 'box';
+    // detailed firearms with real sights (see guns.ts); melee, launchers and throwables are built below
+    const accent = mat(this.id === 'carbine' ? 0x8a7a5a : this.id === 'sniper' ? 0x6a6448 : this.id === 'lmg' ? 0x3c4232 : this.id === 'laser' ? 0xe8ecef : this.id === 'revolver' ? 0xd8b048 : 0xb8262a, this.id === 'laser' ? 0.35 : 0.7, this.id === 'revolver' ? 0.9 : 0.1);
+    const brass = mat(0xc9a14a, 0.3, 1);
+    const lens = new THREE.MeshStandardMaterial({ color: 0x6a8a9a, roughness: 0.05, metalness: 0.6, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide });
+    lens.fog = false;
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0xff2a2a, fog: false, side: THREE.DoubleSide });
+    const laserGlow = new THREE.MeshStandardMaterial({ color: 0xff2a5a, emissive: 0xff2a5a, emissiveIntensity: 2.2, roughness: 0.4 });
+    laserGlow.fog = false;
+    const M: GunMats = { metal, dark, poly, wood, glass: lens, accent, brass, dot: dotMat };
+    const fire = buildFirearm(this.id, M, g, this.bolt, laserGlow);
+    if (fire) {
+      this.materials.push(accent, brass, lens, dotMat, laserGlow);
+      this.muzzle.copy(fire.muzzle);
+      this.sightPoint.copy(fire.sightPoint);
+      this.adsDist = fire.adsDist;
+      magZ = fire.magZ; magTop = fire.magTop; this.magLength = fire.magLength; rake = fire.rake;
+      rightPos = fire.rightPos; leftPos = fire.leftPos; gripRake = fire.gripRake; this.boltTravel = fire.boltTravel;
+      magStyle = fire.mag;
+      this.eject.set(0.03, 0.03, -0.0);
+    } else if (this.id === 'smg') {
       g.add(box(0.044, 0.062, 0.3, 0, 0.012, -0.03, poly));
       g.add(box(0.036, 0.036, 0.1, 0, 0.056, -0.04, metal));
       g.add(cyl(0.011, 0.14, 0, 0.018, -0.26, metal), cyl(0.016, 0.05, 0, 0.018, -0.33, dark));
@@ -314,7 +338,11 @@ export class LongGun implements GunModel {
     const magFrame = new THREE.Group();
     magFrame.position.set(0, magTop, magZ);
     magFrame.rotation.x = rake;
-    if (!['shotgun', 'knife', 'hatchet', 'rpg', 'revolver', 'combat', 'lmg', 'bat', 'grenade', 'molotov', 'sticky', 'fists'].includes(this.id)) {
+    if (magStyle === 'curved' || magStyle === 'stick') {
+      buildMagazine(magStyle, this.magLength, M, this.magazine);
+    } else if (magStyle === 'none') {
+      this.magazine.add(box(0.012, 0.003, 0.02, 0, -0.012, 0, dark));
+    } else if (!['shotgun', 'knife', 'hatchet', 'rpg', 'revolver', 'combat', 'lmg', 'bat', 'grenade', 'molotov', 'sticky', 'fists'].includes(this.id)) {
       const body = box(0.026, this.magLength, 0.04, 0, -this.magLength / 2, 0, dark);
       const base = box(0.03, 0.01, 0.046, 0, -this.magLength - 0.002, 0, poly);
       this.magazine.add(body, base);

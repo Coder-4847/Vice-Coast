@@ -5,7 +5,7 @@ Everything — name, world, characters, brands, music, art — is original.
 
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
-> Status: **1.0 — complete.** Start from the main menu, play the bank-job prologue *Valeria Savings, 2011*, then three switchable
+> Status: **1.0 — complete.** Start from the main menu as Mack outside his flat in Port Valeria, then play three switchable
 > protagonists, 38 story missions with eight heists and a four-ending finale, 15 races, jobs, casino and bar games, a 107-piece
 > collectible hunt, six synthesized radio stations and a photo mode, across a 6 × 8 km state. See the [roadmap](#roadmap).
 
@@ -13,10 +13,9 @@ Everything — name, world, characters, brands, music, art — is original.
 
 * **Main menu**: *Continue* loads your most recent save; *New Game* asks for one of three slots; *Load Game*, *Settings*,
   *How to Play* and *Credits* are there too. Keyboard, mouse and controller are supported; phones and tablets are not (there are no on-screen touch controls).
-* **Prologue**: a new game opens nine years earlier with a daylight raid on Valeria Savings downtown: hold up the lobby, cover
-  the vault drill, shoot past the first police, outrun the cruisers while shooting out of the window (hold right mouse / LB),
-  and escape by helicopter. It teaches walking, shooting, driving, drive-bys and flying, and ends outside Mack's flat on the
-  Seaside boardwalk. Between missions the HUD always names the next story mission and how far away it is. You can abandon it from the failure screen and lose nothing.
+* **A new game** starts with Mack outside his flat on the Seaside boardwalk at dusk: a short opening monologue, then the first
+  story mission is marked on the map. (The old 2011 bank-job prologue has been removed; saves made during it pick up at the flat.)
+  Between missions the HUD always names the next story mission and how far away it is.
 * **Pause menu** (`Esc` / Start): Resume, Map, Progress, Save Game, **Photo Mode**, Settings, Quit to Main Menu.
 * **Photo mode**: the world freezes; fly the camera with `WASD`, mouse, `Space` / `C`, `Shift`; set field of view, roll,
   time of day and a filter (Natural, Vivid, Vintage, Cool, Noir); `H` hides the panel; *Take photo* saves a PNG.
@@ -206,6 +205,22 @@ they are yours). Walk up to the door of one you own and press `E` to go inside; 
 
 Dirty money shows on the bank page and on ledger.vc; half of it is seized if you're Busted. Sold businesses return 70% of the price.
 
+**Business missions** (each job once per game day):
+
+| Job | Where | What happens |
+| --- | --- | --- |
+| **Police raid** | Any illegal operation running hot (heat over 55) | A red `!` appears on the map with a countdown (2½–5 minutes). Get there and a mission starts: two patrol cars and 5–8 officers at the door, then lose a two-star chase. Win and the stock is safe and heat drops by 40. Or pay the precinct on ledger.vc or the laptop ($5,000 + 20% of the stock). Ignore it and the police take 60% of the stock and half the supplies |
+| **Ambush** | Sell runs | Sometimes (more often with high heat) two rival cars come after the van and try to run it off the road; if they pin it, their crews get out shooting |
+| **VIP pickup** | The Velvet Room laptop | Collect a celebrity (Jaxon Reign, Sienna Cortez or Ronnie Blaze) in the club's black Huntley, shake off a paparazzi car and bike, and get them to the door before they get bored. Popularity +15, $3,000 plus a tip for speed and a clean car |
+| **Trouble at the door** | The Velvet Room laptop | A Southside crew is shaking down the queue: clear them out. Popularity +10, $1,500 |
+| **Inland run** | Coastline Import laptop | Inés Calderón's van to the Cinder Flats stash house against the clock, with two rival cars ramming you halfway. $60,000 dirty |
+| **Rip-off** | Coastline Import laptop | Hit the Lazaro crew at the Cinder Flats rail siding, load their shipment, lose the sheriff. $45,000 dirty |
+| **Loose lips** | Coastline Import laptop | An informant is driving to the police: stop his car before he gets there. $35,000 dirty |
+
+The cartel warehouse (containers, pallets of product, a packing line, a cash-counting table, guards and Calderón's office), Marlow Cab
+Co. (cabs in the bays and a dispatch office), Cinder Flats Airfield (a hangar with a light plane, fuel drums and crates) and Harbor
+Storage Units (rows of roll-up doors) now have interiors of their own.
+
 ### Interiors
 
 Almost every building has a door you can use: a lit entrance on the side facing the street. Walk up and press `E` (houses
@@ -386,6 +401,8 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 30. **Phase F** ✅ — an in-game internet (15 sites, a browser with address bar, history and bookmarks), the Verano Exchange stock market (14 companies, hourly prices, charts, portfolio, news, player-driven moves), buying cars and homes online, used cars, businesses with daily income, five new homes, charter flights, online banking, a newspaper that reports what you did
 31. **Phase G** ✅ — boats, aircraft and military hardware sold online (three dealers, 13 craft), a hangar at Cinder Flats and marina berths in Costa Merida, owned craft saved with their paint and berth, fleet management (locate, recover and repair, sell, armour delivery)
 32. **Phase H** ✅ — an online gun store with a cart and courier, air-drop or safehouse delivery, a hidden black-market site with dead drops (and the odd police sting), packages saved until you collect them
-33. **Phase I** ✅ (this build) — businesses you own and walk into: 12 legal fronts (food joints, a car wash, a laundromat, motels, a cab firm, an airfield) and a nightclub with popularity, plus five illegal operations up to a cartel warehouse; supplies, stock, van sell runs, supply raids, heat and police raids; dirty money laundered through your fronts; upgrades; a business dashboard site
+33. **Phase I** ✅ — businesses you own and walk into: 12 legal fronts (food joints, a car wash, a laundromat, motels, a cab firm, an airfield) and a nightclub with popularity, plus five illegal operations up to a cartel warehouse; supplies, stock, van sell runs, supply raids, heat and police raids; dirty money laundered through your fronts; upgrades; a business dashboard site
+34. **Phase J** ✅ — business missions: police raids you fight off (or bribe), rival ambushes on sell runs, nightclub VIP pickups and door trouble, three cartel jobs paying dirty money, and new interiors for the cartel warehouse, cab firm, airfield hangar and storage units
+35. **Fix pass** ✅ (this build) — no more prologue (a new game starts at Mack's flat); every firearm rebuilt in detail (rounded receivers, rails, handguards with slots, muzzle devices, curved magazines, stocks, ejection ports, charging handles) with **real sights**: aperture rings and hooded posts, a red dot (Sentinel carbine), a holographic sight (Falcon AR-7, Helios), a bead on a vented rib (Hammer-12), ghost rings (Breacher), each lined up exactly with the aim point so aiming down the sights looks through them instead of at a block; heist sets and every interior are now sealed (you could walk out of the bank's open doorway onto the salt pan) and the minimap shows the street you came in from; rival ambush cars now come up behind the van the right way round
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

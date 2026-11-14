@@ -360,7 +360,16 @@ export class Interiors {
     this.group = grp;
     this.mats = [...b.mats.values()];
     const o = this.origin;
-    this.handles = g.physics!.addBuildings(b.solids.map((s) => ({ ...s, cx: s.cx + o.x, cy: s.cy + o.y, cz: s.cz + o.z })));
+    // fence the set: doorways in its outer walls (the street door, a shopfront) must never lead out onto the salt pan
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const sd of b.solids) { x0 = Math.min(x0, sd.cx - sd.hx); x1 = Math.max(x1, sd.cx + sd.hx); z0 = Math.min(z0, sd.cz - sd.hz); z1 = Math.max(z1, sd.cz + sd.hz); }
+    const fence = Number.isFinite(x0) ? [
+      { cx: (x0 + x1) / 2, cy: 3, cz: z0 - 0.15, hx: (x1 - x0) / 2 + 0.4, hy: 3, hz: 0.15 },
+      { cx: (x0 + x1) / 2, cy: 3, cz: z1 + 0.15, hx: (x1 - x0) / 2 + 0.4, hy: 3, hz: 0.15 },
+      { cx: x0 - 0.15, cy: 3, cz: (z0 + z1) / 2, hx: 0.15, hy: 3, hz: (z1 - z0) / 2 + 0.4 },
+      { cx: x1 + 0.15, cy: 3, cz: (z0 + z1) / 2, hx: 0.15, hy: 3, hz: (z1 - z0) / 2 + 0.4 },
+    ] : [];
+    this.handles = g.physics!.addBuildings([...b.solids, ...fence].map((s) => ({ ...s, cx: s.cx + o.x, cy: s.cy + o.y, cz: s.cz + o.z })));
     this.spots = b.spots.map((s) => ({ ...s, x: s.x + o.x, z: s.z + o.z }));
     // keep "used" in sync with the copies
     for (let i = 0; i < b.spots.length; i++) { const src = b.spots[i]!, dst = this.spots[i]!; const act = src.act; dst.act = () => { act(); dst.used = src.used || dst.used; }; }

@@ -58,7 +58,9 @@ export class Pistol {
   readonly muzzle = new THREE.Vector3(0, 0.040, -0.112);
   readonly eject = new THREE.Vector3(0.020, 0.046, 0.03);
   /** The point midway between the sights; ADS puts it on the view axis. */
-  readonly sightPoint = new THREE.Vector3(0, 0.0585, -0.01);
+  readonly sightPoint = new THREE.Vector3(0, 0.0618, 0.072);
+  /** Eye relief when aiming: the rear sight sits this far in front of the eye. */
+  readonly adsDist = 0.3;
   /** Magwell axis (pointing down out of the grip) and its base position, gun space. */
   readonly magAxis = new THREE.Vector3(0, -Math.cos(RAKE), Math.sin(RAKE));
   readonly magBase = new THREE.Vector3();

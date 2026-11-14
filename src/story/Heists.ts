@@ -16,6 +16,8 @@ export class Heists {
   transitioning = false;
   inside = false;
   private outside = { x: 0, z: 0, yaw: 0 };
+  /** While inside a heist set: the street spot it stands for (the map and minimap show that, not the salt pan). */
+  get street(): { x: number; z: number } | null { return this.inside ? this.outside : null; }
   /** The last pay-out (for the result card). */
   lastResult: { gross: number; perf: number; cuts: number; net: number; alarm: boolean; notes: string[] } | null = null;
   private boardId = -1;

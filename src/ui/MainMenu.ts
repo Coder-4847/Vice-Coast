@@ -190,7 +190,7 @@ export class MainMenu {
           el.style.setProperty('--c', c.color);
           return el;
         }));
-        p.append(card('A new story', cast, h('p', '', 'Spring, 2011. Three men, one downtown bank and a helicopter waiting on the highway. Nine years later, Marcus "Mack" Delgado parks cars for a living — until somebody remembers his name.'), h('p', 'mm-muted', 'Three playable characters · 38 missions · 6 heists · a whole coast to steal from.')));
+        p.append(card('A new story', cast, h('p', '', 'Port Valeria. Marcus "Mack" Delgado drove getaway cars once; now he parks them for tips — until somebody remembers his name.'), h('p', 'mm-muted', 'Three playable characters · 38 missions · 6 heists · a whole coast to steal from.')));
       } else if (id === 'load') {
         p.append(card('Saved games', ...this.slotsCache.map((s) => h('div', `mm-slotline${s.empty ? ' empty' : ''}`, h('b', '', `Slot ${s.slot}`), h('span', '', s.empty ? 'Empty' : `${s.label} · ${ago(s.savedAt)}`)))));
       } else if (id === 'settings') {

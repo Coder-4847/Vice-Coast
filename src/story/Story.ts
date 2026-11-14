@@ -152,9 +152,8 @@ export class Story {
       g.commerce!.eco.p.home = mack.home;
       st.chars.mack = undefined;
       if (!debug) {
-        // a new game opens nine years earlier, in the snow; the flat comes afterwards
-        const def = BY_ID.m00;
-        const at = def && !this.done('m00') ? this.place(def.start) : this.place(mack.start);
+        // a new game starts with Mack outside his flat in Port Valeria
+        const at = this.place(mack.start);
         g.player!.teleport(at.x, at.z + 5, 0);
         g.world.city.warm(at.x, at.z);
       }
@@ -170,16 +169,18 @@ export class Story {
     this.ready = true;
     g.commerce!.refreshMarkers();
     this.prologueEnding = false;
-    if (!isNew && !debug && !st.introSeen && this.done('m00')) {
+    // saves from before the prologue was removed (even ones stopped part-way through it) pick up at Mack's flat
+    if (!isNew && !debug && !st.introSeen) {
+      this.record('m00').done = true;
       const home = this.place(CHARS.mack.start);
       g.player!.teleport(home.x, home.z + 5, 0);
       g.world.city.warm(home.x, home.z);
       setTimeout(() => this.playIntro(), 1800);
     }
     if (isNew && !debug && !st.introSeen) {
-      const pro = BY_ID.m00;
-      if (pro && !this.done('m00')) setTimeout(() => { if (!this.mission && !this.startMission(pro)) this.afterPrologue(); }, 1500);
-      else setTimeout(() => this.playIntro(), 1800);
+      this.record('m00').done = true;
+      g.world.setHour(18.2);
+      setTimeout(() => this.playIntro(), 1800);
     }
   }
 
