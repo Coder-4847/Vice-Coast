@@ -34,6 +34,7 @@ export class CarTheft {
   private spawnT = 1;
   private alarm: { v: Vehicle; t: number; honk: number } | null = null;
   private hotwireShown: Vehicle | null = null;
+  private sparkT = 0;
   stats = { parked: 0, stolen: 0, jacked: 0 };
 
   constructor(private readonly g: Game) {
@@ -53,6 +54,14 @@ export class CarTheft {
     const cur = d.mode === 'driving' ? d.vehicle : null;
     if (cur && cur.hotwireT > 0) {
       if (this.hotwireShown !== cur) { this.hotwireShown = cur; g.story?.hud.showTip('Hotwiring… hold on a second.', 2); }
+      // sparks under the steering column while the wires are crossed
+      this.sparkT -= dt;
+      if (this.sparkT <= 0) {
+        this.sparkT = 0.18 + Math.random() * 0.25;
+        const p0 = _v.set(cur.spec.seat.x * 0.6, 0.55 + cur.spec.clearance, -0.5).applyQuaternion(cur.quaternion).add(cur.position);
+        g.effects?.impact(p0.clone(), new THREE.Vector3(0, 1, 0), 'metal', false);
+        if (Math.random() < 0.5) g.audio.sport('snap', 0.35, p0);
+      }
     } else if (this.hotwireShown && (!cur || cur.hotwireT <= 0)) {
       if (cur === this.hotwireShown) { g.audio.mech('rack'); g.ui.toast('Engine started'); }
       this.hotwireShown = null;
@@ -87,13 +96,24 @@ export class CarTheft {
     const g = this.g;
     this.job = { kind: 'smash', t: 0, v, x: v.position.x, z: v.position.z };
     g.player!.frozen = true;
-    // a glass burst at the driver's window
+    // face the window and wind up the elbow; the glass goes when it lands (see stepJob)
+    const door = g.vehicles!.doorWorld(v, _v);
+    g.player!.yaw = Math.atan2(-(v.position.x - g.player!.pos.x), -(v.position.z - g.player!.pos.z));
+    g.player!.pitch = -0.32; // eyes on the window
+    g.viewmodel?.play('smash');
+    g.audio.mech('cloth');
+    void door;
+  }
+
+  /** The elbow lands: glass everywhere. */
+  private shatter(v: Vehicle): void {
+    const g = this.g;
     const door = g.vehicles!.doorWorld(v, _v);
     door.y += 1.0;
-    g.effects?.impact(door.clone(), new THREE.Vector3(0, 1, 0), 'glass', false);
-    g.audio.sport('snap', 1.3, door);
-    g.audio.mech('cloth');
-    g.input.rumble(0.5, 0.3, 90);
+    for (let i = 0; i < 3; i++) g.effects?.impact(door.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.4)), new THREE.Vector3(0, 1, 0), 'glass', false);
+    g.audio.sport('snap', 1.4, door);
+    g.audio.sport('hit', 0.8, door);
+    g.input.rumble(0.7, 0.4, 110);
   }
 
   private carjack(c: TrafficCar): void {
@@ -101,6 +121,8 @@ export class CarTheft {
     c.v = 0; c.brake = 1;
     this.job = { kind: 'jack', t: 0, car: c, x: c.x, z: c.z };
     g.player!.frozen = true;
+    g.player!.yaw = Math.atan2(-(c.x - g.player!.pos.x), -(c.z - g.player!.pos.z));
+    g.viewmodel?.play('jack');
     g.audio.mech('cloth');
   }
 
@@ -108,7 +130,8 @@ export class CarTheft {
     const g = this.g, j = this.job!;
     j.t += dt;
     if (j.kind === 'smash' && j.v) {
-      if (j.t < 0.7) return;
+      if (j.t >= 0.4 && j.t - dt < 0.4) this.shatter(j.v);
+      if (j.t < 0.75) return;
       const v = j.v;
       v.locked = false;
       v.hotwireT = 2.2;

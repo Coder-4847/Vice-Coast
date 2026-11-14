@@ -12,8 +12,6 @@ const SNACK_LOOK: Record<string, { size: [number, number, number]; color: number
   sandwich: { size: [0.1, 0.04, 0.1], color: 0xe8c890, accent: 0x6aa84a },
   energy: { size: [0.04, 0.12, 0.04], color: 0x2a6ad8, accent: 0xe8e8e8 },
 };
-const _p = new THREE.Vector3();
-const _q = new THREE.Quaternion();
 
 export class Snacks {
   private cool = 0;
@@ -53,10 +51,9 @@ export class Snacks {
     this.cool = 1.2;
   }
 
-  /** A snack rises from the bottom of the screen to the mouth, gets bitten twice and is gone. */
+  /** The snack goes into the right hand, up to the mouth for two bites, and is gone. */
   private show(id: string): void {
     const g = this.g;
-    if (this.held) g.world.scene.remove(this.held.mesh);
     const look = SNACK_LOOK[id] ?? SNACK_LOOK.bar!;
     const grp = new THREE.Group();
     const [w, h, d] = look.size;
@@ -64,33 +61,22 @@ export class Snacks {
     const band = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, h * 1.02, d * 0.3), new THREE.MeshStandardMaterial({ color: look.accent, roughness: 0.5 }));
     band.position.z = d * 0.25;
     grp.add(body, band);
-    grp.traverse((o) => { o.frustumCulled = false; o.renderOrder = 10; });
-    g.world.scene.add(grp);
+    // held between thumb and fingers, poking out of the top of the fist
+    grp.position.set(0, 0.02, -0.07);
+    grp.rotation.set(-0.4, 0, 0);
     this.held = { mesh: grp, t: 0 };
-    // the gun dips out of the way
-    g.viewmodel?.bump(1.2);
+    if (g.viewmodel) g.viewmodel.play('eat', grp);
   }
 
   private animate(dt: number): void {
     const h = this.held;
     if (!h) return;
     const g = this.g;
+    const prev = h.t;
     h.t += dt;
-    const T = 1.25;
-    const u = Math.min(1, h.t / T);
-    // in from bottom right, up to the mouth, two bites (shrinks), then away
-    const rise = u < 0.35 ? u / 0.35 : u < 0.8 ? 1 : 1 - (u - 0.8) / 0.2;
-    const e = rise * rise * (3 - 2 * rise);
-    _p.set(0.16 - 0.15 * e, -0.3 + 0.21 * e, -0.42 + 0.14 * e);
-    const bites = u < 0.5 ? 1 : u < 0.65 ? 0.7 : 0.4;
-    h.mesh.scale.setScalar(bites);
-    const cam = g.camera;
-    _q.copy(cam.quaternion);
-    h.mesh.position.copy(_p.applyQuaternion(_q).add(cam.position));
-    h.mesh.quaternion.copy(_q).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0.5 - 0.4 * e, -0.6 + 0.5 * e, 0.3)));
-    if (u >= 0.5 && u - dt / T < 0.5) g.audio.sport('bite', 1);
-    if (u >= 1) {
-      g.world.scene.remove(h.mesh);
+    // two bites, timed to the hand reaching the mouth
+    for (const at of [0.5, 0.75]) if (prev < at && h.t >= at) { g.audio.sport('bite', 1); h.mesh.scale.multiplyScalar(0.72); }
+    if (h.t >= 1.3) {
       h.mesh.traverse((o) => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); } });
       this.held = null;
     }

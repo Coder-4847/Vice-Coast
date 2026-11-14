@@ -142,7 +142,7 @@ export class WeaponSystem {
   /** The most recent hit, kept until the next one (HUD, tests, debugging). */
   lastHit: HitEvent | null = null;
   /** Pedestrian hit-testing and alarm hooks, installed by the NPC system. */
-  npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null; hurt(target: unknown, dx: number, dz: number, damage: number, head: boolean): void; alarm(x: number, z: number): void } | null = null;
+  npc: { rayHit(ox: number, oy: number, oz: number, dx: number, dy: number, dz: number, max: number): { t: number; target: unknown; head: boolean } | null; hurt(target: unknown, dx: number, dz: number, damage: number, head: boolean): 'hit' | 'down' | 'kill' | null | void; alarm(x: number, z: number): void } | null = null;
   /** Bullets that hit a vehicle collider (installed by the combat system). */
   onColliderHit: ((handle: number, damage: number) => boolean) | null = null;
   /** RPG launch and laser beam drawing (installed by the ordnance system). */
@@ -152,6 +152,21 @@ export class WeaponSystem {
   shotsFired = 0;
   /** Hit marker timer for the HUD (seconds remaining). */
   hitMarker = 0;
+  /** What the last hit did: white for a hit, yellow for someone downed, red for a kill. */
+  hitKind: 'hit' | 'down' | 'kill' = 'hit';
+  hitHead = false;
+
+  /** Record a hit on a person for the marker (and a sound for downs and kills). */
+  markHit(res: 'hit' | 'down' | 'kill' | null | void, head: boolean): void {
+    const kind = res ?? 'hit';
+    // a kill outranks a down outranks a hit within the same burst (shotgun pellets)
+    if (this.hitMarker > 0.12 && (this.hitKind === 'kill' || this.hitKind === 'down' && kind === 'hit')) { this.hitMarker = 0.3; return; }
+    this.hitKind = kind;
+    this.hitHead = head;
+    this.hitMarker = kind === 'hit' ? 0.18 : 0.42;
+    if (kind === 'kill') this.audio.sport('snap', head ? 0.9 : 0.6);
+    else if (kind === 'down') this.audio.sport('hit', 0.45);
+  }
   /** Muzzle world position for tracers (set by the viewmodel each frame). */
   readonly muzzleWorld = new THREE.Vector3();
   readonly ejectWorld = new THREE.Vector3();
@@ -410,8 +425,7 @@ export class WeaponSystem {
         this.effects.impact(end, n, (npcHit.target as { rangeTarget?: boolean } | null)?.rangeTarget ? 'wood' : 'flesh', false);
         // damage falls off past the gun's effective range
         const fall = npcHit.t > def.range ? Math.max(0.35, 1 - (npcHit.t - def.range) / (def.range * 1.5)) : 1;
-        this.npc?.hurt(npcHit.target, _dir.x, _dir.z, def.damage * fall, npcHit.head);
-        this.hitMarker = 0.18;
+        this.markHit(this.npc?.hurt(npcHit.target, _dir.x, _dir.z, def.damage * fall, npcHit.head), npcHit.head);
         this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
       } else if (hit && hit.collider && this.onColliderHit && this.onColliderHit(hit.collider.handle, def.damage * 0.55)) {
         this.effects.impact(hit.point, hit.normal, hit.surface, false);
@@ -460,9 +474,8 @@ export class WeaponSystem {
       const end = new THREE.Vector3().copy(_origin).addScaledVector(_aim, npcHit.t);
       const n = new THREE.Vector3().copy(_aim).negate();
       this.effects.impact(end, n, 'flesh', false);
-      this.npc?.hurt(npcHit.target, _aim.x, _aim.z, def.damage, npcHit.head);
+      this.markHit(this.npc?.hurt(npcHit.target, _aim.x, _aim.z, def.damage, npcHit.head), npcHit.head);
       this.audio.sport('hit', 0.8, _origin);
-      this.hitMarker = 0.18;
       this.hitThisFrame = this.lastHit = { hit: { point: end, normal: n, distance: npcHit.t, surface: 'flesh', collider: null, body: null }, target: true };
       this.input.rumble(0.45, 0.3, 60);
     } else if (hit) {

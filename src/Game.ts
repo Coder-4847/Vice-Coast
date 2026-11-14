@@ -816,6 +816,8 @@ export class Game {
         lowAmmo: weapon.ammo <= 3 && !weapon.def.melee,
         melee: !!weapon.def.melee,
         hitMarker: weapon.hitMarker,
+        hitKind: weapon.hitKind,
+        hitHead: weapon.hitHead,
         stamina: player.stamina,
         prompt: player.ledgeHint && !player.mantle ? { action: 'jump', label: player.ledgeHint.kind === 'vault' ? 'Vault' : 'Climb' } : null,
         fovDeg: this.camera.fov,

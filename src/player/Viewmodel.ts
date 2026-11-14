@@ -49,6 +49,9 @@ const lerpPose = (a: Pose, b: Pose, t: number, out: Pose): Pose => {
   return out;
 };
 
+export type ActKind = 'smash' | 'jack' | 'eat';
+const ACT_DUR: Record<ActKind, number> = { smash: 0.75, jack: 0.9, eat: 1.25 };
+
 const HIP = pose(0.15, -0.168, -0.45, 0.012, 0.05, 0);
 const SPRINT = pose(0.12, -0.2, -0.38, -0.66, 0.44, 0.18);
 const HOLSTER = pose(0.22, -0.66, -0.12, -1.15, 0.2, 0.2);
@@ -84,6 +87,10 @@ export class Viewmodel {
 
   private readonly gun = new THREE.Group();
   private readonly right = new HandRig();
+  /** A scripted hand action (car break-ins, carjacks, eating) that takes over both hands for a moment. */
+  private act: { kind: ActKind; t: number; dur: number } | null = null;
+  /** Something held in the right hand during an action (a snack). */
+  private held: THREE.Object3D | null = null;
   private readonly left: HandRig;
   private readonly armR: ArmRig;
   private readonly armL: ArmRig;
@@ -241,6 +248,16 @@ export class Viewmodel {
     this.flash.scale.set(s, s, s);
     this.flash.rotation.z = Math.random() * 6.28;
   }
+
+  /** Play a hand action: the gun is lowered out of sight while both hands do the work. */
+  play(kind: ActKind, item: THREE.Object3D | null = null): void {
+    this.act = { kind, t: 0, dur: ACT_DUR[kind] };
+    if (this.held) this.right.root.remove(this.held);
+    this.held = item;
+    if (item) { item.traverse((o) => { o.frustumCulled = false; }); this.right.root.add(item); }
+  }
+
+  get acting(): boolean { return !!this.act; }
 
   /** Hard landing / vault impact nudges the gun down. */
   bump(amount: number): void {
@@ -466,6 +483,22 @@ export class Viewmodel {
     // --- mantle overrides --------------------------------------------------------------------------
     if (p.mantle && mt > 0.01) this.mantleHands(p, cam, mt);
 
+    // --- scripted hand actions ---------------------------------------------------------------------
+    let actW = 0;
+    if (this.act) {
+      const a = this.act;
+      a.t += dt;
+      const u = Math.min(1, a.t / a.dur);
+      actW = smooth(0, 0.12, u) * (1 - smooth(0.85, 1, u));
+      this.actHands(a.kind, u, actW);
+      this.model.group.visible = actW < 0.5;
+      if (u >= 1) {
+        this.act = null;
+        this.model.group.visible = true;
+        if (this.held) { this.right.root.remove(this.held); this.held = null; }
+      }
+    }
+
     // --- finger poses --------------------------------------------------------------------------------
     const trig = w.trigger;
     HandRig.mix(POSES.gripIndexOff, POSES.gripTrigger, trig, this.rPose);
@@ -474,6 +507,7 @@ export class Viewmodel {
     HandRig.mix(leftPose, leftPoseB, leftBlend, this.lPose);
     HandRig.mix(RESTING, this.lPose, grab * (1 - mt), this.lPose);
     HandRig.mix(this.lPose, p.mantle ? POSES.hook : this.lPose, mt, this.lPose);
+    if (actW > 0) { HandRig.mix(this.rPose, this.actR, actW, this.rPose); HandRig.mix(this.lPose, this.actL, actW, this.lPose); }
     if (this.debug.pose === 'fist') { this.right.apply(POSES.fist); this.left.apply(POSES.fist); }
     else if (this.debug.pose === 'flat') { this.right.apply(POSES.flat); this.left.apply(POSES.flat); }
     else { this.right.apply(this.rPose); this.left.apply(this.lPose); }
@@ -484,6 +518,45 @@ export class Viewmodel {
     this.right.root.matrix.compose(this.handR.p, this.handR.q, _one);
     this.left.root.matrix.compose(this.handL.p, this.handL.q, _mirror);
     void dt;
+  }
+
+  private readonly actR: HandPose = HandRig.blank();
+  private readonly actL: HandPose = HandRig.blank();
+
+  /** View-space keyframes for both hands during an action, blended in by `w`. */
+  private actHands(kind: ActKind, u: number, w: number): void {
+    const key = (frames: [number, number, number, number, number, number, number][], t: number, out: Pose): Pose => {
+      let i = 0;
+      while (i < frames.length - 2 && t > frames[i + 1]![0]) i++;
+      const a = frames[i]!, b = frames[i + 1]!;
+      const k = easeInOut(clamp((t - a[0]) / Math.max(1e-4, b[0] - a[0]), 0, 1));
+      out.p.set(a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k);
+      out.q.setFromEuler(new THREE.Euler(a[4] + (b[4] - a[4]) * k, a[5] + (b[5] - a[5]) * k, a[6] + (b[6] - a[6]) * k, 'YXZ'));
+      return out;
+    };
+    let R: [number, number, number, number, number, number, number][], L: typeof R;
+    let pr: HandPose = POSES.fist, pl: HandPose = POSES.flat;
+    if (kind === 'smash') {
+      // left palm on the door, right elbow cocks back and drives through the glass
+      R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.35, 0.32, -0.08, -0.16, 0.9, 0.6, 1.1], [0.5, 0.06, -0.16, -0.56, 0.1, 0.3, 0.5], [0.62, 0.07, -0.17, -0.54, 0.1, 0.3, 0.5], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
+      L = [[0, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3], [0.3, -0.26, -0.16, -0.5, 0.1, 0.4, -1.2], [1, -0.26, -0.16, -0.5, 0.1, 0.4, -1.2]];
+    } else if (kind === 'jack') {
+      // both hands shoot forward, hook the driver and yank him out
+      R = [[0, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3], [0.3, 0.12, -0.08, -0.7, 0.4, 0, 0.6], [0.45, 0.12, -0.1, -0.68, 0.4, 0, 0.6], [0.8, 0.26, -0.24, -0.26, 0.2, -0.4, 0.4], [1, 0.2, -0.3, -0.4, 0.3, -0.2, 0.3]];
+      L = [[0, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3], [0.3, -0.1, -0.06, -0.7, 0.4, 0, -0.6], [0.45, -0.1, -0.08, -0.68, 0.4, 0, -0.6], [0.8, -0.26, -0.22, -0.26, 0.2, 0.4, -0.4], [1, -0.2, -0.3, -0.4, 0.3, 0.2, -0.3]];
+      pr = u < 0.3 ? POSES.flat : POSES.hook; pl = pr;
+    } else {
+      // eat: the right hand brings the snack up to the mouth, two bites, and away
+      R = [[0, 0.2, -0.36, -0.36, 0.4, -0.3, 0.3], [0.3, 0.05, -0.1, -0.2, 1.1, -0.5, 0.6], [0.45, 0.04, -0.07, -0.17, 1.15, -0.5, 0.6], [0.55, 0.05, -0.1, -0.2, 1.1, -0.5, 0.6], [0.65, 0.04, -0.07, -0.17, 1.15, -0.5, 0.6], [1, 0.2, -0.36, -0.36, 0.4, -0.3, 0.3]];
+      L = [[0, -0.2, -0.3, -0.43, 0.35, 0.2, -0.28], [1, -0.2, -0.3, -0.43, 0.35, 0.2, -0.28]];
+      pr = POSES.pinch; pl = RESTING;
+    }
+    const r = key(R, u, this.tmpPose);
+    this.handR.p.lerp(r.p, w); this.handR.q.slerp(r.q, w);
+    const l = key(L, u, this.tmpPose);
+    this.handL.p.lerp(l.p, w); this.handL.q.slerp(l.q, w);
+    HandRig.mix(pr, pr, 0, this.actR);
+    HandRig.mix(pl, pl, 0, this.actL);
   }
 
   /** Left-hand choreography during a reload, in view space. Returns pose + finger pose blend. */

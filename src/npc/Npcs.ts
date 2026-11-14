@@ -9,6 +9,8 @@ import { radialTexture } from '../world/City';
 import { World } from '../world/World';
 import { Traffic, TrafficRenderer } from './Traffic';
 import { Ambient } from './Ambient';
+import { Blood } from '../world/Blood';
+import { GROUP } from '../physics/Physics';
 import { PedRenderer, Pedestrians, pedDensity, type Ped, type VehicleHit } from './Pedestrians';
 
 /** Relative traffic volume through the day: rush hours at ~8 and ~17:30, quiet from midnight to 5. */
@@ -44,8 +46,15 @@ export class Npcs {
   extraHurt: ((target: unknown, damage: number) => boolean) | null = null;
   onGunshot: ((x: number, z: number) => void) | null = null;
 
+  readonly blood = new Blood();
+  private readonly phys: Physics;
+  private bloodT = 0;
+
   constructor(private readonly world: World, physics: Physics, private readonly audio: AudioEngine, preset: QualityPreset) {
     this.preset = preset;
+    this.phys = physics;
+    world.scene.add(this.blood.group);
+    // blood is left out of the atmosphere rig on purpose: its sky tint turns dark red purple
     this.traffic = new Traffic(world.city.plan, world.signals, 180);
     this.traffic.attachPhysics(physics);
     this.trafficView = new TrafficRenderer(96, radialTexture());
@@ -114,6 +123,16 @@ export class Npcs {
     this.pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     this.traffic.frustum.setFromProjectionMatrix(this.pv);
     this.trafficView.sync(this.traffic.cars, alpha, this.world.tod.look.night, dt);
+    // pools spread under the fallen (and follow the ones still crawling)
+    this.blood.update(dt);
+    this.bloodT -= dt;
+    if (this.bloodT <= 0) {
+      this.bloodT = 0.25;
+      for (const p of this.peds.peds) {
+        if (!p.active || p.state !== 'down' || p.fall < 0.9 || p.dist > 120 || p.health > 0) continue;
+        this.blood.pool(p, p.x, p.y, p.z, p.dying > 0 ? 0.9 : 1.25);
+      }
+    }
 
     // pedestrians
     const hour = this.world.tod.hour;
@@ -146,11 +165,28 @@ export class Npcs {
     if (e && (!h || e.t < h.t)) return { t: e.t, target: e.target, head: false };
     return h ? { t: h.t, target: h.ped, head: h.head } : null;
   }
-  hurt(targetAny: unknown, dx: number, dz: number, damage: number, head = false): void {
-    if (this.extraHurt?.(targetAny, damage)) return;
+  /** A bullet or blade hit a person. Returns the result for the hit marker. */
+  hurt(targetAny: unknown, dx: number, dz: number, damage: number, head = false): 'hit' | 'down' | 'kill' | null {
+    if (this.extraHurt?.(targetAny, damage)) return 'hit';
     const target = targetAny as Ped;
-    this.peds.knockDown(target, dx * 1.2, dz * 1.2, damage, true, head);
+    const res = this.peds.knockDown(target, dx * 1.2, dz * 1.2, damage, true, head);
     this.peds.alarm(target.x, target.z, 'crash');
+    this.bleed(target, dx, dz, head, damage);
+    return res;
+  }
+
+  /** Blood thrown behind the wound onto whatever is there: a wall, a car, the pavement. */
+  private bleed(p: Ped, dx: number, dz: number, head: boolean, damage: number): void {
+    const len = Math.hypot(dx, dz) || 1;
+    const o = new THREE.Vector3(p.x, p.y + (p.state === 'down' ? 0.3 : head ? 1.6 : 1.15), p.z);
+    const d = new THREE.Vector3(dx / len, -0.25, dz / len).normalize();
+    o.addScaledVector(d, 0.3);
+    const size = Math.min(1.3, 0.45 + damage / 120 + (head ? 0.3 : 0));
+    const hit = this.phys.raycast(o, d, 3.5, undefined, GROUP.WORLD);
+    if (hit) this.blood.splat(hit.point, hit.normal, size);
+    // and drops on the ground under them
+    const gx = p.x + d.x * 0.6, gz = p.z + d.z * 0.6;
+    this.blood.splat(new THREE.Vector3(gx, this.world.heightAt(gx, gz) + 0.01, gz), new THREE.Vector3(0, 1, 0), size * 0.7);
   }
   alarm(x: number, z: number): void {
     this.peds.alarm(x, z, 'gunshot');

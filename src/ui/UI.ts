@@ -24,6 +24,9 @@ export interface HudState {
   /** Knife or hatchet: no ammunition to show. */
   melee?: boolean;
   hitMarker: number;
+  /** 'hit' (white), 'down' (yellow) or 'kill' (red). */
+  hitKind?: 'hit' | 'down' | 'kill';
+  hitHead?: boolean;
   stamina: number;
   /** Contextual prompt, e.g. "Vault" / "Climb". */
   prompt: { action: 'jump'; label: string } | null;
@@ -263,6 +266,10 @@ export class UI {
     this.crossEl.style.setProperty('--gap', `${Math.max(3, Math.min(90, px)).toFixed(1)}px`);
     this.crossEl.style.opacity = st.drawn ? String(1 - st.ads) : '0.55';
     this.hitEl.style.opacity = String(Math.min(1, st.hitMarker / 0.12));
+    const hk = st.hitKind ?? 'hit';
+    if (this.hitEl.dataset.kind !== hk) this.hitEl.dataset.kind = hk;
+    const hh = st.hitHead ? '1' : '';
+    if ((this.hitEl.dataset.head ?? '') !== hh) this.hitEl.dataset.head = hh;
 
     // reload prompt
     const want = st.drawn && !st.melee && !st.reloading && st.lowAmmo && st.reserve > 0;

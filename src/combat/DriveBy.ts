@@ -129,8 +129,10 @@ export class DriveBy {
     if (npcHit) {
       _n.copy(_d).negate();
       g.effects?.impact(end, _n, 'flesh', false);
-      g.npcs?.hurt(npcHit.target, _d.x, _d.z, damage, npcHit.head);
+      const res = g.npcs?.hurt(npcHit.target, _d.x, _d.z, damage, npcHit.head);
       this.hitT = 0.15;
+      this.cross.dataset.kind = res ?? 'hit';
+      if (res === 'kill' || res === 'down') this.hitT = 0.35;
       g.weapon?.onFire?.(1);
     } else if (hit) {
       if (hit.collider && g.combat?.hitCollider(hit.collider.handle, damage * 0.55)) this.hitT = 0.15;

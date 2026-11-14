@@ -156,6 +156,17 @@ export class Ped {
   health = 100;
   fall = 0;
   fallSign = 1;
+  /** Downed but alive: seconds of writhing and crawling left before they bleed out (0 = dead, or never was). */
+  dying = 0;
+  /** How badly hurt (0 … 1): wounded people limp and clutch the wound. */
+  wound = 0;
+  /** A hit just landed: the body jerks away from it for a moment. */
+  flinch = 0;
+  flinchSign = 1;
+  /** Fall shape: sideways roll, knees buckling first (head shots), and the limbs' final sprawl. */
+  roll = 0;
+  crumple = false;
+  splay: [number, number, number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0, 0, 0];
   tx = 0; tz = 0; // threat / look-at target, or path end point
   px = 0; pz = 0; // path start (for 'path' strollers)
   vx = 0; vz = 0; // knock-back slide
@@ -200,6 +211,7 @@ const _v = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _axisX = new THREE.Vector3(1, 0, 0);
 const _axisY = new THREE.Vector3(0, 1, 0);
+const _axisZ = new THREE.Vector3(0, 0, 1);
 
 /** Time-of-day crowd size (relative). */
 export function pedDensity(hour: number): number {
@@ -276,6 +288,7 @@ export class Pedestrians {
     p.accessory = arch === 'commuter' && r() < 0.5 ? 4 : r() < 0.18 ? 1 : 0;
     p.idleT = 3 + r() * 14;
     p.health = 100;
+    p.dying = 0; p.wound = 0; p.flinch = 0; p.roll = 0; p.crumple = false;
     p.fall = 0;
     p.vx = p.vz = 0;
     p.screamed = false;
@@ -384,8 +397,16 @@ export class Pedestrians {
     }
   }
 
-  knockDown(p: Ped, vx: number, vz: number, damage = 100, byPlayer = false, head = false): void {
-    if (p.state === 'down') return;
+  /**
+   * Damage a pedestrian. Returns what happened, for the hit marker: 'hit' (hurt), 'down' (incapacitated: writhing on the
+   * ground), 'kill' (dead, or a downed person finished off) or null when nothing was hit.
+   */
+  knockDown(p: Ped, vx: number, vz: number, damage = 100, byPlayer = false, head = false): 'hit' | 'down' | 'kill' | null {
+    if (p.state === 'down') {
+      // finishing a writhing person, or more damage to a body
+      if (p.dying > 0) { p.dying = 0; p.vx += vx * 0.3; p.vz += vz * 0.3; return 'kill'; }
+      return 'hit';
+    }
     let dmg = damage * (head ? 2.6 : 1);
     if (p.armor > 0) {
       const soak = Math.min(p.armor, dmg * 0.6);
@@ -394,10 +415,25 @@ export class Pedestrians {
     }
     p.health -= dmg;
     this.hooks?.hit?.(p, byPlayer);
+    // which way the hit came from, relative to where they face: the body jerks (and later falls) with it
+    const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw);
+    const sp = Math.hypot(vx, vz) || 1;
+    const along = (vx * fx + vz * fz) / sp, side = (vx * fz - vz * fx) / sp;
     if (p.health > 0) {
+      p.wound = Math.min(1, p.wound + dmg / 110);
+      p.flinch = 0.32;
+      p.flinchSign = along >= 0 ? 1 : -1;
       if (p.role === 'civ') this.startFlee(p, p.x - vx, p.z - vz, 9);
-      return;
+      return 'hit';
     }
+    // dead outright (head shots, heavy hits, overkill), or down and dying for a while
+    const outright = head || dmg >= 140 || p.health < -70 || this.rnd() < 0.45;
+    p.dying = outright ? 0 : 6 + this.rnd() * 9;
+    p.crumple = head || this.rnd() < 0.25;
+    p.roll = side * (0.25 + this.rnd() * 0.45);
+    // the sprawl they end in: arms flung (forward/back, out to the side), legs apart and bent a little
+    const r = (a: number, b: number): number => a + this.rnd() * (b - a);
+    p.splay = [r(-2.6, 0.6), r(-2.6, 0.6), r(0.1, 1.2), r(0.1, 1.2), r(-0.5, 0.6), r(-0.5, 0.6), r(0.05, 0.4), r(0.05, 0.4)];
     p.state = 'down';
     p.ai = null;
     p.aim = false;
@@ -405,10 +441,12 @@ export class Pedestrians {
     p.stateT = 0;
     p.idleT = 0;
     p.vx = vx; p.vz = vz;
-    p.fallSign = this.rnd() < 0.5 ? 1 : -1;
+    // pushed from behind → falls forward; hit from the front → falls back
+    p.fallSign = along >= 0 ? 1 : -1;
     p.fall = 0;
     p.onRoad = this.plan.roadAt(p.x, p.z).kind === 'road';
     this.hooks?.killed?.(p, byPlayer);
+    return p.dying > 0 ? 'down' : 'kill';
   }
 
   /** Bullet test against all pedestrians; returns the nearest hit (distance along the ray). */
@@ -462,8 +500,15 @@ export class Pedestrians {
           if (p.stateT <= 0) { p.state = p.edge >= 0 ? 'walk' : 'stand'; p.speed = p.baseSpeed; }
           break;
         case 'down':
-          p.fall = Math.min(1, p.fall + dt * 3);
+          // knees buckle first after a head shot; otherwise the body goes over at once
+          p.fall = Math.min(1.6, p.fall + dt * (p.crumple && p.fall < 0.3 ? 1.6 : 3.2));
           p.x += p.vx * dt; p.z += p.vz * dt;
+          if (p.dying > 0) {
+            p.dying = Math.max(0, p.dying - dt);
+            p.phase += dt * 5;
+            // crawling: a slow drag along the ground, away from where they were hit
+            if (p.fall >= 1 && p.dying > 3) { const k = 0.22 * dt; p.x -= Math.sin(p.yaw) * k * p.fallSign; p.z -= Math.cos(p.yaw) * k * p.fallSign; }
+          }
           p.vx *= Math.max(0, 1 - dt * 3.5); p.vz *= Math.max(0, 1 - dt * 3.5);
           p.stateT += 0; // counts up via stateT decrement below
           this.stats.down++;
@@ -471,6 +516,9 @@ export class Pedestrians {
         case 'path': this.pathWalk(p, dt); break;
         default: break; // stand / lie
       }
+      if (p.flinch > 0) p.flinch = Math.max(0, p.flinch - dt);
+      // the wounded limp: no more sprinting
+      if (p.wound > 0.3 && p.state !== 'down' && p.speed > 1.6) p.speed = Math.min(p.speed, 1.6 + (1 - p.wound) * 3);
       // keep clear of the player and of moving vehicles
       if (p.state !== 'down' && p.state !== 'lie') {
         const dx = p.x - player.x, dz = p.z - player.z;
@@ -759,13 +807,26 @@ export class PedRenderer {
       let lift = 0;
       const running = p.state === 'flee' || p.arch === 'jogger';
       if (running && p.speed > 2) pitch = 0.16;
-      if (p.state === 'down') { pitch = p.fall * 1.45 * p.fallSign; lift = p.fall * 0.1; }
+      let roll = 0;
+      if (p.state === 'down') {
+        // falling: tip over in the direction of the hit, twisting a little sideways, then a small bounce as they land
+        const f = Math.min(1, p.fall);
+        const fe = f * f * (3 - 2 * f);
+        pitch = fe * 1.45 * p.fallSign;
+        roll = fe * p.roll;
+        lift = fe * 0.1 - (p.crumple ? Math.min(1, p.fall / 0.3) * 0.35 * (1 - fe) : 0);
+        if (p.fall > 1) lift += Math.sin(Math.min(1, (p.fall - 1) / 0.6) * Math.PI) * 0.05 * (1.6 - p.fall);
+        // the dying writhe and curl up
+        if (p.dying > 0 && f >= 1) roll += Math.sin(p.phase * 1.3) * 0.12;
+      }
+      if (p.flinch > 0) pitch -= (p.flinch / 0.32) * 0.28 * p.flinchSign;
       if (p.state === 'lie') { pitch = -1.5; lift = 0.1; }
       if (p.state === 'idle' || p.state === 'wait' || p.state === 'film') pitch += Math.sin(p.phase + p.seed * 5) * 0.02;
       const bob = p.speed > 0.1 && p.state !== 'down' ? Math.abs(Math.sin(p.phase)) * 0.025 * h : 0;
       _q.setFromAxisAngle(_axisY, p.yaw);
       _q2.setFromAxisAngle(_axisX, pitch);
       _qb.copy(_q).multiply(_q2);
+      if (roll) { _q2.setFromAxisAngle(_axisZ, roll); _qb.multiply(_q2); }
       const bx = p.x, by = p.y + lift + bob, bz = p.z;
       // limb angles about the hip / shoulder
       const moving = p.speed > 0.1 && p.state !== 'down';
@@ -774,7 +835,26 @@ export class PedRenderer {
       let armL = moving ? sw * 0.8 * (running ? 1.3 : 1) : Math.sin(p.phase) * 0.03;
       let armR = -armL;
       let legL = sw, legR = -sw;
-      if (p.state === 'down') { legL = 0.3; legR = -0.2; armL = 0.5; armR = -0.4; }
+      let abL = 0, abR = 0, labL = 0, labR = 0;
+      if (p.state === 'down') {
+        // limbs flail while falling, then settle into this person's sprawl; the dying keep moving
+        const f = Math.min(1, p.fall), sp = p.splay;
+        const flail = (1 - f) * Math.sin(p.fall * 22);
+        armL = sp[0] * f + (-1.8 + flail) * (1 - f); armR = sp[1] * f + (-1.6 - flail) * (1 - f);
+        abL = sp[2] * f + 0.8 * (1 - f); abR = sp[3] * f + 0.8 * (1 - f);
+        legL = sp[4] * f; legR = sp[5] * f; labL = sp[6]; labR = sp[7];
+        if (p.dying > 0 && f >= 1) {
+          const w = Math.sin(p.phase), w2 = Math.sin(p.phase * 0.7 + 1);
+          armL = -1.2 + w * 0.5; armR = -0.6 + w2 * 0.4; // clutching, reaching
+          legL = 0.5 + w2 * 0.35; legR = 0.2 - w * 0.3; // knees drawn up, kicking
+          abL = 0.3; abR = 0.25;
+        }
+      } else if (p.wound > 0.3) {
+        // a hand pressed to the wound, and a limp on one side
+        armR = -0.75;
+        if (moving) { legR *= 0.55; pitch += Math.max(0, Math.sin(p.phase)) * 0.05; }
+      }
+      if (p.flinch > 0) { const k = p.flinch / 0.32; armL -= k * 0.9; armR -= k * 0.9; }
       if (p.aim) { armL = -1.5; armR = -1.5; }
       else if (p.state === 'film') { armL = -1.35; armR = -1.35; }
       else if (p.arch === 'protester' || p.accessory === 2) { armL = -2.85; armR = -2.85; }
@@ -788,9 +868,11 @@ export class PedRenderer {
       for (const side of [-1, 1]) {
         _q2.setFromAxisAngle(_axisX, side < 0 ? armL : armR);
         _q.copy(_qb).multiply(_q2);
+        if (abL || abR) { _q2.setFromAxisAngle(_axisZ, -side * (side < 0 ? abL : abR)); _q.multiply(_q2); }
         this.set(this.arms, na++, _q, side * 0.255 * w, 1.42 * h, 0, bx, by, bz, w, h, w, L.sleeve);
         _q2.setFromAxisAngle(_axisX, side < 0 ? legL : legR);
         _q.copy(_qb).multiply(_q2);
+        if (labL || labR) { _q2.setFromAxisAngle(_axisZ, -side * (side < 0 ? labL : labR)); _q.multiply(_q2); }
         this.set(this.legs, nl, _q, side * 0.095 * w, 0.84 * h, 0, bx, by, bz, w, h, w, L.pants);
         this.set(this.shoes, nl, _q, side * 0.095 * w, 0.84 * h, 0, bx, by, bz, w, h, w, L.shoe);
         nl++;
