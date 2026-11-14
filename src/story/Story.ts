@@ -29,6 +29,7 @@ import { Completion } from '../collect/Completion';
 import { Venues } from '../minigames/Venues';
 import { Pastimes } from '../pastimes/Pastimes';
 import { SprayShops } from '../combat/SprayShops';
+import { RandomEvents } from './RandomEvents';
 import { GangTurf } from '../crime/GangTurf';
 import type { CharId, MissionRecord, Place, StoryState } from './types';
 
@@ -59,6 +60,7 @@ export class Story {
   readonly pastimes: Pastimes;
   readonly spray: SprayShops;
   readonly gangs: GangTurf;
+  readonly events: RandomEvents;
   readonly crewWheel: CrewWheel;
   mission: MissionRun | null = null;
   /** The text for the interact prompt when a mission start or heist board is in reach. */
@@ -92,6 +94,7 @@ export class Story {
     this.pastimes = new Pastimes(this);
     this.spray = new SprayShops(this);
     this.gangs = new GangTurf(this);
+    this.events = new RandomEvents(this);
     this.crewWheel = new CrewWheel(root, g.ui.hudRoot);
     this.crewWheel.onPick = (c) => this.allies.command(c);
     this.crewWheel.onClose = () => { g.loop.timeScale = this.protagonists.timeScaleNow(); };
@@ -665,6 +668,7 @@ export class Story {
     this.pastimes.update(dt);
     this.spray.update(dt);
     this.gangs.update(dt);
+    this.events.update(dt);
     this.completion.update(dt);
     this.beacons.update(dt, g.player.pos.x, g.player.pos.z);
     this.updatePrompt();
@@ -677,7 +681,7 @@ export class Story {
   private guideNext(): void {
     const g = this.g;
     // an activity on the range (or the fishing line) owns the objective box while it runs
-    if (this.pastimes.busy) { this.guideShown = false; return; }
+    if (this.pastimes.busy || this.events.active) { this.guideShown = false; return; }
     if (!this.st.introSeen || !g.player) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }
     const next = MISSIONS.find((d) => !d.activity && this.available(d));
     if (!next) { if (this.guideShown) { this.hud.setObjective(null, null); this.guideShown = false; } return; }

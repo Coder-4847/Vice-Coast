@@ -30,6 +30,8 @@ export const PLACES: Record<string, PlaceDef> = {
   'harbor': { x: 470, z: 1720, label: 'Dusk Harbor', car: true },
   'airport.apron': { x: A.x + 60, z: A.apronZ + 60, label: 'Valeria International apron', car: true },
   'airport.strip': { x: A.x - 330, z: A.z, label: 'Valeria International runway' },
+  'airport.gate': { x: A.x - 40, z: A.apronZ - 140, label: 'Valeria International road', car: true },
+  'allin.convoy': { x: A.x + 780, z: A.apronZ - 60, label: 'The coast road', car: true },
   'island.strip': { x: I.x, z: I.z, label: 'Isla Rojo airstrip' },
   'island.ridge': { x: I.x - 120, z: I.z - 130, label: 'Isla Rojo ridge' },
   'island.villa': { x: I.x + 60, z: I.z + 90, label: 'Isla Rojo villa' },

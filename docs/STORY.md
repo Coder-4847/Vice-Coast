@@ -65,6 +65,8 @@ mission with three endings; afterwards everything is unlocked for free roam.
 1. **Clean Slate** — Mack turns himself in with the ledgers and testifies. He loses his freedom and keeps his family.
 2. **Clear Skies** — Imani takes the money and the airstrip and leaves. She loses her friends and keeps her life.
 3. **Big Finish** — Teddy rides The Crown down in a stunt nobody will forget. He loses everything and becomes a legend.
+4. **All In** — Brandt springs Crane from the prison transport and the three of them stop his escape together. Nobody walks
+   away clean, and nobody walks away alone.
 
 ## Mission list
 
@@ -135,11 +137,22 @@ Key scenes are full cutscenes; the rest is subtitled dialogue. Act III (28–38)
 
 (Mission 37 is the Aurelia heist itself.)
 
-#### The three endings
-A choice screen opens at the start of the last mission. Each ending is its own short sequence and cutscene:
-1. **Clean Slate** — Mack drives the ledgers to the courthouse and walks in.
-2. **Clear Skies** — Imani flies the Skylark to Isla Rojo and lands for good.
+#### The four endings
+A choice screen opens at the start of the last mission. Each ending is its own sequence and cutscene:
+1. **Clean Slate** — Mack drives the ledgers to the courthouse with two Task Force cruisers behind him, clears Brandt's men
+   off the courthouse steps and walks in.
+2. **Clear Skies** — Imani clears the Task Force off the runway, takes off with three stars on her and lands the Skylark on
+   Isla Rojo for good.
 3. **Big Finish** — Teddy takes a longer ramp and a 45 m jump with the cameras rolling.
+4. **All In** — the GTA-style "everyone together" finale, switching between all three:
+   - **Mack** races Crane to Valeria International with two cruisers on him.
+   - **Teddy** takes a tank from Fort Halloran and smashes the Task Force roadblock on the airport road.
+   - **Imani** takes the Hornet gunship and stops Crane's convoy on the coast road before it reaches his jet.
+   - All three take down Brandt and her last men on the tarmac; Pruitt arrests Crane on the apron.
+
+Every ending finishes with the cast on the boardwalk, text messages from the people left behind, and an **end-credits roll**
+with the ending's name, the player's numbers (missions, gold medals, heists, money earned, people taken down, time played)
+and how many of the four endings they have seen.
 
 After the credits scene the free-roam flag is set (`flags.freeroam`, `flags.ending`); every mission stays replayable from the phone, and replaying the finale lets you pick another ending.
 

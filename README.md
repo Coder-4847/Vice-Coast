@@ -6,7 +6,7 @@ Everything — name, world, characters, brands, music, art — is original.
 **Live:** https://coder-4847.github.io/Vice-Coast/
 
 > Status: **1.0 — complete.** Start from the main menu, play the bank-job prologue *Valeria Savings, 2011*, then three switchable
-> protagonists, 38 story missions with six heists and a three-ending finale, 15 races, jobs, casino and bar games, a 107-piece
+> protagonists, 38 story missions with eight heists and a four-ending finale, 15 races, jobs, casino and bar games, a 107-piece
 > collectible hunt, six synthesized radio stations and a photo mode, across a 6 × 8 km state. See the [roadmap](#roadmap).
 
 ### Starting out
@@ -197,6 +197,10 @@ yacht are still to come.
 **Radio.** Six stations, synthesized live: rock, hip-hop, electronic, latin, jazz/lounge and talk, with DJs, adverts and news as subtitles (and optional spoken lines).
 Press `Q` in any vehicle or aircraft; click a card on the strip to jump to a station. **Radio volume** is in Settings → Audio.
 
+**Random street events** turn up every few minutes while you free-roam the city, marked with a blue `$` or `!`: a **security van**
+making a stop (two guards; hold `E` at the rear doors for the cash, then deal with the police) or a **purse snatcher** (stop him,
+pick up the wallet, then return it to its owner for a reward or keep what is inside).
+
 **Side activities** start from flag markers (⚑) that appear within a kilometre: **street, circuit, rally and downhill races** against AI rivals, **bike, boat and air races**
 against the clock, **taxi, courier, bounty, repo and vigilante jobs**, **flight school and a stunt course**. They pay in full every time and can be replayed.
 Walk up to the **Lucky Seven casino** (blackjack, roulette, slots) or the **Iron Hound bar** (darts, pool); the phone's **Toolkit** has lock-picking, hacking and safe-cracking.
@@ -281,6 +285,7 @@ Vite uses a relative `base`, so asset URLs work under `/Vice-Coast/` and locally
 20. **Rework, phases 2 + 3** ✅ — GTA-style HUD (radar bottom-left with health, armour and ability bars; money, weapon and wanted stars top-right; help box top-left; objectives above the subtitles), full-width MISSION PASSED and WASTED / BUSTED screens, main menu with the three leads, building facades with brick, panels, frames, weathering and gravel roofs, patched and cracked asphalt, warmer skin on the first-person hands
 21. **Rework, phases 4–6** ✅ — Southside, a gang neighbourhood of bungalows, chain-link fences, walk-ups, corner stores and courts held by the Southside Kings (neutral until you shoot, aim at them or hurt one; then a gang war with reinforcements); hydrants, bins, benches, news boxes and bus shelters along every street; more traffic and pedestrians on every preset; witnesses phone the police (stop them in time and nobody comes); at one star unarmed suspects are arrested rather than shot; officers sweep their own sectors of the search zone
 22. **Rework, phase 7** ✅ — switchblade and hatchet (melee with slash animations), RPG-7V with smoke-trailed rockets, Helios LX laser rifle; snacks you carry and eat with `F`; four more gun stores and five more food places across the map; a timed pop-up target challenge with medals at the beach shooting range; number keys 2–9 select weapons
-23. **Rework, phases 8 + 9** ✅ (this build) — street theft (parked cars, locked doors, window smashing, alarms, hotwiring, carjacking), seven new vehicles (sedan, police Interceptor, van, SUV, muscle car, sports car, dirt bike) with new van and SUV bodies, the Lancer fighter jet and Hornet attack helicopter with rockets plus a jet strip at Fort Halloran, eleven more stores to rob, and two new heists: The Pinecrest Score and Halloran Armory
+23. **Rework, phases 8 + 9** ✅ — street theft (parked cars, locked doors, window smashing, alarms, hotwiring, carjacking), seven new vehicles (sedan, police Interceptor, van, SUV, muscle car, sports car, dirt bike) with new van and SUV bodies, the Lancer fighter jet and Hornet attack helicopter with rockets plus a jet strip at Fort Halloran, eleven more stores to rob, and two new heists: The Pinecrest Score and Halloran Armory
+24. **Rework, phases 10 + 11** ✅ (this build) — a fourth ending, **All In** (all three together: a car chase, a tank through a roadblock and a gunship hunt for Crane's convoy, then Brandt's last stand), final fights added to Clean Slate and Clear Skies, epilogue texts, an end-credits roll with your numbers and endings seen; random street events (security vans to rob, purse snatchers to chase); an eating animation for snacks
 
 See [CREDITS.md](CREDITS.md) for third-party software and assets.

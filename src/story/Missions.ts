@@ -477,7 +477,7 @@ export class MissionRun {
   craftOf(name: string): import('../craft/Craft').Craft { return this.craftsMade.get(name)!; }
 
   /** Give the player a weapon for the mission. */
-  give(id: 'vc9' | 'smg' | 'shotgun' | 'rifle', rounds = 90): void {
+  give(id: import('../player/Weapons').WeaponId, rounds = 90): void {
     const w = this.g.weapon;
     if (!w) return;
     w.give(id, rounds);

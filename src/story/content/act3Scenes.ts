@@ -151,12 +151,31 @@ export const ACT3_SCENES: Record<string, CutsceneDef> = {
       low([L('teddy', 'Dex. If this goes wrong, tell the story right. If it goes right, do not let me do another. Big Finish.')]),
     ],
   },
+  m38_allin: {
+    id: 'm38_allin', anchor: 'home.mack', heading: -90, hour: 21,
+    actors: crew(),
+    shots: [
+      wide([L('pruitt', 'Twenty minutes ago Brandt and six of her people hit the prison transport on the East Highway. Two guards are dead. Crane is out.'), L('imani', 'Where is he going?'), L('pruitt', 'His jet is fuelled at Valeria International. If it leaves, the ledgers are just paper and he is just a man on a beach.')], { look: [0, 1.4, 2] }),
+      wide([L('teddy', 'So we stop a plane. I can stop a plane. I have a friend at Fort Halloran who owes me a tank.'), L('mack', 'Nobody owes you a tank, Teddy.'), L('teddy', 'Nobody is going to miss one, then.')], { look: [0, 1.4, 2], from: [-0.6, 1.9, -7], to: [0.2, 1.75, -5.6] }),
+      wide([L('mack', 'All three of us. Together. No coin toss.'), L('imani', 'All in.')], { look: [0, 1.4, 0] }),
+    ],
+  },
+  m38_end4: {
+    id: 'm38_end4', anchor: 'airport.apron', heading: 0, hour: 22,
+    actors: [A('crane', [0, 3.2], 'mack'), A('mack', [-1.6, 0], 'crane', true), A('imani', [0.2, -0.6], 'crane', true), A('teddy', [1.8, 0], 'crane'), A('pruitt', [4.2, 2], 'crane')],
+    shots: [
+      wide([L('crane', 'Do you know what you have done? Half this city works for me. Tomorrow they will not have jobs.'), L('mack', 'Tomorrow they will not have you. That is a start.')], { look: [0, 1.4, 2] }),
+      close(0, [L('crane', 'Brandt was the best money I ever spent.'), L('imani', 'She was the last money you ever spent.')], { look: [0, 1.6, 3.2], from: [-1.2, 1.62, 0.6], to: [-0.9, 1.64, 1.1] }),
+      wide([L('pruitt', 'Desmond Crane, you are under arrest. Again. Try to make it stick this time.'), L('teddy', 'Can I film this?'), L('pruitt', 'Absolutely not.')], { look: [1, 1.4, 2], from: [5, 2.2, -6], to: [3.6, 1.9, -4.5] }),
+      { from: [0, 3.2, -9], to: [0, 7, -16], look: [0, 1.5, 3], fov: 52, lines: [L('mack', 'Three people who did not trust each other. One city that did not need us.'), L('imani', 'And one bar, apparently.'), L('teddy', 'All in.')] },
+    ],
+  },
   m38_credits: {
     id: 'm38_credits', anchor: 'home.mack', heading: -90, hour: 19,
     actors: [A('mack', [-2, 0], 'imani'), A('imani', [0, 0.2], 'teddy'), A('teddy', [2, 0], 'mack')],
     shots: [
       wide([L('mack', 'That is San Verano. The city keeps going. It always does.'), L('imani', 'It does not need us.'), L('teddy', 'It does not need anyone. That is why it is beautiful.')]),
-      { from: [0, 3.6, -9], to: [0, 6.5, -14], look: [0, 1.5, 4], fov: 52, lines: [L('mack', 'Thank you for playing. The whole city is yours now: every job, every road. Go and find what is left.')] },
+      { from: [0, 3.6, -9], to: [0, 6.5, -14], look: [0, 1.5, 4], fov: 52, lines: [L('mack', 'Whatever happens next, it happens without us. And for once, that sounds fine.')] },
     ],
   },
 };

@@ -901,3 +901,21 @@ html[data-font="readable"] body { letter-spacing: 0.015em; }
 /* the first-minutes controls card sits to the right, clear of objectives and subtitles */
 .hud .hints { left: auto; right: calc(var(--hud-pad) + env(safe-area-inset-right)); bottom: auto; top: 50%; transform: translateY(-50%); }
 .hud .hints.is-hidden { transform: translate(8px, -50%); }
+
+/* ---- end credits ------------------------------------------------------------------------------------------------ */
+.credits { position: fixed; inset: 0; z-index: 90; overflow: hidden; background: radial-gradient(ellipse at 50% 120%, rgba(60, 30, 20, 0.55), rgba(4, 5, 8, 0.96) 60%); opacity: 0; transition: opacity 0.7s var(--ease); font-family: var(--font); color: var(--text); }
+.credits.show { opacity: 1; }
+.cr-roll { position: absolute; left: 50%; top: 0; width: min(640px, 88vw); text-align: center; transform: translate(-50%, 100vh); display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 20vh; will-change: transform; }
+.cr-kicker { font-size: var(--fs-xs); letter-spacing: 0.5em; text-transform: uppercase; color: var(--muted); }
+.cr-ending { font-size: clamp(2.4rem, 7vw, 4.6rem); font-weight: 700; letter-spacing: 0.06em; color: #ffd166; text-shadow: 0 4px 30px rgba(255, 140, 60, 0.35); }
+.cr-tag { font-size: var(--fs-md); color: var(--text); opacity: 0.85; max-width: 46ch; margin-bottom: 28px; }
+.cr-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; width: 100%; padding: 16px 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.cr-stat { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--muted); }
+.cr-stat b { color: var(--text); font-weight: 600; }
+.cr-seen { font-size: var(--fs-sm); color: var(--accent); margin-bottom: 40vh; }
+.cr-head { margin-top: 44px; font-size: var(--fs-xs); letter-spacing: 0.4em; text-transform: uppercase; color: var(--accent); }
+.cr-name { font-size: var(--fs-lg); font-weight: 500; }
+.cr-end { margin-top: 30vh; font-size: var(--fs-xl); font-weight: 600; }
+.cr-sub { color: var(--muted); font-size: var(--fs-md); }
+.cr-skip { position: absolute; right: var(--sp-5); bottom: var(--sp-5); font-size: var(--fs-xs); letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+@media (max-width: 520px) { .cr-stats { grid-template-columns: 1fr; } }

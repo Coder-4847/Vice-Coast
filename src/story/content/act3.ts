@@ -1,6 +1,49 @@
 import { GOLD, type Gen, type MissionDef, type MissionRun } from '../Missions';
 import { row, type Page } from '../../ui/Modal';
 import { chasers, dist, gm, heistDone, send, squad, TF, type Gun } from './act2';
+import { HEAT } from '../../combat/Wanted';
+import { rollCredits } from '../../ui/Credits';
+import { money } from '../../economy/Economy';
+
+const ENDINGS = [
+  { name: 'Clean Slate', tag: 'Mack walked into the courthouse with the ledgers and did not walk out. Carmen and Lola sat in the third row every day of the trial.' },
+  { name: 'Clear Skies', tag: 'Imani took the money and the airstrip and never filed another flight plan. Somewhere over the Pacific, the radio is always off.' },
+  { name: 'Big Finish', tag: 'Teddy flew farther than anyone ever has, on forty million screens. Dex still has the footage. Nobody has let him jump again.' },
+  { name: 'All In', tag: 'They finished it together. Crane went to trial, Brandt went down on the tarmac, and three people who did not trust each other bought a bar.' },
+];
+
+/** The roll at the very end: the ending, the player's numbers and how many endings they have seen. */
+function* credits(m: MissionRun, e: number): Gen {
+  const s = m.s, st = s.st;
+  st.flags[`ending${e}`] = true;
+  const seen = [1, 2, 3, 4].filter((n) => st.flags[`ending${n}`]).length;
+  const recs = Object.values(st.missions);
+  const done = recs.filter((r) => r.done).length;
+  const medals = recs.reduce((a, r) => a + (r.medals?.length ?? 0), 0);
+  const heists = Object.values(st.heists).filter((h) => h.done).length;
+  const ps = s.g.commerce!.eco.p.stats;
+  const hrs = Math.floor(ps.playSeconds / 3600), mins = Math.floor((ps.playSeconds % 3600) / 60);
+  const end = ENDINGS[e - 1]!;
+  const g = s.g;
+  if (g.player) g.player.frozen = true;
+  let finished = false;
+  void rollCredits({
+    ending: end.name, tagline: end.tag, endingsSeen: seen, endingsTotal: 4,
+    stats: [['Missions completed', String(done)], ['Gold medals', String(medals)], ['Heists pulled', String(heists)], ['Money earned', money(ps.earned)], ['People taken down', String(ps.kills)], ['Time on the coast', `${hrs} h ${mins} min`]],
+  }).then(() => { finished = true; });
+  m.onCleanup(() => { if (g.player) g.player.frozen = false; });
+  while (!finished) yield;
+  if (g.player) g.player.frozen = false;
+}
+
+/** Texts from the people left behind, after each ending. */
+function epilogue(m: MissionRun, e: number): void {
+  const s = m.s;
+  if (e === 1) { send(s, 'Lola', 'Third row, like Mom said. The judge laughed at your joke. I think that is good?'); send(s, 'Imani', 'You did the thing none of us could. I will fly over the prison on your birthday. Look up.'); }
+  else if (e === 2) { send(s, 'Pilar', 'Nobody has asked where you went. I tell them the weather took you.'); send(s, 'Mack', 'Clear skies, Cole. Send a postcard with no return address.'); }
+  else if (e === 3) { send(s, 'Dex', 'Two hundred million views and the hospital says the bones will knit. You are an idiot. My idiot.'); send(s, 'Mama Jo', 'Your table is ready when you can walk to it.'); }
+  else { send(s, 'Pruitt', 'Crane pleads on Monday. Brandt is dead. I am told the three of you bought a bar. Try not to rob it.'); send(s, 'Teddy', 'Bar is called THE SWITCH. Mack picked it. First round is on Imani.'); }
+}
 
 const act2Done = (s: import('../Story').Story): boolean => s.done('m27');
 
@@ -18,6 +61,7 @@ const choicePage = (m: MissionRun): Page => ({
     opt(1, 'Clean Slate', 'Mack takes the ledgers to the court and testifies. He loses his freedom and keeps his family.');
     opt(2, 'Clear Skies', 'Imani takes the money and the airstrip and leaves. She loses her friends and keeps her life.');
     opt(3, 'Big Finish', 'Teddy rides it down in a stunt nobody will forget. He loses everything and becomes a legend.');
+    opt(4, 'All In', 'Brandt springs Crane from custody. The three of them go after him together: a car, a tank and a gunship. Nobody walks away clean, and nobody walks away alone.');
   },
 });
 
@@ -283,7 +327,7 @@ export const ACT3: MissionDef[] = [
   },
   {
     id: 'm38', title: 'Three Ways Out', char: 'any', act: 3, giver: 'pruitt', after: ['m36'], gate: heistDone('h6'), start: 'mack.door', hour: 21, reward: 15000,
-    blurb: 'The ledgers are in. Crane is done. Each of them has one more thing to do, and only one of them gets to do it.',
+    blurb: 'The ledgers are in. Crane is done, or nearly. Each of them has one more thing to do: alone, or all together.',
     gold: [GOLD.time(900)],
     unlock: (s) => {
       s.st.flags.freeroam = true;
@@ -308,7 +352,13 @@ export const ACT3: MissionDef[] = [
           m.give('vc9', 30);
           m.vehicle('car', 'veloce', 'mack.door', { color: '#1d2a44' });
           yield* m.enter('car', 'Take the ledgers to the court');
+          // Brandt's last loyal men try to stop the ledgers reaching a judge
+          chasers(m, ['tf1', 'tf2'], 'mack.door', 'cruiser', 118);
+          m.say('pruitt', 'Brandt knows where you are going. Two cars behind you, and more at the steps.');
           yield* m.goto('court', 'Drive to Valeria Courthouse', { vehicle: 'car', r: 16 });
+          m.s.drivers.clear();
+          m.say('mack', 'Welcoming committee. Of course.');
+          yield* squad(m, 'steps', 'court', [[-10, 12, 'smg'], [10, 14, 'smg'], [-4, 22, 'rifle'], [6, 24, 'shotgun']], 'Clear Brandt\'s men off the courthouse steps', TF);
           m.objective('Leave the car and walk in');
           while (m.playerIn('car')) yield;
           yield* m.cutscene('m38_end1');
@@ -316,6 +366,12 @@ export const ACT3: MissionDef[] = [
           yield* m.switchTo('imani');
           const plane = m.craft('plane', 'skylark', 'airport.strip', { yaw: -Math.PI / 2 });
           m.failIf('plane', () => plane.exploded, 'The Skylark was destroyed.');
+          m.give('rifle', 120);
+          m.say('pilar', 'Imani, there are Task Force trucks on the runway. They know which plane is yours.');
+          yield* squad(m, 'rwy', 'airport.strip', [[-30, 14, 'rifle'], [-12, -16, 'smg'], [16, 18, 'smg'], [34, -10, 'rifle']], 'Clear the Task Force off the runway', TF);
+          const pp = m.playerPos();
+          m.g.wanted?.report(HEAT[3]! + 4, pp.x, pp.z, true);
+          m.say('imani', 'Three stars and a runway. I have had worse mornings.');
           m.objective('Board the Skylark');
           m.route('airport.strip');
           while (!m.playerFlying('plane')) yield;
@@ -325,7 +381,7 @@ export const ACT3: MissionDef[] = [
           m.objective('Climb out of the Skylark');
           while (m.g.piloting?.active) yield;
           yield* m.cutscene('m38_end2');
-        } else {
+        } else if (e === 3) {
           yield* m.switchTo('teddy');
           const t = m.at('home.teddy');
           const car = m.vehicle('stunt', 'barrage', { x: t.x + 9, z: t.z + 7 }, { color: '#c4202c' });
@@ -355,11 +411,97 @@ export const ACT3: MissionDef[] = [
           m.say('dex', `${Math.round(best)} metres! They will name a tyre after you!`);
           yield* m.wait(2);
           yield* m.cutscene('m38_end3');
+        } else {
+          yield* allIn(m);
         }
       },
-      function* (m): Gen { yield* m.cutscene('m38_credits'); },
+      function* (m): Gen {
+        const e = m.stats.extra.end ?? 1;
+        yield* m.cutscene('m38_credits');
+        epilogue(m, e);
+        yield* credits(m, e);
+      },
     ],
   },
 ];
+
+/**
+ * The fourth ending. Brandt hits the prison transport and Crane runs for his jet at Valeria International. Mack drives in
+ * with the Task Force on his tail, Teddy smashes the roadblock on the airport road in a tank, Imani hunts the convoy down
+ * the coast road in a gunship, and the three of them finish Brandt on the tarmac.
+ */
+function* allIn(m: MissionRun): Gen {
+  const P = m.s.protagonists;
+  const A = m.at('airport.gate'), C = m.at('allin.convoy');
+  yield* m.cutscene('m38_allin');
+  m.noSwitch = false;
+  // where everyone starts
+  const tp = m.s.snap(A.x - 60, A.z - 30, 3), ip = m.s.snap(A.x + 90, A.z + 170, 3);
+  P.put('teddy', tp.x, tp.z, 0);
+  P.put('imani', ip.x, ip.z, 0);
+  // ---- Mack: get to the airport road ------------------------------------------------------------------------
+  yield* m.switchTo('mack');
+  m.give('smg', 180);
+  m.vehicle('car', 'comet', 'mack.door', { color: '#101216' });
+  yield* m.enter('car', 'Get in the Comet');
+  chasers(m, ['tf1', 'tf2'], 'mack.door', 'cruiser', 120);
+  m.say('pruitt', 'Crane is out. Brandt hit the transport on the East Highway. They are running for his jet at Valeria International.');
+  m.say('mack', 'Then we close the airport.');
+  yield* m.goto('airport.gate', 'Race to the airport road', { vehicle: 'car', r: 40, sub: 'Two Task Force cruisers are on you' });
+  m.s.drivers.clear();
+  // ---- Teddy: the roadblock -----------------------------------------------------------------------------------
+  const tank = m.craft('tank', 'bulwark', { x: tp.x + 8, z: tp.z }, { yaw: Math.PI });
+  m.failIf('tank', () => tank.exploded, 'The tank was destroyed.');
+  for (let i = 0; i < 3; i++) m.vehicle(`rb${i}`, 'cruiser', m.s.snap(A.x - 20 + i * 7, A.z + 40, 2.6), { yaw: Math.PI / 2 });
+  for (const [dx, dz] of [[-24, 50], [-6, 54], [12, 50], [24, 46]] as [number, number][]) m.s.hostiles.spawn({ ...gm(m, 'airport.gate', dx, dz, 'rifle', { tag: 'rb', ...TF, hold: true }) });
+  m.tags.add('rb');
+  m.say('teddy', 'Mack! Look what I borrowed from Fort Halloran!');
+  yield* m.asChar('teddy', 'Take the tank', 'Teddy is on the airport road');
+  m.objective('Get in the tank', 'Walk up to it and press E');
+  while (!m.playerFlying('tank')) yield;
+  m.unblip('craft:tank');
+  m.tip('Mouse aims the turret, left button fires the cannon, right button the machine gun.', 8);
+  for (let i = 0; i < 3; i++) yield* m.destroy(`rb${i}`, `Smash the roadblock (${3 - i} cruisers left)`);
+  yield* m.kill('rb', [], 'Finish the Task Force on the road');
+  // Teddy climbs out so the switch to Imani is free (nobody can switch from inside a craft)
+  m.say('teddy', 'Road is open! Imani, they are all yours!');
+  m.g.piloting?.abort();
+  // ---- Imani: the convoy --------------------------------------------------------------------------------------
+  const heli = m.craft('gunship', 'hornet', { x: ip.x + 10, z: ip.z }, { yaw: -Math.PI / 2 });
+  m.failIf('heli', () => heli.exploded, 'The Hornet was destroyed.');
+  m.say('pilar', 'Imani, the gunship is fuelled and armed. Crane\'s convoy is on the coast road, heading for the apron.');
+  yield* m.asChar('imani', 'Get in the Hornet', 'Imani is on the apron');
+  m.objective('Get in the Hornet');
+  while (!m.playerFlying('gunship')) yield;
+  m.unblip('craft:gunship');
+  const convoy = ['esc0', 'limo', 'esc1'];
+  convoy.forEach((n, i) => {
+    m.vehicle(n, n === 'limo' ? 'huntley' : 'cruiser', m.s.snap(C.x + i * 14, C.z + (i % 2) * 6, 2.6), { yaw: Math.PI / 2, color: n === 'limo' ? '#0b0c0e' : undefined, blip: n === 'limo' });
+  });
+  const lead = m.drive('limo', () => m.at('airport.apron'), { kmh: 62, arrive: 40 });
+  m.drive('esc0', () => m.veh('limo').position, { kmh: 70 });
+  m.drive('esc1', () => m.veh('limo').position, { kmh: 70 });
+  m.failIf('jet', () => lead.arrived, 'Crane reached his jet.');
+  m.tip('Climb with Space and fly with W / A / S / D. Hold R to fire rockets along the nose.', 10);
+  m.say('imani', 'I see them. Three cars, one with the expensive windows.');
+  yield* m.destroy('limo', 'Stop Crane\'s limo before it reaches the apron');
+  m.clearFails();
+  m.s.drivers.clear();
+  m.say('crane', 'Ines! Get me out of this car!');
+  // ---- all three: Brandt's last stand on the tarmac ---------------------------------------------------------------
+  const wreck = m.veh('limo').position.clone();
+  P.put('mack', wreck.x - 40, wreck.z - 30, 0);
+  P.put('teddy', wreck.x + 40, wreck.z - 30, 0);
+  m.say('brandt', 'You should have stayed a valet, Delgado.');
+  m.say('mack', 'I am right behind the wreck, Imani. Teddy is on the other side. Land, or light them up.');
+  yield* m.kill('brandt', [
+    { ...m.s.snap(wreck.x + 6, wreck.z + 8), kind: 'rifle', hp: 320, look: 'brandt', tag: 'brandt' },
+    { ...m.s.snap(wreck.x - 10, wreck.z + 4), kind: 'smg', look: 'guard', tag: 'brandt' },
+    { ...m.s.snap(wreck.x + 14, wreck.z - 6), kind: 'smg', look: 'guard', tag: 'brandt' },
+    { ...m.s.snap(wreck.x - 4, wreck.z + 16), kind: 'shotgun', look: 'guard', tag: 'brandt' },
+  ], 'Take down Brandt and her last men', { sub: 'From the gunship, or land and switch to Mack or Teddy to flank them' });
+  m.g.wanted?.clear();
+  yield* m.cutscene('m38_end4');
+}
 
 void (null as unknown as Gun);
